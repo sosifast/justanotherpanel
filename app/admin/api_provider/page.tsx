@@ -6,5 +6,11 @@ export default async function ApiProviderPage() {
         orderBy: { id: 'asc' }
     });
 
-    return <ApiProvidersClient initialProviders={providers} />;
+    // Convert Decimal to number for Client Component
+    const serializedProviders = providers.map(provider => ({
+        ...provider,
+        balance: Number(provider.balance)
+    }));
+
+    return <ApiProvidersClient initialProviders={serializedProviders} />;
 }

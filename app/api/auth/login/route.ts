@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
+import { compare } from 'bcryptjs';
 import { SignJWT } from 'jose';
+import { cookies } from 'next/headers';
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { email, password } = await request.json();
+    const { email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Missing email or password' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
@@ -19,9 +20,9 @@ export async function POST(request: Request) {
       where: {
         OR: [
           { email: email },
-          { username: email } // We use the 'email' payload field for both email/username input
+          { username: email }
         ]
-      },
+      }
     });
 
     if (!user) {
@@ -31,8 +32,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify password
-    const isValid = await bcrypt.compare(password, user.password);
+    // Check password
+    const isValid = await compare(password, user.password);
 
     if (!isValid) {
       return NextResponse.json(
@@ -40,41 +41,49 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+    
+    if (user.status !== 'ACTIVE') {
+         return NextResponse.json(
+        { error: 'Account is not active' },
+        { status: 403 }
+      );
+    }
 
     // Create JWT
     const secret = new TextEncoder().encode(
-      process.env.JWT_SECRET || 'default_secret_key_change_me'
+      process.env.JWT_SECRET || 'default-secret-key-change-it'
     );
 
-    const token = await new SignJWT({
-      id: user.id,
-      email: user.email,
-      role: user.role,
+    const token = await new SignJWT({ 
+        sub: user.id.toString(), 
+        username: user.username,
+        role: user.role 
     })
       .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('1d')
+      .setExpirationTime('24h')
       .sign(secret);
 
-    // Create response with cookie
-    const response = NextResponse.json(
-      { success: true, message: 'Login successful' },
-      { status: 200 }
-    );
-
-    response.cookies.set('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 86400, // 1 day
-      path: '/',
+    // Set cookie
+    const cookieStore = await cookies();
+    cookieStore.set('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 60 * 60 * 24, // 24 hours
+        path: '/'
     });
 
-    return response;
-  } catch (error) {
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
+
+    return NextResponse.json(
+      { message: 'Login successful', user: userWithoutPassword },
+      { status: 200 }
+    );
+  } catch (error: any) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

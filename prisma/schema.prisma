@@ -1,0 +1,302 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int        @id @default(autoincrement())
+  full_name            String
+  username             String     @unique
+  email                String     @unique
+  password             String
+  balance              Decimal    @default(0) @db.Decimal(10, 2)
+  role                 Role       @default(MEMBER)
+  status               UserStatus @default(ACTIVE)
+  profile_imagekit_url String?
+  apikey               String?    @unique
+  created_at           DateTime   @default(now())
+  updated_at           DateTime   @updatedAt
+
+  orders          Order[]
+  deposits        Deposits[]
+  discount_usages DiscountUsage[]
+
+  @@map("user")
+}
+
+model Platform {
+  id                Int            @id @default(autoincrement())
+  name              String
+  slug              String         @unique
+  icon_imagekit_url String?
+  status            PlatformStatus @default(ACTIVE)
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+
+  categories Category[]
+
+  @@map("platform")
+}
+
+model Setting {
+  id                   Int      @id @default(autoincrement())
+  site_name            String
+  favicon_imagekit_url String?
+  logo_imagekit_url    String?
+  instagram_url        String?
+  facebook_url         String?
+  email                String?
+  phone                String?
+  telegram             String?
+  imagekit_url         String?
+  imagekit_publickey   String?
+  imagekit_privatekey  String?
+  google_analytic_code String?
+  google_search_code   String?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  @@map("setting")
+}
+
+model Category {
+  id          Int            @id @default(autoincrement())
+  id_platform Int
+  name        String
+  status      CategoryStatus @default(ACTIVE)
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
+
+  platform Platform  @relation(fields: [id_platform], references: [id])
+  services Service[]
+
+  @@map("category")
+}
+
+model Service {
+  id              Int           @id @default(autoincrement())
+  id_category     Int
+  sid             String?
+  id_api_provider Int?
+  name            String
+  min             Int
+  max             Int
+  price_api       Decimal       @db.Decimal(10, 4)
+  price_sale      Decimal       @db.Decimal(10, 4)
+  price_reseller  Decimal       @db.Decimal(10, 4)
+  refill          Boolean       @default(false)
+  type            ServiceType   @default(DEFAULT)
+  status          ServiceStatus @default(ACTIVE)
+  note            String?       @db.Text
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  category     Category     @relation(fields: [id_category], references: [id])
+  api_provider ApiProvider? @relation(fields: [id_api_provider], references: [id])
+  orders       Order[]
+
+  @@map("service")
+}
+
+model ApiProvider {
+  id         Int               @id @default(autoincrement())
+  name       String
+  code       String            @unique
+  url        String
+  api_key    String
+  balance    Decimal           @default(0) @db.Decimal(10, 4)
+  status     ApiProviderStatus @default(ACTIVE)
+  created_at DateTime          @default(now())
+  updated_at DateTime          @updatedAt
+
+  services Service[]
+  orders   Order[]
+
+  @@map("api_provider")
+}
+
+model PaymentGateway {
+  id          Int                  @id @default(autoincrement())
+  provider    PaymentProvider
+  api_config  Json
+  status      PaymentGatewayStatus @default(ACTIVE)
+  min_deposit Decimal              @db.Decimal(10, 2)
+  created_at  DateTime             @default(now())
+  updated_at  DateTime             @updatedAt
+
+  @@map("payment_gateway")
+}
+
+model Order {
+  id              Int         @id @default(autoincrement())
+  id_user         Int
+  id_api_provider Int?
+  id_service      Int
+  link            String
+  price_api       Decimal     @db.Decimal(10, 4)
+  price_sale      Decimal     @db.Decimal(10, 4)
+  price_seller    Decimal     @db.Decimal(10, 4) // As per text, likely price_reseller
+  remains         Int?
+  start_count     Int?
+  quantity        Int
+  status          OrderStatus @default(PENDING)
+  refill          Boolean     @default(false)
+  runs            Int?
+  interval        Int?
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  user            User            @relation(fields: [id_user], references: [id])
+  api_provider    ApiProvider?    @relation(fields: [id_api_provider], references: [id])
+  service         Service         @relation(fields: [id_service], references: [id])
+  discount_usages DiscountUsage[]
+
+  @@map("order")
+}
+
+model Deposits {
+  id                 Int           @id @default(autoincrement())
+  id_user            Int
+  amount             Decimal       @db.Decimal(10, 2)
+  detail_transaction Json
+  status             DepositStatus @default(PENDING)
+  created_at         DateTime      @default(now())
+  updated_at         DateTime      @updatedAt
+
+  user User @relation(fields: [id_user], references: [id])
+
+  @@map("deposits")
+}
+
+model News {
+  id         Int        @id @default(autoincrement())
+  subject    String
+  content    String     @db.Text
+  status     NewsStatus @default(ACTIVE)
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+
+  @@map("news")
+}
+
+model Discount {
+  id              Int            @id @default(autoincrement())
+  name_discount   String
+  min_transaction Decimal        @db.Decimal(10, 2)
+  max_transaction Decimal        @db.Decimal(10, 2)
+  type            DiscountType
+  amount          Decimal        @db.Decimal(10, 2)
+  expired_date    DateTime
+  max_used        Int
+  status          DiscountStatus @default(ACTIVE)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+
+  discount_usages DiscountUsage[]
+
+  @@map("discount")
+}
+
+model DiscountUsage {
+  id          Int      @id @default(autoincrement())
+  id_discount Int
+  id_users    Int
+  id_order    Int?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  discount Discount @relation(fields: [id_discount], references: [id])
+  user     User     @relation(fields: [id_users], references: [id])
+  order    Order?   @relation(fields: [id_order], references: [id])
+
+  @@map("discount_usage")
+}
+
+// Enums
+
+enum Role {
+  MEMBER
+  STAFF
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  NOT_ACTIVE
+}
+
+enum PlatformStatus {
+  ACTIVE
+  NOT_ACTIVE
+}
+
+enum CategoryStatus {
+  ACTIVE
+  NOT_ACTIVE
+}
+
+enum ServiceType {
+  DEFAULT
+  PACKAGE
+  CUSTOM_COMMENTS
+  POLL
+  SUBSCRIPTIONS
+}
+
+enum ServiceStatus {
+  ACTIVE
+  NOT_ACTIVE
+}
+
+enum ApiProviderStatus {
+  ACTIVE
+  NOT_ACTIVE
+}
+
+enum PaymentProvider {
+  PAYPAL
+  CRYPTOMUS
+  MANUAL
+}
+
+enum PaymentGatewayStatus {
+  ACTIVE
+  NOT_ACTIVE
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PROGRESS
+  PROCESSING
+  COMPLETED
+  SUCCESS
+  PARTIAL
+  ERROR
+  CANCELED
+}
+
+enum DepositStatus {
+  PENDING
+  ERROR
+  CANCELED
+  PAYMENT // Text says Payment, maybe PAID? Keeping as per text
+}
+
+enum NewsStatus {
+  ACTIVE
+  NOT_ACTIVE
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum DiscountStatus {
+  ACTIVE
+  NOT_ACTIVE
+}

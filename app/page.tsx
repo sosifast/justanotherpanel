@@ -13,8 +13,26 @@ import {
   Globe,
   ArrowRight,
   ShieldCheck,
-  MousePointer2
+  MousePointer2,
+  Facebook,
+  Instagram
 } from 'lucide-react';
+
+const TelegramIcon = ({ className }: { className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M22 2L11 13" />
+    <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+  </svg>
+);
 
 const App = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -78,8 +96,8 @@ const App = () => {
             </nav>
 
             <div className="hidden md:flex items-center gap-3">
-               <a href="/login" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Login</a>
-               <a href="/register" className="text-sm font-medium bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-all inline-flex items-center justify-center">
+               <a href="/auth/login" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Login</a>
+               <a href="/auth/register" className="text-sm font-medium bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-all inline-flex items-center justify-center">
                 Get Started
               </a>
             </div>
@@ -103,8 +121,8 @@ const App = () => {
             <a href="#features" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Features</a>
             <a href="#about" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Why Us</a>
             <div className="pt-2 border-t border-slate-100 flex flex-col gap-3">
-              <a href="/login" className="text-slate-900 font-semibold text-left">Login</a>
-              <a href="/register" className="bg-slate-900 text-white px-5 py-2 rounded-lg font-medium text-center">Sign Up</a>
+              <a href="/auth/login" className="text-slate-900 font-semibold text-left">Login</a>
+              <a href="/auth/register" className="bg-slate-900 text-white px-5 py-2 rounded-lg font-medium text-center">Sign Up</a>
             </div>
           </nav>
         )}
@@ -136,7 +154,7 @@ const App = () => {
             
             {/* Buttons changed to Anchors for crawlability */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
-              <a href="/register" className="w-full sm:w-auto px-8 py-4 bg-slate-900 text-white rounded-xl font-semibold text-base hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
+              <a href="/auth/register" className="w-full sm:w-auto px-8 py-4 bg-slate-900 text-white rounded-xl font-semibold text-base hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
                 Start Growing Now
                 <ArrowRight className="w-4 h-4" />
               </a>
@@ -357,8 +375,8 @@ const App = () => {
               <ul className="space-y-3 text-sm text-slate-600">
                 <li><a href="/services" className="hover:text-blue-600 transition-colors">Services</a></li>
                 <li><a href="/api" className="hover:text-blue-600 transition-colors">API Documentation</a></li>
-                <li><a href="/register" className="hover:text-blue-600 transition-colors">Sign Up</a></li>
-                <li><a href="/login" className="hover:text-blue-600 transition-colors">Login</a></li>
+                <li><a href="/auth/register" className="hover:text-blue-600 transition-colors">Sign Up</a></li>
+                <li><a href="/auth/login" className="hover:text-blue-600 transition-colors">Login</a></li>
               </ul>
             </nav>
 
@@ -375,7 +393,19 @@ const App = () => {
           
           <div className="border-t border-slate-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-400">
             <div>&copy; {new Date().getFullYear()} JustAnotherPanel. All rights reserved.</div>
-            <div className="flex gap-6">
+            <div className="flex gap-6 items-center">
+               <div className="flex items-center gap-4">
+                 <a href="#" aria-label="Telegram" className="text-slate-400 hover:text-blue-500 transition-colors">
+                   <TelegramIcon className="w-5 h-5" />
+                 </a>
+                 <a href="#" aria-label="Facebook" className="text-slate-400 hover:text-blue-600 transition-colors">
+                   <Facebook className="w-5 h-5" />
+                 </a>
+                 <a href="#" aria-label="Instagram" className="text-slate-400 hover:text-pink-600 transition-colors">
+                   <Instagram className="w-5 h-5" />
+                 </a>
+               </div>
+               <div className="w-px h-4 bg-slate-200 hidden sm:block"></div>
                <div className="flex items-center gap-2">
                  <Globe className="w-4 h-4" />
                  <span>English (US)</span>

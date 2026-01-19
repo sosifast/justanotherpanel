@@ -2,10 +2,43 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Mail, ArrowRight } from 'lucide-react';
+import { Mail, ArrowRight, Loader2 } from 'lucide-react';
 
 const ForgetPassword = () => {
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const res = await fetch('/api/auth/forget', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Request failed');
+      }
+
+      setSuccess(data.message || 'If an account exists, a reset link has been sent.');
+      setEmail('');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-500 selection:text-white flex items-center justify-center p-4 relative overflow-hidden">
@@ -27,7 +60,19 @@ const ForgetPassword = () => {
           </p>
         </div>
 
-        <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+        {success && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-600 rounded-xl text-sm text-center">
+            {success}
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm text-center">
+            {error}
+          </div>
+        )}
+
+        <form className="space-y-5" onSubmit={handleSubmit}>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
             <div className="relative group">
@@ -47,10 +92,11 @@ const ForgetPassword = () => {
 
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition-all transform active:scale-[0.98] shadow-lg shadow-slate-900/20"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition-all transform active:scale-[0.98] shadow-lg shadow-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Send Reset Link
-            <ArrowRight className="w-4 h-4" />
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Reset Link'}
+            {!loading && <ArrowRight className="w-4 h-4" />}
           </button>
         </form>
 

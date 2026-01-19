@@ -1,20 +1,56 @@
 import React from 'react';
 import { Users, ShoppingBag, LifeBuoy, DollarSign, TrendingUp, AlertCircle, MoreVertical } from 'lucide-react';
+import { prisma } from '@/lib/prisma';
+import { formatDistanceToNow } from 'date-fns';
 
-const AdminDashboard = () => {
+async function getStats() {
+  const totalRevenue = await prisma.deposits.aggregate({
+    _sum: { amount: true },
+    where: { status: 'PAYMENT' } // Assuming PAYMENT = Paid
+  });
+
+  const totalOrders = await prisma.order.count();
+  const activeUsers = await prisma.user.count({ where: { status: 'ACTIVE' } });
+
+  // Pending tickets static for now
+  const pendingTickets = 0;
+
+  return {
+    revenue: totalRevenue._sum.amount ? Number(totalRevenue._sum.amount).toFixed(2) : '0.00',
+    orders: totalOrders,
+    users: activeUsers,
+    tickets: pendingTickets
+  };
+}
+
+async function getRecentOrders() {
+  return await prisma.order.findMany({
+    take: 5,
+    orderBy: { created_at: 'desc' },
+    include: {
+      user: true,
+      service: true,
+      api_provider: true
+    }
+  });
+}
+
+async function getProviders() {
+  return await prisma.apiProvider.findMany({
+    where: { status: 'ACTIVE' }
+  });
+}
+
+const AdminDashboard = async () => {
+  const statsData = await getStats();
+  const recentOrders = await getRecentOrders();
+  const providers = await getProviders();
+
   const stats = [
-    { label: "Total Revenue", value: "$124,592.00", change: "+14.5%", icon: <DollarSign className="w-5 h-5 text-emerald-500" />, bg: "bg-emerald-500/10" },
-    { label: "Total Orders", value: "85,246", change: "+2.4%", icon: <ShoppingBag className="w-5 h-5 text-blue-500" />, bg: "bg-blue-500/10" },
-    { label: "Active Users", value: "12,304", change: "+12%", icon: <Users className="w-5 h-5 text-indigo-500" />, bg: "bg-indigo-500/10" },
-    { label: "Pending Tickets", value: "24", change: "-5%", icon: <LifeBuoy className="w-5 h-5 text-amber-500" />, bg: "bg-amber-500/10" },
-  ];
-
-  const recentOrders = [
-    { id: "ORD-7782", user: "alex_marketing", service: "Instagram Followers [Real]", amount: "$12.50", provider: "Medusa API", status: "Completed" },
-    { id: "ORD-7783", user: "brand_boost", service: "TikTok Views [Instant]", amount: "$4.20", provider: "SMM King", status: "Processing" },
-    { id: "ORD-7784", user: "johndoe99", service: "YouTube Likes", amount: "$1.50", provider: "Main Provider", status: "Pending" },
-    { id: "ORD-7785", user: "crypto_news", service: "Twitter Retweets", amount: "$8.00", provider: "Medusa API", status: "Completed" },
-    { id: "ORD-7786", user: "sarah_vlogs", service: "Instagram Likes", amount: "$0.50", provider: "SMM King", status: "Canceled" },
+    { label: "Total Revenue", value: `$${statsData.revenue}`, change: "+0%", icon: <DollarSign className="w-5 h-5 text-emerald-500" />, bg: "bg-emerald-500/10" },
+    { label: "Total Orders", value: statsData.orders.toLocaleString(), change: "+0%", icon: <ShoppingBag className="w-5 h-5 text-blue-500" />, bg: "bg-blue-500/10" },
+    { label: "Active Users", value: statsData.users.toLocaleString(), change: "+0%", icon: <Users className="w-5 h-5 text-indigo-500" />, bg: "bg-indigo-500/10" },
+    { label: "Pending Tickets", value: statsData.tickets.toLocaleString(), change: "0%", icon: <LifeBuoy className="w-5 h-5 text-amber-500" />, bg: "bg-amber-500/10" },
   ];
 
   return (
@@ -27,14 +63,8 @@ const AdminDashboard = () => {
           >
             <div className="flex justify-between items-start mb-4">
               <div className={`p-3 rounded-lg ${stat.bg}`}>{stat.icon}</div>
-              <div
-                className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
-                  stat.change.startsWith('+')
-                    ? 'bg-green-50 text-green-700'
-                    : 'bg-red-50 text-red-700'
-                }`}
-              >
-                {stat.change.startsWith('+') ? <TrendingUp className="w-3 h-3" /> : null}
+              <div className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-700">
+                {/* Placeholder change data */}
                 {stat.change}
               </div>
             </div>
@@ -66,27 +96,26 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((order, i) => (
+                {recentOrders.map((order) => (
                   <tr
-                    key={i}
+                    key={order.id}
                     className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group"
                   >
-                    <td className="px-6 py-4 font-medium text-slate-900">{order.id}</td>
-                    <td className="px-6 py-4">{order.user}</td>
-                    <td className="px-6 py-4 truncate max-w-[150px]">{order.service}</td>
-                    <td className="px-6 py-4 font-medium">{order.amount}</td>
-                    <td className="px-6 py-4 text-slate-500 text-xs">{order.provider}</td>
+                    <td className="px-6 py-4 font-medium text-slate-900">#{order.id}</td>
+                    <td className="px-6 py-4">{order.user.username}</td>
+                    <td className="px-6 py-4 truncate max-w-[150px]">{order.service.name}</td>
+                    <td className="px-6 py-4 font-medium">${Number(order.price_sale).toFixed(4)}</td>
+                    <td className="px-6 py-4 text-slate-500 text-xs">{order.api_provider?.name || 'Manual'}</td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          order.status === 'Completed'
+                        className={`px-2 py-1 rounded-full text-xs font-bold ${order.status === 'COMPLETED' || order.status === 'SUCCESS'
                             ? 'bg-emerald-100 text-emerald-700'
-                            : order.status === 'Processing'
-                            ? 'bg-blue-100 text-blue-700'
-                            : order.status === 'Pending'
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}
+                            : order.status === 'PROCESSING' || order.status === 'IN_PROGRESS'
+                              ? 'bg-blue-100 text-blue-700'
+                              : order.status === 'PENDING'
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-red-100 text-red-700'
+                          }`}
                       >
                         {order.status}
                       </span>
@@ -98,6 +127,13 @@ const AdminDashboard = () => {
                     </td>
                   </tr>
                 ))}
+                {recentOrders.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                      No orders found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -107,25 +143,26 @@ const AdminDashboard = () => {
           <div className="bg-slate-900 text-white rounded-xl p-6 relative overflow-hidden shadow-xl">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full -mr-10 -mt-10 blur-xl" />
             <h3 className="text-slate-300 text-sm font-medium mb-1">Provider Balances</h3>
+            {/* Total provider balance sum */}
             <div className="flex items-baseline gap-2 mb-4">
-              <h2 className="text-3xl font-bold">$4,250.00</h2>
-              <span className="text-xs text-green-400 font-medium">+ $1,200 deposited</span>
+              <h2 className="text-3xl font-bold">
+                ${providers.reduce((acc, curr) => acc + Number(curr.balance), 0).toFixed(2)}
+              </h2>
             </div>
             <div className="space-y-3">
-              <div className="flex justify-between text-xs items-center">
-                <span className="text-slate-400">Medusa API</span>
-                <span className="font-bold">$1,205.50</span>
-              </div>
-              <div className="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-blue-500 h-full w-[70%]" />
-              </div>
-              <div className="flex justify-between text-xs items-center">
-                <span className="text-slate-400">SMM King</span>
-                <span className="font-bold">$402.10</span>
-              </div>
-              <div className="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-amber-500 h-full w-[20%]" />
-              </div>
+              {providers.map(provider => (
+                <div key={provider.id}>
+                  <div className="flex justify-between text-xs items-center mb-1">
+                    <span className="text-slate-400">{provider.name}</span>
+                    <span className="font-bold">${Number(provider.balance).toFixed(2)}</span>
+                  </div>
+                  <div className="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    {/* Visual bar just for effect, randomized width or full */}
+                    <div className="bg-blue-500 h-full w-full" style={{ width: '100%' }} />
+                  </div>
+                </div>
+              ))}
+              {providers.length === 0 && <p className="text-slate-500 text-xs">No active providers.</p>}
             </div>
             <button className="w-full mt-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors border border-white/10">
               Manage APIs
@@ -137,18 +174,18 @@ const AdminDashboard = () => {
               <AlertCircle className="w-4 h-4 text-red-500" /> System Alerts
             </h3>
             <div className="space-y-3">
-              <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
-                <p className="text-xs text-red-700 font-medium mb-1">Provider Error</p>
-                <p className="text-xs text-red-600/80">
-                  &quot;Main Provider&quot; is returning 502 Errors. Auto-switch enabled.
-                </p>
-              </div>
-              <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                <p className="text-xs text-amber-700 font-medium mb-1">Low Balance</p>
-                <p className="text-xs text-amber-600/80">
-                  SMM King balance is below threshold ($50.00).
-                </p>
-              </div>
+              {/* Low Balance Alerts */}
+              {providers.filter(p => Number(p.balance) < 10).map(p => (
+                <div key={p.id} className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                  <p className="text-xs text-amber-700 font-medium mb-1">Low Balance</p>
+                  <p className="text-xs text-amber-600/80">
+                    {p.name} balance is low (${Number(p.balance).toFixed(2)}).
+                  </p>
+                </div>
+              ))}
+              {providers.filter(p => Number(p.balance) < 10).length === 0 && (
+                <p className="text-sm text-slate-500 italic">No active alerts.</p>
+              )}
             </div>
           </div>
         </div>
@@ -156,5 +193,6 @@ const AdminDashboard = () => {
     </>
   );
 };
+
 
 export default AdminDashboard;

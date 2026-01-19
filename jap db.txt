@@ -1,5 +1,3 @@
-buatkan database
-
 1.user
 id
 full_name
@@ -112,4 +110,39 @@ create_at
 update-at
 
 9.deposits
-isi bagian ini sesuai dengan data yang di perlukan untuk riwayat deposit menggunakan Paypal,Cryptomus, Manual
+id
+id_user
+amount
+detail_transaction //json format 
+status(Pending,Error,Canceled,Payment)
+create_at 
+update_at
+
+10.news
+id
+subject
+content //full text
+status(Active, Not-Active)
+create_at
+update_at
+
+11.discount
+id
+name_discount
+min_transaction
+max_transaction
+type(Percentage,Fixed)
+amount
+expired_date
+max_used
+status(Active,Not-Active)
+create_at 
+update_at
+
+12.discount_usage
+id
+id_discount
+id_users
+id_order
+create_at
+update_at 

@@ -1,0 +1,115 @@
+buatkan database
+
+1.user
+id
+full_name
+username
+email
+password
+balance
+role(Member, Staff, Admin)
+status(Active, Not-Active)
+profile_imagekit_url
+apikey
+create_at
+update_at
+
+
+2.platform
+id
+name
+slug
+icon_imagekit_url
+status(Active,Not-Active)
+create_at
+update_at
+
+
+3.setting
+id
+site_name
+favicon_imagekit_url
+logo_imagekit_url
+instagram_url
+facebook_url
+email
+phone
+telegram
+imagekit_url
+imagekit_publickey
+imagekit_privatekey
+google_analytic_code
+google_search_code
+create_at
+update_at
+
+
+4.category
+id
+id_platform
+name
+status(Active,Not-Active)
+create_at
+update_at
+
+
+5.service
+id
+id_category
+sid
+id_api_provider
+name
+min
+max
+price_api
+price_sale
+price_reseller
+refill(1,0) //default 0
+type(Default,Package,Custom Comments,Poll,Subscriptions )
+status(Active, Not-Active)
+note
+create_at
+update_at
+
+6.api_provider
+id
+name
+code
+url
+api_key
+balance
+status(Active,Not-Active)
+create_at
+update_at
+
+7.payment_gateway
+id
+provider(Paypal,Cryptomus, Manual)
+api_config //json format
+status(Active,Not-Active)
+min_deposit
+create_at
+update_at
+
+
+8.order
+id
+id_user
+id_api_provider
+id_service
+link
+price_api
+price_sale
+price_seller
+remains
+start_count
+quantity
+status(Pending,In Progress, Processing, Completed, Success, Partial, Error) //Perbaiki bahasa yang benar
+refill(1,0)
+runs //null
+interval //null
+create_at
+update-at
+
+9.deposits
+isi bagian ini sesuai dengan data yang di perlukan untuk riwayat deposit menggunakan Paypal,Cryptomus, Manual

@@ -87,12 +87,58 @@ export async function POST(req: Request) {
             : Number(service.price_reseller);
 
         const totalPrice = (pricePerUnit / 1000) * orderQuantity;
+        let finalPrice = totalPrice;
+        let discountRecord = null;
+
+        // Verify Discount if provided
+        const { discountCode } = body;
+        if (discountCode) {
+            const discount = await prisma.discount.findFirst({
+                where: {
+                    name_discount: discountCode,
+                    status: 'ACTIVE',
+                    expired_date: {
+                        gte: new Date()
+                    }
+                },
+                include: {
+                    _count: {
+                        select: { discount_usages: true }
+                    }
+                }
+            });
+
+            if (discount && discount._count.discount_usages < discount.max_used) {
+                // Check limits
+                if (totalPrice >= Number(discount.min_transaction) &&
+                    (Number(discount.max_transaction) === 0 || totalPrice <= Number(discount.max_transaction))) {
+
+                    let discountAmount = 0;
+                    if (discount.type === 'PERCENTAGE') {
+                        discountAmount = (totalPrice * Number(discount.amount)) / 100;
+                    } else {
+                        discountAmount = Number(discount.amount);
+                    }
+
+                    // Check max discount get
+                    const maxGet = Number((discount as any).discount_max_get || 0);
+                    if (maxGet > 0 && discountAmount > maxGet) {
+                        discountAmount = maxGet;
+                    }
+
+                    if (discountAmount > totalPrice) discountAmount = totalPrice;
+
+                    finalPrice = Math.max(0, totalPrice - discountAmount);
+                    discountRecord = discount;
+                }
+            }
+        }
 
         // Check user balance
-        if (Number(user.balance) < totalPrice) {
+        if (Number(user.balance) < finalPrice) {
             return NextResponse.json({
                 error: 'Insufficient balance',
-                required: totalPrice,
+                required: finalPrice,
                 current: Number(user.balance)
             }, { status: 400 });
         }
@@ -178,12 +224,27 @@ export async function POST(req: Request) {
             }
         });
 
+        // Record Discount Usage
+        if (discountRecord) {
+            await prisma.discountUsage.create({
+                data: {
+                    id_discount: discountRecord.id,
+                    id_users: parseInt(userId),
+                    id_order: order.id
+                }
+            });
+            // Also need to increment max_used on discount? Schema has max_used as limit, but not current count.
+            // But prisma counts on query. So no need to update discount table unless there is a 'current_uses' field.
+            // Oh, previously I saw `max_used` in schema. It's the LIMIT.
+            // We use count(DiscountUsage) to check limit. So adding to DiscountUsage is enough.
+        }
+
         // Deduct user balance
         await prisma.user.update({
             where: { id: parseInt(userId) },
             data: {
                 balance: {
-                    decrement: totalPrice
+                    decrement: finalPrice
                 }
             }
         });
@@ -196,7 +257,8 @@ export async function POST(req: Request) {
                 pid: order.pid,
                 status: order.status,
                 quantity: order.quantity,
-                total_price: totalPrice,
+                total_price: finalPrice,
+                discount_applied: discountRecord ? discountRecord.name_discount : null,
                 service: order.service.name
             }
         }, { status: 201 });

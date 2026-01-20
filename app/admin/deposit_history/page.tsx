@@ -5,9 +5,18 @@ export default async function DepositHistoryPage() {
     const deposits = await prisma.deposits.findMany({
         orderBy: { created_at: 'desc' },
         include: {
-            user: true
+            user: {
+                select: {
+                    username: true
+                }
+            }
         }
     });
 
-    return <DepositsClient initialDeposits={deposits} />;
+    const serializedDeposits = deposits.map(d => ({
+        ...d,
+        amount: Number(d.amount)
+    }));
+
+    return <DepositsClient initialDeposits={serializedDeposits} />;
 }

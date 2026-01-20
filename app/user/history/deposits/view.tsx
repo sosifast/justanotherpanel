@@ -16,22 +16,31 @@ import {
     CreditCard
 } from 'lucide-react';
 import { Deposits, DepositStatus } from '@prisma/client';
+import { format } from 'date-fns';
+import DepositDetailsModal from './DepositDetailsModal';
 
 // Define the shape of detail_transaction
 interface TransactionDetail {
     fee?: number;
     method?: string;
+    provider?: string;
     transactionId?: string;
 }
 
+interface SerializedDeposit extends Omit<Deposits, 'amount'> {
+    amount: number;
+}
+
 interface DepositsViewProps {
-    initialDeposits: Deposits[];
+    initialDeposits: SerializedDeposit[];
 }
 
 const DepositsView = ({ initialDeposits }: DepositsViewProps) => {
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState('all');
     const [method, setMethod] = useState('all');
+    const [selectedDeposit, setSelectedDeposit] = useState<SerializedDeposit | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const methods = ['all', 'PayPal', 'Cryptomus', 'Manual'];
     const statuses = ['all', 'PAYMENT', 'PENDING', 'ERROR', 'CANCELED'];
@@ -79,9 +88,14 @@ const DepositsView = ({ initialDeposits }: DepositsViewProps) => {
         }
     };
 
+    const handleViewDetails = (deposit: SerializedDeposit) => {
+        setSelectedDeposit(deposit);
+        setIsModalOpen(true);
+    };
+
     const filteredDeposits = initialDeposits.filter(deposit => {
         const details = deposit.detail_transaction as unknown as TransactionDetail;
-        const depositMethod = details?.method || 'Unknown';
+        const depositMethod = details?.method || details?.provider || 'Unknown';
         const transactionId = details?.transactionId || '';
 
         const matchesSearch = deposit.id.toString().includes(search) ||
@@ -203,39 +217,43 @@ const DepositsView = ({ initialDeposits }: DepositsViewProps) => {
                                 const total = Number(deposit.amount); // Assuming amount is total, or amount + fee. Let's assume amount is net and total is amount + fee? Or amount is total.
                                 // In schema: amount Decimal.
                                 // Let's display amount as Total.
-                                
+
                                 return (
-                                <tr key={deposit.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">#{deposit.id}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2 text-slate-600">
-                                            <Calendar className="w-3 h-3 text-slate-400" />
-                                            {new Date(deposit.created_at).toLocaleString()}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="font-medium text-slate-700">{details?.method || 'Unknown'}</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right font-medium text-slate-900">${(total - fee).toFixed(2)}</td>
-                                    <td className="px-6 py-4 text-right text-slate-500">${fee.toFixed(2)}</td>
-                                    <td className="px-6 py-4 text-right">
-                                        <span className="font-semibold text-emerald-600">${total.toFixed(2)}</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusStyle(deposit.status)}`}>
-                                            {getStatusIcon(deposit.status)}
-                                            {getStatusLabel(deposit.status)}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                            <Eye className="w-4 h-4" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            )})}
+                                    <tr key={deposit.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">#{deposit.id}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2 text-slate-600">
+                                                <Calendar className="w-3 h-3 text-slate-400" />
+                                                {format(new Date(deposit.created_at), 'dd MMM yyyy, HH:mm')}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="font-medium text-slate-700">{details?.method || details?.provider || 'Unknown'}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-medium text-slate-900">${(total - fee).toFixed(2)}</td>
+                                        <td className="px-6 py-4 text-right text-slate-500">${fee.toFixed(2)}</td>
+                                        <td className="px-6 py-4 text-right">
+                                            <span className="font-semibold text-emerald-600">${total.toFixed(2)}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusStyle(deposit.status)}`}>
+                                                {getStatusIcon(deposit.status)}
+                                                {getStatusLabel(deposit.status)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button
+                                                onClick={() => handleViewDetails(deposit)}
+                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -262,6 +280,12 @@ const DepositsView = ({ initialDeposits }: DepositsViewProps) => {
                     </div>
                 </div>
             </div>
+
+            <DepositDetailsModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                deposit={selectedDeposit as any}
+            />
         </div>
     );
 };

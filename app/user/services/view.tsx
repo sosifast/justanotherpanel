@@ -10,8 +10,10 @@ import {
     Star,
     Clock,
     TrendingUp,
-    Filter
+    Filter,
+    ShoppingCart
 } from 'lucide-react';
+import Link from 'next/link';
 import { Service, Category, Platform } from '@prisma/client';
 
 type ServiceClient = Omit<Service, 'price_api' | 'price_sale' | 'price_reseller'> & {
@@ -95,6 +97,7 @@ const ServicesView = ({ initialServices }: ServicesViewProps) => {
                                 <th className="px-6 py-4 text-center">Max</th>
                                 <th className="px-6 py-4 text-right">Rate per 1K</th>
                                 <th className="px-6 py-4 text-center">Avg Time</th>
+                                <th className="px-6 py-4 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -123,6 +126,15 @@ const ServicesView = ({ initialServices }: ServicesViewProps) => {
                                         <span className="inline-flex items-center gap-1 text-xs text-slate-500">
                                             <Clock className="w-3 h-3" /> {/* Avg time not in schema */} -
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <Link
+                                            href={`/user/new-order?service=${service.id}`}
+                                            className="inline-flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            title="Order Now"
+                                        >
+                                            <ShoppingCart className="w-5 h-5" />
+                                        </Link>
                                     </td>
                                 </tr>
                             ))}

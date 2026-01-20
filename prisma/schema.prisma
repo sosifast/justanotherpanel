@@ -219,6 +219,7 @@ model Discount {
   name_discount   String
   min_transaction Decimal        @db.Decimal(10, 2)
   max_transaction Decimal        @db.Decimal(10, 2)
+  discount_max_get Decimal       @default(0) @db.Decimal(10, 2)
   type            DiscountType
   amount          Decimal        @db.Decimal(10, 2)
   expired_date    DateTime

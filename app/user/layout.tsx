@@ -100,6 +100,9 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                 <Link href="/user/api" className={linkClass('/user/api')}>
                   API
                 </Link>
+                <Link href="/user/voucher" className={linkClass('/user/voucher')}>
+                  Voucher
+                </Link>
               </div>
             </div>
 

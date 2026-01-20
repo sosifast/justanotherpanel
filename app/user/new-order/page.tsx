@@ -2,12 +2,16 @@ import { prisma } from '@/lib/prisma';
 import NewOrderClient from './NewOrderClient';
 
 type Props = {
-    searchParams: Promise<{ platform?: string }>;
+    searchParams: Promise<{
+        platform?: string;
+        service?: string;
+    }>;
 };
 
 export default async function NewOrderPage({ searchParams }: Props) {
     const params = await searchParams;
     const platformSlug = params.platform;
+    const serviceId = params.service ? parseInt(params.service) : undefined;
 
     // Get all active platforms with categories and services
     const platforms = await prisma.platform.findMany({
@@ -71,6 +75,7 @@ export default async function NewOrderPage({ searchParams }: Props) {
         <NewOrderClient
             platforms={serializedPlatforms}
             selectedPlatformSlug={platformSlug || null}
+            selectedServiceId={serviceId}
             user={serializedUser}
         />
     );

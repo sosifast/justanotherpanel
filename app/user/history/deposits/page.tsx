@@ -14,5 +14,10 @@ export default async function DepositsPage() {
         }
     });
 
-    return <DepositsView initialDeposits={deposits} />;
+    const serializedDeposits = deposits.map(deposit => ({
+        ...deposit,
+        amount: Number(deposit.amount)
+    }));
+
+    return <DepositsView initialDeposits={serializedDeposits} />;
 }

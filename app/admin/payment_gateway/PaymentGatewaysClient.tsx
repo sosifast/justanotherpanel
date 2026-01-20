@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Plus, CreditCard, DollarSign, CheckCircle, XCircle, Settings } from 'lucide-react';
+import { Search, Filter, MoreVertical, Plus, CreditCard, DollarSign, CheckCircle, XCircle, Settings, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import GatewayModal from './GatewayModal';
+import { useRouter } from 'next/navigation';
 
 type PaymentGatewayData = {
   id: number;
@@ -12,16 +15,79 @@ type PaymentGatewayData = {
 };
 
 const PaymentGatewaysClient = ({ initialGateways }: { initialGateways: PaymentGatewayData[] }) => {
+  const router = useRouter();
   const [gateways, setGateways] = useState(initialGateways);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedGateway, setSelectedGateway] = useState<PaymentGatewayData | undefined>(undefined);
 
   const getFee = (config: any) => {
-    // Assuming config has fee structure. Default to placeholder.
-    return config?.fee || '0%';
+    return config?.fee ? `${config.fee}%` : '0%';
   };
 
-  const getType = (config: any) => {
-    // Assuming config or provider implies type.
-    return 'Automatic'; // Most are automatic in this context
+  const getType = (gateway: PaymentGatewayData) => {
+    return gateway.provider === 'MANUAL' ? 'Manual' : 'Automatic';
+  };
+
+  const handleAddGateway = () => {
+    setSelectedGateway(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleEditGateway = (gateway: PaymentGatewayData) => {
+    setSelectedGateway(gateway);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveGateway = async (data: any) => {
+    try {
+      if (selectedGateway) {
+        // Edit
+        const res = await fetch(`/api/admin/payment-gateways/${selectedGateway.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Failed to update');
+        toast.success('Gateway updated successfully');
+      } else {
+        // Create
+        const res = await fetch('/api/admin/payment-gateways', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Failed to create');
+        toast.success('Gateway created successfully');
+      }
+      router.refresh();
+      // Update local state loosely (refresh handles it but state update is faster feedback if needed, 
+      // but we rely on refresh mainly for server data. For now let's just refresh. 
+      // Actually updating state is better for strict React)
+      // For simplicity we rely on nextjs refresh or would fetch again.
+      // Let's just wait for refresh.
+      // window.location.reload(); // Force reload to get fresh data is robust here
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      toast.error('Operation failed');
+      throw error; // Re-throw for modal to handle if needed
+    }
+  };
+
+  const handleDeleteGateway = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this gateway?')) return;
+
+    try {
+      const res = await fetch(`/api/admin/payment-gateways/${id}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to delete');
+      toast.success('Gateway deleted');
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to delete');
+    }
   };
 
   return (
@@ -31,7 +97,10 @@ const PaymentGatewaysClient = ({ initialGateways }: { initialGateways: PaymentGa
           <h1 className="text-2xl font-bold text-slate-800">Payment Gateways</h1>
           <p className="text-slate-500 text-sm">Configure payment methods for user deposits.</p>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-900/20">
+        <button
+          onClick={handleAddGateway}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-900/20"
+        >
           <Plus className="w-4 h-4" />
           Add Gateway
         </button>
@@ -101,11 +170,17 @@ const PaymentGatewaysClient = ({ initialGateways }: { initialGateways: PaymentGa
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                      <button
+                        onClick={() => handleEditGateway(gateway)}
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
                         <Settings className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                        <MoreVertical className="w-4 h-4" />
+                      <button
+                        onClick={() => handleDeleteGateway(gateway.id)}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
@@ -128,6 +203,13 @@ const PaymentGatewaysClient = ({ initialGateways }: { initialGateways: PaymentGa
           </div>
         </div>
       </div>
+
+      <GatewayModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSaveGateway}
+        gateway={selectedGateway}
+      />
     </div>
   );
 };

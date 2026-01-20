@@ -55,10 +55,11 @@ type User = {
 type Props = {
     platforms: Platform[];
     selectedPlatformSlug: string | null;
+    selectedServiceId?: number | null;
     user: User;
 };
 
-const NewOrderClient = ({ platforms, selectedPlatformSlug, user }: Props) => {
+const NewOrderClient = ({ platforms, selectedPlatformSlug, selectedServiceId: initialServiceId, user }: Props) => {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
@@ -72,15 +73,50 @@ const NewOrderClient = ({ platforms, selectedPlatformSlug, user }: Props) => {
     const [runs, setRuns] = useState('');
     const [interval, setInterval] = useState('');
 
+    // Discount state
+    const [discountCode, setDiscountCode] = useState('');
+    const [validatingDiscount, setValidatingDiscount] = useState(false);
+    const [appliedDiscount, setAppliedDiscount] = useState<{
+        id: number;
+        code: string;
+        amount: number;
+        type: string;
+    } | null>(null);
+
     // Set initial platform from URL
     useEffect(() => {
-        if (selectedPlatformSlug && platforms.length > 0) {
+        if (selectedPlatformSlug && !initialServiceId && platforms.length > 0) {
             const platform = platforms.find(p => p.slug === selectedPlatformSlug);
             if (platform) {
                 setSelectedPlatformId(platform.id);
+                setSelectedCategoryId(null);
+                setSelectedServiceId(null);
             }
         }
-    }, [selectedPlatformSlug, platforms]);
+    }, [selectedPlatformSlug, initialServiceId, platforms]);
+
+    // Set initial service from URL
+    useEffect(() => {
+        if (initialServiceId && platforms.length > 0) {
+            for (const p of platforms) {
+                for (const c of p.categories) {
+                    const s = c.services.find(svc => svc.id === initialServiceId);
+                    if (s) {
+                        setSelectedPlatformId(p.id);
+                        setSelectedCategoryId(c.id);
+                        setSelectedServiceId(s.id);
+                        return;
+                    }
+                }
+            }
+        }
+    }, [initialServiceId, platforms]);
+
+    // Reset discount when service changes or price changes significantly (optional but safer)
+    useEffect(() => {
+        setAppliedDiscount(null);
+        setDiscountCode('');
+    }, [selectedServiceId]);
 
     // Get selected entities
     const selectedPlatform = useMemo(() =>
@@ -115,41 +151,83 @@ const NewOrderClient = ({ platforms, selectedPlatformSlug, user }: Props) => {
         return (pricePerK / 1000) * qty;
     }, [selectedService, quantity, comments, user]);
 
-    // Reset dependent selections when parent changes
-    useEffect(() => {
-        setSelectedCategoryId(null);
-        setSelectedServiceId(null);
-    }, [selectedPlatformId]);
-
-    useEffect(() => {
-        setSelectedServiceId(null);
-        setQuantity('');
-        setComments('');
-    }, [selectedCategoryId]);
-
-    useEffect(() => {
-        setQuantity('');
-        setComments('');
-        setRuns('');
-        setInterval('');
-    }, [selectedServiceId]);
+    const finalPrice = useMemo(() => {
+        if (!appliedDiscount) return price;
+        return Math.max(0, price - appliedDiscount.amount);
+    }, [price, appliedDiscount]);
 
     // Handle platform change
     const handlePlatformChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value;
         setSelectedPlatformId(value ? parseInt(value) : null);
+        setSelectedCategoryId(null);
+        setSelectedServiceId(null);
     };
 
     // Handle category change
     const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value;
         setSelectedCategoryId(value ? parseInt(value) : null);
+        setSelectedServiceId(null);
+        setQuantity('');
+        setComments('');
     };
 
     // Handle service change
     const handleServiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value;
         setSelectedServiceId(value ? parseInt(value) : null);
+        setQuantity('');
+        setComments('');
+        setRuns('');
+        setInterval('');
+    };
+
+    const handleApplyDiscount = async () => {
+        if (!discountCode.trim()) return;
+        if (!user) {
+            toast.error('Please login to use discount');
+            return;
+        }
+        if (price <= 0) {
+            toast.error('Please enter a valid quantity first');
+            return;
+        }
+
+        setValidatingDiscount(true);
+        try {
+            const res = await fetch('/api/user/discount/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: discountCode,
+                    userId: user.id,
+                    totalPrice: price,
+                    serviceId: selectedServiceId
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                toast.error(data.error || 'Invalid discount code');
+                setAppliedDiscount(null);
+            } else {
+                setAppliedDiscount(data.discount);
+                toast.success(`Discount applied: -$${data.discount.amount.toFixed(4)}`);
+            }
+        } catch (error) {
+            console.error('Discount validation error:', error);
+            toast.error('Failed to validate discount');
+        } finally {
+            setValidatingDiscount(false);
+        }
+    };
+
+    const handleRemoveDiscount = () => {
+        setAppliedDiscount(null);
+        setDiscountCode('');
+        toast.success('Discount removed');
     };
 
     // Submit order
@@ -185,7 +263,7 @@ const NewOrderClient = ({ platforms, selectedPlatformSlug, user }: Props) => {
             }
         }
 
-        if (price > user.balance) {
+        if (finalPrice > user.balance) {
             toast.error('Insufficient balance');
             return;
         }
@@ -202,7 +280,8 @@ const NewOrderClient = ({ platforms, selectedPlatformSlug, user }: Props) => {
                     quantity: selectedService?.type === 'CUSTOM_COMMENTS' ? undefined : quantity,
                     comments: selectedService?.type === 'CUSTOM_COMMENTS' ? comments : undefined,
                     runs: runs || undefined,
-                    interval: interval || undefined
+                    interval: interval || undefined,
+                    discountCode: appliedDiscount ? appliedDiscount.code : undefined
                 })
             });
 
@@ -510,13 +589,68 @@ const NewOrderClient = ({ platforms, selectedPlatformSlug, user }: Props) => {
                             )}
 
                             <div className="border-t border-slate-100 pt-3 mt-3">
-                                <div className="flex justify-between">
+                                {/* Discount Section */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                        Discount Code
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="col-span-2">
+                                            <input
+                                                type="text"
+                                                value={discountCode}
+                                                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                                                placeholder="Enter Code"
+                                                disabled={!!appliedDiscount}
+                                                className="w-full px-3 h-10 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm uppercase"
+                                            />
+                                        </div>
+                                        {appliedDiscount ? (
+                                            <button
+                                                type="button"
+                                                onClick={handleRemoveDiscount}
+                                                className="w-full h-10 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors"
+                                            >
+                                                Remove
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={handleApplyDiscount}
+                                                disabled={!discountCode || validatingDiscount}
+                                                className="w-full h-10 bg-slate-900 text-white hover:bg-slate-800 disabled:bg-slate-300 rounded-lg text-sm font-medium transition-colors"
+                                            >
+                                                {validatingDiscount ? '...' : 'Apply'}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {appliedDiscount && (
+                                        <div className="mt-2 text-xs text-emerald-600 flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Code applied: -${Number(appliedDiscount.amount.toFixed(4))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm text-slate-500">Subtotal</span>
+                                    <span className="font-medium text-slate-900">${Number(price.toFixed(4))}</span>
+                                </div>
+
+                                {appliedDiscount && (
+                                    <div className="flex justify-between items-center mb-1 text-emerald-600">
+                                        <span className="text-sm">Discount</span>
+                                        <span className="font-medium">-${Number(appliedDiscount.amount.toFixed(4))}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center pt-2 border-t border-dashed border-slate-200">
                                     <span className="font-medium text-slate-900">Total</span>
-                                    <span className={`text-xl font-bold ${price > (user?.balance || 0) ? 'text-red-600' : 'text-emerald-600'}`}>
-                                        ${price.toFixed(4)}
+                                    <span className={`text-xl font-bold ${finalPrice > (user?.balance || 0) ? 'text-red-600' : 'text-emerald-600'}`}>
+                                        ${Number(finalPrice.toFixed(4))}
                                     </span>
                                 </div>
-                                {price > (user?.balance || 0) && (
+                                {finalPrice > (user?.balance || 0) && (
                                     <p className="text-xs text-red-500 mt-1">Insufficient balance</p>
                                 )}
                             </div>

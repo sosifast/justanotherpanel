@@ -140,6 +140,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             isActive={isActive('/admin/smm/platform')}
           />
           <SidebarItem
+            icon={<DollarSign className="w-5 h-5" />}
+            label="Discounts"
+            href="/admin/discount"
+            isActive={isActive('/admin/discount')}
+          />
+          <SidebarItem
             icon={<Download className="w-5 h-5" />}
             label="Import Services"
             href="/admin/smm/import"
@@ -177,6 +183,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             href="/admin/tickets"
             isActive={isActive('/admin/tickets')}
             badge="5"
+          />
+          <SidebarItem
+            icon={<MessageSquare className="w-5 h-5" />}
+            label="News"
+            href="/admin/news"
+            isActive={isActive('/admin/news')}
           />
 
           <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-2">

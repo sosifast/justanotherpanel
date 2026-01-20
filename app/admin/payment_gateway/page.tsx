@@ -6,5 +6,10 @@ export default async function PaymentGatewayPage() {
         orderBy: { id: 'asc' }
     });
 
-    return <PaymentGatewaysClient initialGateways={gateways} />;
+    const serializedGateways = gateways.map((gateway) => ({
+        ...gateway,
+        min_deposit: Number(gateway.min_deposit)
+    }));
+
+    return <PaymentGatewaysClient initialGateways={serializedGateways} />;
 }

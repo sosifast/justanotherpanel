@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Search, Filter, MoreVertical, Download, DollarSign, User, Calendar, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 type DepositData = {
   id: number;
@@ -110,7 +110,7 @@ const DepositsClient = ({ initialDeposits }: { initialDeposits: DepositData[] })
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-500 text-xs">
-                    {formatDistanceToNow(new Date(deposit.created_at), { addSuffix: true })}
+                    {format(new Date(deposit.created_at), 'dd MMM yyyy, HH:mm')}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">

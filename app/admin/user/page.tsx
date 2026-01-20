@@ -6,5 +6,13 @@ export default async function UsersPage() {
         orderBy: { created_at: 'desc' }
     });
 
-    return <UsersClient initialUsers={users} />;
+    // Convert Decimal and Date to serializable types
+    const serializedUsers = users.map(user => ({
+        ...user,
+        balance: Number(user.balance),
+        created_at: user.created_at.toISOString(),
+        updated_at: user.updated_at.toISOString()
+    }));
+
+    return <UsersClient initialUsers={serializedUsers} />;
 }

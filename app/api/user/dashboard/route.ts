@@ -1,0 +1,121 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+
+// GET - Get dashboard data for current user
+export async function GET() {
+    try {
+        const cookieStore = await cookies();
+        const userIdCookie = cookieStore.get('userId');
+
+        if (!userIdCookie) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const userId = parseInt(userIdCookie.value);
+
+        // Get user data
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                full_name: true,
+                username: true,
+                email: true,
+                balance: true,
+                role: true,
+                status: true,
+                profile_imagekit_url: true
+            }
+        });
+
+        if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        // Get order statistics
+        const totalOrders = await prisma.order.count({
+            where: { id_user: userId }
+        });
+
+        const activeOrders = await prisma.order.count({
+            where: {
+                id_user: userId,
+                status: {
+                    in: ['PENDING', 'IN_PROGRESS', 'PROCESSING']
+                }
+            }
+        });
+
+        // Get total spent (sum of price_sale from all orders)
+        const totalSpentResult = await prisma.order.aggregate({
+            where: { id_user: userId },
+            _sum: {
+                price_sale: true
+            }
+        });
+
+        // Get recent orders (last 5)
+        const recentOrders = await prisma.order.findMany({
+            where: { id_user: userId },
+            orderBy: { created_at: 'desc' },
+            take: 5,
+            include: {
+                service: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                }
+            }
+        });
+
+        // Get active platforms with category count
+        const platforms = await prisma.platform.findMany({
+            where: { status: 'ACTIVE' },
+            orderBy: { name: 'asc' },
+            include: {
+                _count: {
+                    select: { categories: true }
+                }
+            }
+        });
+
+        // Get latest news (last 5)
+        const news = await prisma.news.findMany({
+            where: { status: 'ACTIVE' },
+            orderBy: { created_at: 'desc' },
+            take: 5,
+            select: {
+                id: true,
+                subject: true,
+                content: true,
+                created_at: true
+            }
+        });
+
+        return NextResponse.json({
+            user,
+            stats: {
+                balance: Number(user.balance),
+                totalSpent: Number(totalSpentResult._sum.price_sale || 0),
+                totalOrders,
+                activeOrders
+            },
+            recentOrders: recentOrders.map(order => ({
+                id: order.id,
+                service: order.service.name,
+                serviceId: order.service.id,
+                link: order.link,
+                quantity: order.quantity,
+                status: order.status,
+                created_at: order.created_at
+            })),
+            platforms,
+            news
+        });
+    } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 });
+    }
+}

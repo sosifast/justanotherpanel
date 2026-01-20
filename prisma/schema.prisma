@@ -162,8 +162,10 @@ model PaymentGateway {
 
 model Order {
   id              Int         @id @default(autoincrement())
+  invoice_number  String      @unique
   id_user         Int
   id_api_provider Int?
+  pid             String?     // Provider order ID
   id_service      Int
   link            String
   price_api       Decimal     @db.Decimal(10, 4)

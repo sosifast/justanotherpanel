@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
 
         try {
             const secret = new TextEncoder().encode(
-                process.env.JWT_SECRET || 'default_secret_key_change_me'
+                process.env.JWT_SECRET || 'default-secret-key-change-it'
             );
             const { payload } = await jwtVerify(token, secret);
             const role = payload.role as string;
@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
         if (token) {
             try {
                 const secret = new TextEncoder().encode(
-                    process.env.JWT_SECRET || 'default_secret_key_change_me'
+                    process.env.JWT_SECRET || 'default-secret-key-change-it'
                 );
                 await jwtVerify(token, secret);
                 // If token is valid, redirect to user dashboard

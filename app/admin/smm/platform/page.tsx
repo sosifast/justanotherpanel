@@ -3,7 +3,12 @@ import PlatformsClient from './PlatformsClient';
 
 export default async function SmmPlatformPage() {
     const platforms = await prisma.platform.findMany({
-        orderBy: { id: 'asc' }
+        orderBy: { id: 'asc' },
+        include: {
+            _count: {
+                select: { categories: true }
+            }
+        }
     });
 
     return <PlatformsClient initialPlatforms={platforms} />;

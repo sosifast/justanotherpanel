@@ -14,7 +14,13 @@ import {
 } from 'lucide-react';
 import { Service, Category, Platform } from '@prisma/client';
 
-type ServiceWithCategory = Service & {
+type ServiceClient = Omit<Service, 'price_api' | 'price_sale' | 'price_reseller'> & {
+    price_api: number;
+    price_sale: number;
+    price_reseller: number;
+};
+
+type ServiceWithCategory = ServiceClient & {
     category: Category & {
         platform: Platform;
     };

@@ -46,9 +46,6 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                 <Link href="/user" className={linkClass('/user')}>
                   Dashboard
                 </Link>
-                <Link href="/user/orders" className={linkClass('/user/orders')}>
-                  New Order
-                </Link>
                 <Link href="/user/services" className={linkClass('/user/services')}>
                   Services
                 </Link>

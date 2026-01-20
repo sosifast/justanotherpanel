@@ -20,6 +20,7 @@ export default async function AdminSettingsPage() {
         imagekit_privatekey: settings.imagekit_privatekey,
         google_analytic_code: settings.google_analytic_code,
         google_search_code: settings.google_search_code,
+        reseller_fee: (settings as any).reseller_fee ? parseFloat((settings as any).reseller_fee.toString()) : 100000,
     } : null;
 
     return <SettingsClient initialSettings={mappedSettings} />;

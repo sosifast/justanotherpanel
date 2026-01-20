@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Code,
     Copy,
@@ -12,18 +12,57 @@ import {
     Clock,
     RefreshCw,
     ChevronRight,
-    AlertCircle
+    AlertCircle,
+    Loader2
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 const ApiDocumentationPage = () => {
     const [copiedKey, setCopiedKey] = useState(false);
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
     const [activeSection, setActiveSection] = useState('services');
     const [activeLanguage, setActiveLanguage] = useState('curl');
+    const [userData, setUserData] = useState<{ api_key: string; isReseller: boolean } | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [apiEndpoint, setApiEndpoint] = useState('https://justanotherpanel.com/api/v2');
+    const [samples, setSamples] = useState<{ service: any; order: any; balance: any } | null>(null);
 
-    const apiKey = 'sk_live_abc123xyz789def456';
+    const apiKey = userData?.api_key || 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setApiEndpoint(`${window.location.origin}/api/v2`);
+        }
+        const fetchUserData = async () => {
+            try {
+                const res = await fetch('/api/user/profile');
+                if (res.ok) {
+                    const data = await res.json();
+                    setUserData({
+                        api_key: data.user.apikey,
+                        isReseller: data.user.reseller?.status === 'ACTIVE'
+                    });
+                }
+
+                const sampleRes = await fetch('/api/user/api-docs/samples');
+                if (sampleRes.ok) {
+                    const sampleData = await sampleRes.json();
+                    setSamples(sampleData);
+                }
+            } catch (error) {
+                console.error('Failed to fetch user data for API docs');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUserData();
+    }, []);
 
     const copyApiKey = () => {
+        if (!userData?.api_key) {
+            toast.error('API key not found. Please generate one in Account settings.');
+            return;
+        }
         navigator.clipboard.writeText(apiKey);
         setCopiedKey(true);
         setTimeout(() => setCopiedKey(false), 2000);
@@ -53,7 +92,10 @@ const ApiDocumentationPage = () => {
                 { name: 'key', type: 'string', required: true, description: 'Your API key' },
                 { name: 'action', type: 'string', required: true, description: 'services' },
             ],
-            response: `{
+            response: samples?.service ? JSON.stringify({
+                status: "success",
+                data: [samples.service]
+            }, null, 2) : `{
   "status": "success",
   "data": [
     {
@@ -64,17 +106,18 @@ const ApiDocumentationPage = () => {
       "rate": "0.50",
       "min": 100,
       "max": 500000,
+      "note": "Super fast delivery",
       "refill": true,
-      "cancel": true
+      "cancel": false
     }
   ]
 }`,
             examples: {
-                curl: `curl -X POST https://justanotherpanel.com/api/v2 \\
+                curl: `curl -X POST ${apiEndpoint} \\
   -d "key=YOUR_API_KEY" \\
   -d "action=services"`,
                 php: `<?php
-$api_url = 'https://justanotherpanel.com/api/v2';
+$api_url = '${apiEndpoint}';
 
 $post_data = [
     'key' => 'YOUR_API_KEY',
@@ -135,24 +178,27 @@ print(result)`,
                 { name: 'link', type: 'string', required: true, description: 'Link to page' },
                 { name: 'quantity', type: 'integer', required: true, description: 'Quantity needed' },
             ],
-            response: `{
+            response: samples?.order ? JSON.stringify({
+                status: "success",
+                order: samples.order.order
+            }, null, 2) : `{
   "status": "success",
   "order": 123456
 }`,
             examples: {
-                curl: `curl -X POST https://justanotherpanel.com/api/v2 \\
+                curl: `curl -X POST ${apiEndpoint} \\
   -d "key=YOUR_API_KEY" \\
   -d "action=add" \\
-  -d "service=1" \\
+  -d "service=${samples?.service?.service || 1}" \\
   -d "link=https://instagram.com/username" \\
   -d "quantity=1000"`,
                 php: `<?php
-$api_url = 'https://justanotherpanel.com/api/v2';
+$api_url = '${apiEndpoint}';
 
 $post_data = [
     'key' => 'YOUR_API_KEY',
     'action' => 'add',
-    'service' => 1,
+    'service' => ${samples?.service?.service || 1},
     'link' => 'https://instagram.com/username',
     'quantity' => 1000
 ];
@@ -215,7 +261,10 @@ print(result)`,
                 { name: 'action', type: 'string', required: true, description: 'status' },
                 { name: 'order', type: 'integer', required: true, description: 'Order ID' },
             ],
-            response: `{
+            response: samples?.order ? JSON.stringify({
+                status: "success",
+                ...samples.order
+            }, null, 2) : `{
   "status": "success",
   "charge": "0.50",
   "start_count": "1000",
@@ -224,17 +273,17 @@ print(result)`,
   "currency": "USD"
 }`,
             examples: {
-                curl: `curl -X POST https://justanotherpanel.com/api/v2 \\
+                curl: `curl -X POST ${apiEndpoint} \\
   -d "key=YOUR_API_KEY" \\
   -d "action=status" \\
-  -d "order=123456"`,
+  -d "order=${samples?.order?.order || 123456}"`,
                 php: `<?php
-$api_url = 'https://justanotherpanel.com/api/v2';
+$api_url = '${apiEndpoint}';
 
 $post_data = [
     'key' => 'YOUR_API_KEY',
     'action' => 'status',
-    'order' => 123456
+    'order' => ${samples?.order?.order || 123456}
 ];
 
 $ch = curl_init();
@@ -290,17 +339,20 @@ print(result)`,
                 { name: 'key', type: 'string', required: true, description: 'Your API key' },
                 { name: 'action', type: 'string', required: true, description: 'balance' },
             ],
-            response: `{
+            response: samples?.balance ? JSON.stringify({
+                status: "success",
+                ...samples.balance
+            }, null, 2) : `{
   "status": "success",
   "balance": "1240.50",
   "currency": "USD"
 }`,
             examples: {
-                curl: `curl -X POST https://justanotherpanel.com/api/v2 \\
+                curl: `curl -X POST ${apiEndpoint} \\
   -d "key=YOUR_API_KEY" \\
   -d "action=balance"`,
                 php: `<?php
-$api_url = 'https://justanotherpanel.com/api/v2';
+$api_url = '${apiEndpoint}';
 
 $post_data = [
     'key' => 'YOUR_API_KEY',
@@ -364,12 +416,12 @@ print(result)`,
   "refill": 1
 }`,
             examples: {
-                curl: `curl -X POST https://justanotherpanel.com/api/v2 \\
+                curl: `curl -X POST ${apiEndpoint} \\
   -d "key=YOUR_API_KEY" \\
   -d "action=refill" \\
   -d "order=123456"`,
                 php: `<?php
-$api_url = 'https://justanotherpanel.com/api/v2';
+$api_url = '${apiEndpoint}';
 
 $post_data = [
     'key' => 'YOUR_API_KEY',
@@ -443,13 +495,13 @@ print(result)`,
                     </div>
                     <div className="flex items-center gap-3">
                         <code className="px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-amber-400 font-mono text-sm">
-                            {apiKey.substring(0, 12)}...{apiKey.substring(apiKey.length - 6)}
+                            {apiKey}
                         </code>
                         <button
                             onClick={copyApiKey}
                             className={`p-2.5 rounded-lg transition-colors ${copiedKey
-                                    ? 'bg-green-500 text-white'
-                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                ? 'bg-green-500 text-white'
+                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                                 }`}
                         >
                             {copiedKey ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -464,8 +516,12 @@ print(result)`,
                     <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div className="text-sm">
                         <p className="font-medium text-blue-800 mb-1">API Endpoint</p>
-                        <code className="text-blue-600 bg-blue-100 px-2 py-1 rounded">https://justanotherpanel.com/api/v2</code>
-                        <p className="text-blue-700 mt-2">All requests should be made using POST method with Content-Type: application/x-www-form-urlencoded</p>
+                        <code className="text-blue-600 bg-blue-100 px-2 py-1 rounded">{apiEndpoint}</code>
+                        <div className="flex items-center gap-2 mt-2">
+                            <p className="text-blue-700">Method: <span className="font-bold">POST</span></p>
+                            <span className="text-blue-300">|</span>
+                            <p className="text-blue-700">Pricing Tier: <span className="font-bold underline decoration-indigo-500 decoration-2">{userData?.isReseller ? 'RESELLER' : 'STANDARD'}</span></p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -483,8 +539,8 @@ print(result)`,
                                     key={endpoint.id}
                                     onClick={() => setActiveSection(endpoint.id)}
                                     className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg transition-colors text-left ${activeSection === endpoint.id
-                                            ? 'bg-blue-50 text-blue-600'
-                                            : 'text-slate-600 hover:bg-slate-50'
+                                        ? 'bg-blue-50 text-blue-600'
+                                        : 'text-slate-600 hover:bg-slate-50'
                                         }`}
                                 >
                                     {endpoint.icon}
@@ -565,8 +621,8 @@ print(result)`,
                                                 key={lang.id}
                                                 onClick={() => setActiveLanguage(lang.id)}
                                                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${activeLanguage === lang.id
-                                                        ? 'bg-slate-900 text-white'
-                                                        : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                                                    ? 'bg-slate-900 text-white'
+                                                    : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
                                                     }`}
                                             >
                                                 {lang.name}
@@ -578,8 +634,8 @@ print(result)`,
                                     <button
                                         onClick={() => copyCode(activeEndpoint.examples[activeLanguage as keyof typeof activeEndpoint.examples], `${activeEndpoint.id}-${activeLanguage}`)}
                                         className={`absolute top-3 right-3 p-2 rounded-lg transition-colors z-10 ${copiedCode === `${activeEndpoint.id}-${activeLanguage}`
-                                                ? 'bg-green-500 text-white'
-                                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                                             }`}
                                     >
                                         {copiedCode === `${activeEndpoint.id}-${activeLanguage}` ? (

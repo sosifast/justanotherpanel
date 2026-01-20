@@ -31,6 +31,7 @@ export async function GET() {
             imagekit_privatekey: settings.imagekit_privatekey,
             google_analytic_code: settings.google_analytic_code,
             google_search_code: settings.google_search_code,
+            reseller_fee: (settings as any).reseller_fee ? parseFloat((settings as any).reseller_fee.toString()) : 100000,
             created_at: settings.created_at,
             updated_at: settings.updated_at,
         };
@@ -60,6 +61,7 @@ export async function PUT(req: Request) {
             imagekit_privatekey,
             google_analytic_code,
             google_search_code,
+            reseller_fee
         } = body;
 
         // Get existing settings or create if not exists
@@ -82,7 +84,8 @@ export async function PUT(req: Request) {
                     imagekit_privatekey: imagekit_privatekey || null,
                     google_analytic_code: google_analytic_code || null,
                     google_search_code: google_search_code || null,
-                }
+                    reseller_fee: reseller_fee !== undefined ? reseller_fee : 100000,
+                } as any
             });
         } else {
             // Update existing settings
@@ -102,7 +105,8 @@ export async function PUT(req: Request) {
                     imagekit_privatekey: imagekit_privatekey !== undefined ? imagekit_privatekey : settings.imagekit_privatekey,
                     google_analytic_code: google_analytic_code !== undefined ? google_analytic_code : settings.google_analytic_code,
                     google_search_code: google_search_code !== undefined ? google_search_code : settings.google_search_code,
-                }
+                    reseller_fee: reseller_fee !== undefined ? reseller_fee : (settings as any).reseller_fee,
+                } as any
             });
         }
 
@@ -122,6 +126,7 @@ export async function PUT(req: Request) {
             imagekit_privatekey: settings.imagekit_privatekey,
             google_analytic_code: settings.google_analytic_code,
             google_search_code: settings.google_search_code,
+            reseller_fee: (settings as any).reseller_fee ? parseFloat((settings as any).reseller_fee.toString()) : 100000,
             created_at: settings.created_at,
             updated_at: settings.updated_at,
         };

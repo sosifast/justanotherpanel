@@ -1,18 +1,54 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, Search, ChevronDown, Settings, Wallet, LogOut, ShoppingCart, CreditCard } from 'lucide-react';
+import Image from 'next/image';
 
 type UserLayoutProps = {
   children: React.ReactNode;
+};
+
+type UserProfile = {
+  id: number;
+  full_name: string;
+  username: string;
+  email: string;
+  profile_imagekit_url: string | null;
+  balance: number | string;
 };
 
 const UserLayout = ({ children }: UserLayoutProps) => {
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await fetch('/api/user/profile');
+      const data = await response.json();
+      if (response.ok) {
+        setUserProfile(data.user);
+      }
+    } catch (error) {
+      console.error('Failed to load user profile');
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   const isActive = (path: string) => pathname === path;
   const isHistoryActive = pathname?.startsWith('/user/history');
@@ -127,17 +163,27 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="flex items-center gap-2 pl-2 pr-1 py-1 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                    JD
-                  </div>
+                  {userProfile?.profile_imagekit_url ? (
+                    <Image
+                      src={userProfile.profile_imagekit_url}
+                      alt={userProfile.full_name}
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                      {userProfile ? getInitials(userProfile.full_name) : 'U'}
+                    </div>
+                  )}
                   <ChevronDown className="w-4 h-4 text-slate-500" />
                 </button>
 
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-1">
                     <div className="px-4 py-3 border-b border-slate-50">
-                      <p className="text-sm font-semibold text-slate-900">John Doe</p>
-                      <p className="text-xs text-slate-500">john@example.com</p>
+                      <p className="text-sm font-semibold text-slate-900">{userProfile?.full_name || 'Loading...'}</p>
+                      <p className="text-xs text-slate-500">{userProfile?.email || ''}</p>
                     </div>
                     <Link
                       href="/user/account"

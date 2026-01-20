@@ -37,20 +37,27 @@ const AdminReportMoneyPage = async () => {
   });
   const totalUserBalance = Number(totalUserBalanceResult._sum.balance || 0);
 
+  // 5. Reseller Income: Sum of registration fees
+  // Since we don't have a transaction log yet, we estimate by count * current fee
+  const resellersCount = await prisma.reseller.count();
+  const settingsData = await prisma.setting.findFirst();
+  const resellerFee = Number((settingsData as any)?.reseller_fee || 100000);
+  const totalResellerIncome = resellersCount * resellerFee;
+
   // For the display, let's map: 
-  // Revenue -> Total In (Deposits)
-  // Deposit -> Total In (Deposits) -- redundant in UI but keeping structure
+  // Revenue -> Total In (Deposits + Reseller Fees)
+  // Deposit -> Total In (Deposits)
   // Payout -> Total Out (API Costs)
-  // Balance -> User Balances (Liability) or Profit. Let's show Profit (Revenue - Expense) as it's more useful for "Money Report". 
-  // Wait, UI has "Wallet" icon for "Saldo Panel". 
-  // Let's stick to: Revenue (Deposits), Deposit (Deposits), Payout (API Costs), Balance (Profit).
-  const balance = totalRevenue - totalPayout;
+  // Balance -> Profit (Revenue - Payout)
+  const actualRevenue = totalRevenue + totalResellerIncome;
+  const balance = actualRevenue - totalPayout;
 
 
   const summary = {
-    totalRevenue: totalRevenue,
+    totalRevenue: actualRevenue,
     totalDeposit: totalDeposit,
     totalPayout: totalPayout,
+    totalResellerIncome: totalResellerIncome,
     balance: balance
   };
 
@@ -90,7 +97,7 @@ const AdminReportMoneyPage = async () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-500">Total Revenue</span>
@@ -104,6 +111,13 @@ const AdminReportMoneyPage = async () => {
             <ArrowUpRight className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-lg font-bold text-slate-900">{formatMoney(summary.totalDeposit)}</div>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-500">Reseller Income</span>
+            <ArrowUpRight className="w-4 h-4 text-purple-600" />
+          </div>
+          <div className="text-lg font-bold text-slate-900">{formatMoney(summary.totalResellerIncome)}</div>
         </div>
         <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col gap-2">
           <div className="flex items-center justify-between">

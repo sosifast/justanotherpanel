@@ -41,9 +41,9 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
-    
+
     if (user.status !== 'ACTIVE') {
-         return NextResponse.json(
+      return NextResponse.json(
         { error: 'Account is not active' },
         { status: 403 }
       );
@@ -54,10 +54,10 @@ export async function POST(req: Request) {
       process.env.JWT_SECRET || 'default-secret-key-change-it'
     );
 
-    const token = await new SignJWT({ 
-        sub: user.id.toString(), 
-        username: user.username,
-        role: user.role 
+    const token = await new SignJWT({
+      sub: user.id.toString(),
+      username: user.username,
+      role: user.role
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
@@ -66,11 +66,34 @@ export async function POST(req: Request) {
     // Set cookie
     const cookieStore = await cookies();
     cookieStore.set('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 60 * 60 * 24, // 24 hours
-        path: '/'
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 24, // 24 hours
+      path: '/'
+    });
+
+    // Create session record
+    const userAgent = req.headers.get('user-agent') || 'Unknown';
+    const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'Unknown';
+
+    // Parse device from user agent (simple detection)
+    let device = 'Unknown Device';
+    if (userAgent.includes('Mobile')) device = 'Mobile Device';
+    else if (userAgent.includes('Tablet')) device = 'Tablet';
+    else if (userAgent.includes('Windows')) device = 'Windows PC';
+    else if (userAgent.includes('Mac')) device = 'Mac';
+    else if (userAgent.includes('Linux')) device = 'Linux PC';
+
+    await prisma.userSession.create({
+      data: {
+        id_user: user.id,
+        token,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        device,
+        location: 'Unknown' // Can be enhanced with IP geolocation service
+      }
     });
 
     // Remove password from response

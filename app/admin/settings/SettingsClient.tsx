@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Save, Globe2, Image, Instagram, Facebook, Mail, Phone, MessageCircle, Code, Key, CheckCircle, Loader2 } from 'lucide-react';
+import { Save, Globe2, Image, Instagram, Facebook, Mail, Phone, MessageCircle, Code, Key, CheckCircle, Loader2, DollarSign } from 'lucide-react';
 import ImageUpload from '@/components/ui/ImageUpload';
 
 type SettingData = {
@@ -19,6 +19,7 @@ type SettingData = {
   imagekit_privatekey: string | null;
   google_analytic_code: string | null;
   google_search_code: string | null;
+  reseller_fee: number;
 } | null;
 
 const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) => {
@@ -40,6 +41,7 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
     imagekit_privatekey: initialSettings?.imagekit_privatekey || '',
     google_analytic_code: initialSettings?.google_analytic_code || '',
     google_search_code: initialSettings?.google_search_code || '',
+    reseller_fee: initialSettings?.reseller_fee || 100000,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -161,6 +163,20 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
                   placeholder="+62 812 3456 7890"
                 />
                 <Phone className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">Reseller Registration Fee (USD) *</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  name="reseller_fee"
+                  value={formData.reseller_fee}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 pl-9 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="100000"
+                />
+                <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               </div>
             </div>
           </div>

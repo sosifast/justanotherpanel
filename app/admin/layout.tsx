@@ -23,7 +23,8 @@ import {
   List,
   Download,
   MessageSquare,
-  DollarSign
+  DollarSign,
+  Shield
 } from 'lucide-react';
 
 type AdminLayoutProps = {
@@ -160,6 +161,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             label="Users"
             href="/admin/user"
             isActive={isActive('/admin/user')}
+          />
+          <SidebarItem
+            icon={<Shield className="w-5 h-5" />}
+            label="Resellers"
+            href="/admin/register-reseller"
+            isActive={isActive('/admin/register-reseller')}
           />
           <SidebarItem
             icon={<Wallet className="w-5 h-5" />}

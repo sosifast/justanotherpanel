@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     MessageSquare,
     Plus,
@@ -12,33 +12,183 @@ import {
     AlertCircle,
     XCircle,
     ChevronLeft,
-    ChevronRight
+    Send,
+    Loader2
 } from 'lucide-react';
-import { Ticket, TicketMessage, TicketPriority, TicketStatus } from '@prisma/client';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
-type TicketWithMessages = Ticket & {
-    messages: TicketMessage[];
+type TicketMessage = {
+    id: number;
+    id_ticket: number;
+    sender: string;
+    content: string;
+    created_at: string;
 };
 
-interface TicketsViewProps {
-    initialTickets: TicketWithMessages[];
-}
+type Ticket = {
+    id: number;
+    id_user: number;
+    subject: string;
+    category: string;
+    status: string;
+    priority: string;
+    created_at: string;
+    updated_at: string;
+    messages?: TicketMessage[];
+    _count?: {
+        messages: number;
+    };
+};
 
-const TicketsView = ({ initialTickets }: TicketsViewProps) => {
+const TicketsView = () => {
+    const router = useRouter();
     const [view, setView] = useState<'list' | 'create' | 'detail'>('list');
-    const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
+    const [tickets, setTickets] = useState<Ticket[]>([]);
+    const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [sending, setSending] = useState(false);
+
+    // Filters
     const [search, setSearch] = useState('');
-    const [status, setStatus] = useState('all');
-    
+    const [statusFilter, setStatusFilter] = useState('all');
+
     // Form state
     const [subject, setSubject] = useState('');
     const [category, setCategory] = useState('');
-    const [priority, setPriority] = useState('MEDIUM');
     const [message, setMessage] = useState('');
     const [newMessage, setNewMessage] = useState('');
 
-    const categories = ['Order Issue', 'Refund', 'Payment', 'Technical', 'General'];
+    const categories = ['General', 'Billing', 'Technical', 'Order Issue', 'Other'];
     const statuses = ['all', 'OPEN', 'PENDING', 'ANSWERED', 'CLOSED'];
+
+    // Fetch tickets
+    useEffect(() => {
+        if (view === 'list') {
+            fetchTickets();
+        }
+    }, [view, statusFilter]);
+
+    const fetchTickets = async () => {
+        try {
+            setLoading(true);
+            const params = new URLSearchParams();
+            if (statusFilter !== 'all') {
+                params.append('status', statusFilter);
+            }
+
+            const response = await fetch(`/api/user/tickets?${params}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                setTickets(data.tickets);
+            } else {
+                toast.error(data.error || 'Failed to fetch tickets');
+            }
+        } catch (error) {
+            toast.error('Failed to fetch tickets');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchTicketDetail = async (ticketId: number) => {
+        try {
+            const response = await fetch(`/api/user/tickets/${ticketId}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                setSelectedTicket(data.ticket);
+                setView('detail');
+            } else {
+                toast.error(data.error || 'Failed to fetch ticket details');
+            }
+        } catch (error) {
+            toast.error('Failed to fetch ticket details');
+        }
+    };
+
+    const handleCreateTicket = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+            setSending(true);
+            const response = await fetch('/api/user/tickets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subject, category, message })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success('Ticket created successfully!');
+                setSubject('');
+                setCategory('');
+                setMessage('');
+                setView('list');
+                fetchTickets();
+            } else {
+                toast.error(data.error || 'Failed to create ticket');
+            }
+        } catch (error) {
+            toast.error('Failed to create ticket');
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!selectedTicket || !newMessage.trim()) return;
+
+        try {
+            setSending(true);
+            const response = await fetch(`/api/user/tickets/${selectedTicket.id}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: newMessage })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setNewMessage('');
+                // Refresh ticket detail
+                await fetchTicketDetail(selectedTicket.id);
+                toast.success('Message sent!');
+            } else {
+                toast.error(data.error || 'Failed to send message');
+            }
+        } catch (error) {
+            toast.error('Failed to send message');
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const handleCloseTicket = async () => {
+        if (!selectedTicket) return;
+
+        try {
+            const response = await fetch(`/api/user/tickets/${selectedTicket.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'CLOSED' })
+            });
+
+            if (response.ok) {
+                toast.success('Ticket closed successfully!');
+                await fetchTicketDetail(selectedTicket.id);
+            } else {
+                const data = await response.json();
+                toast.error(data.error || 'Failed to close ticket');
+            }
+        } catch (error) {
+            toast.error('Failed to close ticket');
+        }
+    };
 
     const getStatusStyle = (status: string) => {
         switch (status) {
@@ -83,32 +233,11 @@ const TicketsView = ({ initialTickets }: TicketsViewProps) => {
         }
     };
 
-    const filteredTickets = initialTickets.filter(ticket => {
+    const filteredTickets = tickets.filter(ticket => {
         const matchesSearch = ticket.subject.toLowerCase().includes(search.toLowerCase()) ||
             ticket.id.toString().includes(search);
-        const matchesStatus = status === 'all' || ticket.status === status;
-        return matchesSearch && matchesStatus;
+        return matchesSearch;
     });
-
-    const selectedTicket = initialTickets.find(t => t.id === selectedTicketId);
-
-    const handleCreateTicket = (e: React.FormEvent) => {
-        e.preventDefault();
-        // Handle ticket creation (This would typically be an API call)
-        console.log('Create ticket:', { subject, category, priority, message });
-        setView('list');
-        setSubject('');
-        setCategory('');
-        setPriority('MEDIUM');
-        setMessage('');
-    };
-
-    const handleSendMessage = (e: React.FormEvent) => {
-        e.preventDefault();
-        // Handle sending message
-        console.log('Send message:', newMessage);
-        setNewMessage('');
-    };
 
     return (
         <div>
@@ -128,7 +257,7 @@ const TicketsView = ({ initialTickets }: TicketsViewProps) => {
                 )}
                 {(view === 'create' || view === 'detail') && (
                     <button
-                        onClick={() => { setView('list'); setSelectedTicketId(null); }}
+                        onClick={() => { setView('list'); setSelectedTicket(null); }}
                         className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors"
                     >
                         <ChevronLeft className="w-4 h-4" />
@@ -144,19 +273,19 @@ const TicketsView = ({ initialTickets }: TicketsViewProps) => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div className="bg-white rounded-xl border border-slate-200 p-4">
                             <p className="text-sm text-slate-500 mb-1">Total Tickets</p>
-                            <p className="text-2xl font-bold text-slate-900">{initialTickets.length}</p>
+                            <p className="text-2xl font-bold text-slate-900">{tickets.length}</p>
                         </div>
                         <div className="bg-white rounded-xl border border-slate-200 p-4">
                             <p className="text-sm text-slate-500 mb-1">Open</p>
-                            <p className="text-2xl font-bold text-blue-600">{initialTickets.filter(t => t.status === 'OPEN').length}</p>
+                            <p className="text-2xl font-bold text-blue-600">{tickets.filter(t => t.status === 'OPEN').length}</p>
                         </div>
                         <div className="bg-white rounded-xl border border-slate-200 p-4">
                             <p className="text-sm text-slate-500 mb-1">Pending</p>
-                            <p className="text-2xl font-bold text-amber-600">{initialTickets.filter(t => t.status === 'PENDING').length}</p>
+                            <p className="text-2xl font-bold text-amber-600">{tickets.filter(t => t.status === 'PENDING').length}</p>
                         </div>
                         <div className="bg-white rounded-xl border border-slate-200 p-4">
                             <p className="text-sm text-slate-500 mb-1">Answered</p>
-                            <p className="text-2xl font-bold text-green-600">{initialTickets.filter(t => t.status === 'ANSWERED').length}</p>
+                            <p className="text-2xl font-bold text-green-600">{tickets.filter(t => t.status === 'ANSWERED').length}</p>
                         </div>
                     </div>
 
@@ -176,8 +305,8 @@ const TicketsView = ({ initialTickets }: TicketsViewProps) => {
                             <div className="relative">
                                 <Filter className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
                                 <select
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value)}
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
                                     className="pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm min-w-[150px]"
                                 >
                                     {statuses.map((s) => (
@@ -191,58 +320,67 @@ const TicketsView = ({ initialTickets }: TicketsViewProps) => {
 
                     {/* Tickets Table */}
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
-                                    <tr>
-                                        <th className="px-6 py-4">Ticket</th>
-                                        <th className="px-6 py-4">Category</th>
-                                        <th className="px-6 py-4 text-center">Priority</th>
-                                        <th className="px-6 py-4 text-center">Status</th>
-                                        <th className="px-6 py-4">Last Updated</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredTickets.map((ticket) => (
-                                        <tr
-                                            key={ticket.id}
-                                            onClick={() => { setSelectedTicketId(ticket.id); setView('detail'); }}
-                                            className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer"
-                                        >
-                                            <td className="px-6 py-4">
-                                                <div>
-                                                    <p className="font-medium text-slate-900 mb-1">#{ticket.id}</p>
-                                                    <p className="text-slate-600 truncate max-w-[300px]">{ticket.subject}</p>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-slate-600">{ticket.category}</span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`font-medium ${getPriorityStyle(ticket.priority)}`}>
-                                                    {ticket.priority}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusStyle(ticket.status)}`}>
-                                                    {getStatusIcon(ticket.status)}
-                                                    {ticket.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-slate-500">
-                                                {new Date(ticket.updated_at).toLocaleString()}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {filteredTickets.length === 0 && (
+                        {loading ? (
                             <div className="p-12 text-center">
-                                <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                                <p className="text-slate-500">No tickets found</p>
+                                <Loader2 className="w-8 h-8 text-blue-600 mx-auto mb-4 animate-spin" />
+                                <p className="text-slate-500">Loading tickets...</p>
                             </div>
+                        ) : (
+                            <>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-6 py-4">Ticket</th>
+                                                <th className="px-6 py-4">Category</th>
+                                                <th className="px-6 py-4 text-center">Priority</th>
+                                                <th className="px-6 py-4 text-center">Status</th>
+                                                <th className="px-6 py-4">Last Updated</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredTickets.map((ticket) => (
+                                                <tr
+                                                    key={ticket.id}
+                                                    onClick={() => fetchTicketDetail(ticket.id)}
+                                                    className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer"
+                                                >
+                                                    <td className="px-6 py-4">
+                                                        <div>
+                                                            <p className="font-medium text-slate-900 mb-1">#{ticket.id}</p>
+                                                            <p className="text-slate-600 truncate max-w-[300px]">{ticket.subject}</p>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-slate-600">{ticket.category}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className={`font-medium ${getPriorityStyle(ticket.priority)}`}>
+                                                            {ticket.priority}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusStyle(ticket.status)}`}>
+                                                            {getStatusIcon(ticket.status)}
+                                                            {ticket.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-slate-500">
+                                                        {new Date(ticket.updated_at).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {filteredTickets.length === 0 && !loading && (
+                                    <div className="p-12 text-center">
+                                        <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                                        <p className="text-slate-500">No tickets found</p>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </>
@@ -269,38 +407,21 @@ const TicketsView = ({ initialTickets }: TicketsViewProps) => {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
-                                    <div className="relative">
-                                        <select
-                                            value={category}
-                                            onChange={(e) => setCategory(e.target.value)}
-                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
-                                            required
-                                        >
-                                            <option value="">Select category</option>
-                                            {categories.map((cat) => (
-                                                <option key={cat} value={cat}>{cat}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">Priority</label>
-                                    <div className="relative">
-                                        <select
-                                            value={priority}
-                                            onChange={(e) => setPriority(e.target.value)}
-                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
-                                        >
-                                            <option value="LOW">Low</option>
-                                            <option value="MEDIUM">Medium</option>
-                                            <option value="HIGH">High</option>
-                                        </select>
-                                        <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
-                                    </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
+                                <div className="relative">
+                                    <select
+                                        value={category}
+                                        onChange={(e) => setCategory(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                                        required
+                                    >
+                                        <option value="">Select category</option>
+                                        {categories.map((cat) => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
                                 </div>
                             </div>
 
@@ -319,8 +440,10 @@ const TicketsView = ({ initialTickets }: TicketsViewProps) => {
                             <div className="flex items-center justify-end pt-4 border-t border-slate-100">
                                 <button
                                     type="submit"
-                                    className="px-6 py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors"
+                                    disabled={sending}
+                                    className="px-6 py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
+                                    {sending && <Loader2 className="w-4 h-4 animate-spin" />}
                                     Create Ticket
                                 </button>
                             </div>
@@ -339,24 +462,22 @@ const TicketsView = ({ initialTickets }: TicketsViewProps) => {
                                 <h2 className="font-semibold text-slate-900">Conversation</h2>
                                 <span className="text-xs text-slate-500">ID: #{selectedTicket.id}</span>
                             </div>
-                            
+
                             <div className="p-6 space-y-6 max-h-[600px] overflow-y-auto">
-                                {selectedTicket.messages.map((msg) => (
+                                {selectedTicket.messages && selectedTicket.messages.map((msg, index) => (
                                     <div
-                                        key={msg.id}
+                                        key={index}
                                         className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                                     >
                                         <div
-                                            className={`max-w-[80%] rounded-2xl px-5 py-3 ${
-                                                msg.sender === 'user'
+                                            className={`max-w-[80%] rounded-2xl px-5 py-3 ${msg.sender === 'user'
                                                     ? 'bg-blue-600 text-white rounded-br-none'
                                                     : 'bg-slate-100 text-slate-800 rounded-bl-none'
-                                            }`}
+                                                }`}
                                         >
                                             <p className="text-sm">{msg.content}</p>
-                                            <p className={`text-[10px] mt-1 ${
-                                                msg.sender === 'user' ? 'text-blue-200' : 'text-slate-400'
-                                            }`}>
+                                            <p className={`text-[10px] mt-1 ${msg.sender === 'user' ? 'text-blue-200' : 'text-slate-400'
+                                                }`}>
                                                 {new Date(msg.created_at).toLocaleString()}
                                             </p>
                                         </div>
@@ -364,23 +485,28 @@ const TicketsView = ({ initialTickets }: TicketsViewProps) => {
                                 ))}
                             </div>
 
-                            <div className="p-4 border-t border-slate-100 bg-slate-50">
-                                <form onSubmit={handleSendMessage} className="flex gap-4">
-                                    <input
-                                        type="text"
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        placeholder="Type your message..."
-                                        className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors"
-                                    >
-                                        Send
-                                    </button>
-                                </form>
-                            </div>
+                            {selectedTicket.status !== 'CLOSED' && (
+                                <div className="p-4 border-t border-slate-100 bg-slate-50">
+                                    <form onSubmit={handleSendMessage} className="flex gap-4">
+                                        <input
+                                            type="text"
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            placeholder="Type your message..."
+                                            className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                                            disabled={sending}
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={sending || !newMessage.trim()}
+                                            className="px-4 py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        >
+                                            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                            Send
+                                        </button>
+                                    </form>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -420,6 +546,17 @@ const TicketsView = ({ initialTickets }: TicketsViewProps) => {
                                     <p className="text-xs text-slate-500 mb-1">Last Updated</p>
                                     <p className="text-sm text-slate-900">{new Date(selectedTicket.updated_at).toLocaleString()}</p>
                                 </div>
+
+                                {selectedTicket.status !== 'CLOSED' && (
+                                    <div className="pt-4 border-t border-slate-100">
+                                        <button
+                                            onClick={handleCloseTicket}
+                                            className="w-full px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                                        >
+                                            Close Ticket
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

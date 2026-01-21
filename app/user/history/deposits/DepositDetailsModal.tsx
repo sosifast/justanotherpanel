@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
-import { X, Copy, CheckCircle, Clock, XCircle, CreditCard, Wallet, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Copy, CheckCircle, Clock, XCircle, CreditCard, Wallet, Calendar, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 type Deposit = {
     id: number;
@@ -20,6 +21,9 @@ interface DepositDetailsModalProps {
 }
 
 const DepositDetailsModal = ({ isOpen, onClose, deposit }: DepositDetailsModalProps) => {
+    const router = useRouter();
+    const [isChecking, setIsChecking] = useState(false);
+
     if (!isOpen || !deposit) return null;
 
     const details = deposit.detail_transaction || {};
@@ -31,6 +35,37 @@ const DepositDetailsModal = ({ isOpen, onClose, deposit }: DepositDetailsModalPr
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
         toast.success('Copied to clipboard');
+    };
+
+    const handleCheckStatus = async () => {
+        setIsChecking(true);
+        try {
+            const response = await fetch('/api/user/deposits/check-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ depositId: deposit.id })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (data.status === deposit.status) {
+                    toast('Status is still ' + data.status.toLowerCase());
+                } else {
+                    toast.success(`Status updated to ${data.status.toLowerCase()}`);
+                    router.refresh();
+                    onClose();
+                }
+            } else {
+                toast.error(data.error || 'Failed to check status');
+            }
+        } catch (error) {
+            toast.error('An error occurred');
+        } finally {
+            setIsChecking(false);
+        }
     };
 
     const getStatusBadge = (status: string) => {
@@ -134,14 +169,25 @@ const DepositDetailsModal = ({ isOpen, onClose, deposit }: DepositDetailsModalPr
                     </div>
                 </div>
 
-                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                    {deposit.status === 'PENDING' ? (
+                        <button
+                            onClick={handleCheckStatus}
+                            disabled={isChecking}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`} />
+                            {isChecking ? 'Checking...' : 'Check Status'}
+                        </button>
+                    ) : (
+                        <div></div>
+                    )}
                     <button
                         onClick={onClose}
                         className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
                     >
                         Close
                     </button>
-                    {/* Could add 'Get Help' or other actions here */}
                 </div>
             </div>
         </div>

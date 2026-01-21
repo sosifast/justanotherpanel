@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Download, ShoppingCart, User, Link as LinkIcon, DollarSign, CheckCircle, XCircle, Clock, Loader } from 'lucide-react';
+import { Search, Filter, MoreVertical, Download, ShoppingCart, User, Link as LinkIcon, DollarSign, CheckCircle, XCircle, Clock, Loader, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 type OrderData = {
@@ -18,6 +18,8 @@ type OrderData = {
 
 const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
   const [orders, setOrders] = useState(initialOrders);
+  const [updating, setUpdating] = useState<number | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -43,6 +45,38 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
       case 'CANCELED': return <XCircle className="w-3 h-3" />;
       case 'ERROR': return <XCircle className="w-3 h-3" />;
       default: return null;
+    }
+  };
+
+  const handleUpdateStatus = async (orderId: number) => {
+    try {
+      setUpdating(orderId);
+      setDropdownOpen(null);
+      const res = await fetch(`/api/admin/orders/${orderId}/check-status`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        // Update local state
+        setOrders(prev => prev.map(o => o.id === orderId ? {
+          ...o,
+          status: data.order.status,
+          start_count: data.order.start_count,
+          // include remains if OrderData types updated, else ignore
+        } : o));
+
+        // Show success toast
+        // You might want to import toast from react-hot-toast
+      } else {
+        console.error(data.error);
+        alert(`Failed: ${data.error}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error updating status');
+    } finally {
+      setUpdating(null);
     }
   };
 
@@ -131,10 +165,26 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
                       {order.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                  <td className="px-6 py-4 text-right relative">
+                    <button
+                      onClick={() => setDropdownOpen(dropdownOpen === order.id ? null : order.id)}
+                      className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
                       <MoreVertical className="w-4 h-4" />
                     </button>
+
+                    {dropdownOpen === order.id && (
+                      <div className="absolute right-6 top-10 z-10 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[140px]">
+                        <button
+                          onClick={() => handleUpdateStatus(order.id)}
+                          disabled={updating === order.id}
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {updating === order.id ? <Loader className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                          Check Status
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

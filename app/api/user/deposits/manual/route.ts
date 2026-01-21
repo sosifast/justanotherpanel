@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createAdminNotification } from '@/lib/admin-notifications';
 
 export async function POST(req: Request) {
     try {
@@ -34,6 +35,14 @@ export async function POST(req: Request) {
                 }
             }
         });
+
+        // Notify Admin
+        await createAdminNotification(
+            'New Manual Deposit Request',
+            `User #${userId} requested a $${amount} manual deposit.`,
+            'NEW_DEPOSIT',
+            deposit.id
+        );
 
         return NextResponse.json({ success: true, id: deposit.id });
     } catch (error) {

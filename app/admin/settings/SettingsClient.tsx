@@ -20,6 +20,10 @@ type SettingData = {
   google_analytic_code: string | null;
   google_search_code: string | null;
   reseller_fee: number;
+  pusher_app_id: string | null;
+  pusher_app_key: string | null;
+  pusher_app_secret: string | null;
+  pusher_app_cluster: string | null;
 } | null;
 
 const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) => {
@@ -42,6 +46,10 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
     google_analytic_code: initialSettings?.google_analytic_code || '',
     google_search_code: initialSettings?.google_search_code || '',
     reseller_fee: initialSettings?.reseller_fee || 100000,
+    pusher_app_id: initialSettings?.pusher_app_id || '',
+    pusher_app_key: initialSettings?.pusher_app_key || '',
+    pusher_app_secret: initialSettings?.pusher_app_secret || '',
+    pusher_app_cluster: initialSettings?.pusher_app_cluster || '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -344,6 +352,60 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
             <p className="text-xs text-slate-500">
               💡 After saving ImageKit settings, you can upload logo and favicon images above.
             </p>
+          </div>
+        </div>
+
+        {/* Pusher Configuration */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Globe2 className="w-4 h-4 text-pink-600" />
+            <h2 className="font-semibold text-slate-800 text-sm">Pusher Configuration</h2>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">App ID</label>
+              <input
+                type="text"
+                name="pusher_app_id"
+                value={formData.pusher_app_id}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ex: 123456"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">App Key</label>
+              <input
+                type="text"
+                name="pusher_app_key"
+                value={formData.pusher_app_key}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ex: a1b2c3d4e5f6g7h8i9j0"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">App Secret</label>
+              <input
+                type="password"
+                name="pusher_app_secret"
+                value={formData.pusher_app_secret}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ex: a1b2c3d4e5f6g7h8i9j0"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">App Cluster</label>
+              <input
+                type="text"
+                name="pusher_app_cluster"
+                value={formData.pusher_app_cluster}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ex: ap1"
+              />
+            </div>
           </div>
         </div>
 

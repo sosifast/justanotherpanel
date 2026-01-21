@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Bell, Search, ChevronDown, Settings, Wallet, LogOut, ShoppingCart, CreditCard } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Bell, Search, ChevronDown, Settings, Wallet, LogOut, ShoppingCart, CreditCard, Check, X, Ticket } from 'lucide-react';
 import Image from 'next/image';
+import Pusher from 'pusher-js';
+import { toast } from 'react-hot-toast';
 
 type UserLayoutProps = {
   children: React.ReactNode;
@@ -19,15 +21,133 @@ type UserProfile = {
   balance: number | string;
 };
 
+type Notification = {
+  id: number;
+  title: string;
+  message: string;
+  type: 'ORDER' | 'DEPOSIT' | 'TICKET' | 'SYSTEM';
+  is_read: boolean;
+  created_at: string;
+};
+
 const UserLayout = ({ children }: UserLayoutProps) => {
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
+  // Notification & Ticket State
+  const [ticketCount, setTicketCount] = useState(0);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [pusherSettings, setPusherSettings] = useState<{ key: string; cluster: string } | null>(null);
+
   useEffect(() => {
     fetchUserProfile();
+    fetchTicketCount();
+    fetchNotifications();
+    fetchPusherSettings();
   }, []);
+
+  useEffect(() => {
+    if (!userProfile?.id || !pusherSettings) return;
+
+    const pusher = new Pusher(pusherSettings.key, {
+      cluster: pusherSettings.cluster,
+      authEndpoint: '/api/pusher/auth',
+    });
+
+    const channel = pusher.subscribe(`private-user-${userProfile.id}`);
+
+    channel.bind('notification', (data: any) => {
+      // Add new notification to list
+      setNotifications(prev => [data, ...prev]);
+      setUnreadCount(prev => prev + 1);
+
+      // Show toast
+      toast(
+        (t) => (
+          <div className="flex items-start gap-2">
+            <div className="flex-1">
+              <p className="font-medium text-sm">{data.title}</p>
+              <p className="text-xs text-slate-500">{data.message}</p>
+            </div>
+            <button onClick={() => toast.dismiss(t.id)} className="text-slate-400 hover:text-slate-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ),
+        { duration: 4000, position: 'bottom-right' }
+      );
+
+      // If ticket notification, update count
+      if (data.type === 'TICKET') {
+        fetchTicketCount();
+      }
+    });
+
+    return () => {
+      pusher.unsubscribe(`private-user-${userProfile.id}`);
+    };
+  }, [userProfile?.id, pusherSettings]);
+
+  const fetchPusherSettings = async () => {
+    try {
+      const res = await fetch('/api/settings/public');
+      if (res.ok) {
+        const data = await res.json();
+        setPusherSettings(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch pusher settings');
+    }
+  };
+
+  const fetchTicketCount = async () => {
+    try {
+      const res = await fetch('/api/user/tickets/count');
+      if (res.ok) {
+        const data = await res.json();
+        setTicketCount(data.count);
+      }
+    } catch (e) {
+      console.error('Failed to fetch ticket count');
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch('/api/user/notifications/list');
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications);
+        setUnreadCount(data.unread_count);
+      }
+    } catch (e) {
+      console.error('Failed to fetch notifications');
+    }
+  };
+
+  const handleMarkAsRead = async (id: number | 'all') => {
+    try {
+      // Optimistic update
+      if (id === 'all') {
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        setUnreadCount(0);
+      } else {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+
+      await fetch('/api/user/notifications/read', {
+        method: 'POST',
+        body: JSON.stringify({ id })
+      });
+    } catch (e) {
+      console.error('Failed to mark as read');
+    }
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -58,6 +178,20 @@ const UserLayout = ({ children }: UserLayoutProps) => {
       ? 'text-blue-600 bg-blue-50'
       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
     }`;
+
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+      router.push('/auth/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-500 selection:text-white pb-20">
@@ -130,8 +264,13 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                 <Link href="/user/add-funds" className={linkClass('/user/add-funds')}>
                   Add Funds
                 </Link>
-                <Link href="/user/tickets" className={linkClass('/user/tickets')}>
+                <Link href="/user/tickets" className={linkClass('/user/tickets') + ' flex items-center gap-2'}>
                   Tickets
+                  {ticketCount > 0 && (
+                    <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[1.25rem] text-center">
+                      {ticketCount}
+                    </span>
+                  )}
                 </Link>
                 <Link href="/user/api" className={linkClass('/user/api')}>
                   API
@@ -152,10 +291,64 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               </div>
 
-              <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-              </button>
+              <div className="relative">
+                <button
+                  className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+                  )}
+                </button>
+
+                {isNotificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 max-h-[80vh] overflow-hidden flex flex-col">
+                    <div className="px-4 py-3 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                      <p className="font-semibold text-sm text-slate-900">Notifications</p>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={() => handleMarkAsRead('all')}
+                          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+                    <div className="overflow-y-auto flex-1">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 text-sm">
+                          <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                          No notifications
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!notification.is_read ? 'bg-blue-50/30' : ''}`}
+                            onClick={() => !notification.is_read && handleMarkAsRead(notification.id)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${!notification.is_read ? 'bg-blue-500' : 'bg-transparent'}`} />
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm ${!notification.is_read ? 'font-semibold text-slate-900' : 'text-slate-600'}`}>
+                                  {notification.title}
+                                </p>
+                                <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">
+                                  {notification.message}
+                                </p>
+                                <p className="text-[10px] text-slate-400 mt-1.5">
+                                  {new Date(notification.created_at).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="relative">
                 <button
@@ -200,6 +393,7 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                     <div className="border-t border-slate-50 mt-1">
                       <button
                         type="button"
+                        onClick={handleLogout}
                         className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                       >
                         <LogOut className="w-4 h-4" /> Sign Out

@@ -55,9 +55,20 @@ export default async function ServicesPage() {
         }
     });
 
+    const serializedServices = services.map(service => ({
+        ...service,
+        price_api: Number(service.price_api),
+        price_sale: Number(service.price_sale),
+        price_reseller: Number(service.price_reseller),
+        category: {
+            ...service.category,
+            platform: service.category.platform
+        }
+    }));
+
     return (
         <ServicesClient
-            initialServices={services}
+            initialServices={serializedServices}
             categories={categories}
             apiProviders={apiProviders}
         />

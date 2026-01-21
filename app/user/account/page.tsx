@@ -33,6 +33,7 @@ type UserProfile = {
     email: string;
     profile_imagekit_url: string | null;
     balance: number | string;
+    webhook_url: string | null;
     created_at: string;
 };
 
@@ -109,6 +110,10 @@ const AccountPage = () => {
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
 
+    // Webhook state
+    const [webhookUrl, setWebhookUrl] = useState('');
+    const [savingWebhook, setSavingWebhook] = useState(false);
+
     useEffect(() => {
         fetchProfile();
         fetchSessions();
@@ -131,6 +136,7 @@ const AccountPage = () => {
                     skype: '',
                     timezone: 'UTC-5'
                 });
+                setWebhookUrl(data.user.webhook_url || '');
             }
         } catch (error) {
             console.error('Failed to load profile');
@@ -351,6 +357,43 @@ const AccountPage = () => {
             toast.error('Failed to register as reseller');
         } finally {
             setRegistering(false);
+        }
+    };
+
+    const handleSaveWebhook = async () => {
+        try {
+            setSavingWebhook(true);
+            const response = await fetch('/api/user/profile', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ webhook_url: webhookUrl })
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                setUserProfile(data.user);
+                toast.success('Webhook URL updated successfully!');
+            } else {
+                toast.error(data.error || 'Failed to update webhook URL');
+            }
+        } catch (error) {
+            toast.error('Failed to update webhook URL');
+        } finally {
+            setSavingWebhook(false);
+        }
+    };
+
+    const handleTestWebhook = async () => {
+        try {
+            const response = await fetch('/api/user/test-webhook', { method: 'POST' });
+            const data = await response.json();
+            if (response.ok) {
+                toast.success('Test webhook sent! Check your server logs.');
+            } else {
+                toast.error(data.error || 'Failed to send test webhook');
+            }
+        } catch (e) {
+            toast.error('Error sending test webhook');
         }
     };
 
@@ -947,6 +990,50 @@ const AccountPage = () => {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Webhook Configuration */}
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                                    <h2 className="font-semibold text-slate-900">Webhook Configuration</h2>
+                                    <p className="text-sm text-slate-500">Receive automatic updates when your order status changes</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">Webhook URL</label>
+                                        <div className="relative">
+                                            <Globe className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                                            <input
+                                                type="url"
+                                                value={webhookUrl}
+                                                onChange={(e) => setWebhookUrl(e.target.value)}
+                                                placeholder="https://your-domain.com/api/callback"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                                            />
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-2">
+                                            We will send a POST request to this URL with order status updates.
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={handleSaveWebhook}
+                                            disabled={savingWebhook}
+                                            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors disabled:opacity-50"
+                                        >
+                                            {savingWebhook ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                            Save Webhook URL
+                                        </button>
+                                        <button
+                                            onClick={handleTestWebhook}
+                                            disabled={!webhookUrl}
+                                            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                        >
+                                            <Globe className="w-4 h-4" />
+                                            Test Webhook
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* API Usage Stats */}
                             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

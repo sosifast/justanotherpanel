@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createAdminNotification } from '@/lib/admin-notifications';
 import axios from 'axios';
 import crypto from 'crypto'; // Node crypto is sufficient, no need for crypto-js if we just use md5
 
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
 
         if (result.state === 0 && result.result?.url) {
             // Create deposit record
-            await prisma.deposits.create({
+            const deposit = await prisma.deposits.create({
                 data: {
                     id_user: userId,
                     amount: amount,
@@ -71,6 +72,14 @@ export async function POST(req: Request) {
                     }
                 }
             });
+
+            // Notify Admin
+            await createAdminNotification(
+                'New Deposit Initiated',
+                `User #${userId} initiated a $${amount} deposit via Cryptomus.`,
+                'NEW_DEPOSIT',
+                deposit.id
+            );
 
             return NextResponse.json({ url: result.result.url });
         } else {

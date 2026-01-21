@@ -13,7 +13,8 @@ import {
     RefreshCw,
     ChevronRight,
     AlertCircle,
-    Loader2
+    Loader2,
+    Globe
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -470,6 +471,67 @@ data = {
 response = requests.post(api_url, data=data)
 result = response.json()
 print(result)`,
+            },
+        },
+        {
+            id: 'webhook',
+            name: 'Webhooks',
+            method: 'POST (Incoming)',
+            icon: <Globe className="w-4 h-4" />,
+            description: 'Receive real-time updates for your orders',
+            params: [
+                { name: 'order', type: 'integer', required: true, description: 'Order ID' },
+                { name: 'status', type: 'string', required: true, description: 'New Status (COMPLETED, PARTIAL, CANCELED)' },
+                { name: 'charge', type: 'decimal', required: false, description: 'Final charge amount' },
+                { name: 'remains', type: 'integer', required: false, description: 'Remaining quantity' },
+            ],
+            response: `{
+  "status": "success"
+}
+// Note: Your server must respond with 200 OK`,
+            examples: {
+                curl: `// Incoming JSON Payload
+{
+  "order": 123456,
+  "status": "COMPLETED",
+  "charge": "0.50",
+  "start_count": 1000,
+  "remains": 0,
+  "currency": "USD"
+}`,
+                php: `// Handle Incoming Webhook using PHP
+$json = file_get_contents('php://input');
+$data = json_decode($json, true);
+
+if ($data) {
+    $order_id = $data['order'];
+    $status = $data['status'];
+    
+    // Update your database
+    // ...
+    
+    echo json_encode(['status' => 'success']);
+}`,
+                node: `// Handle Incoming Webhook using Express
+app.post('/webhook', (req, res) => {
+    const { order, status, charge } = req.body;
+    
+    console.log(\`Order \${order} update: \${status}\`);
+    
+    // Update your database
+    
+    res.json({ status: 'success' });
+});`,
+                python: `// Handle Incoming Webhook using Flask
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    data = request.json
+    order_id = data.get('order')
+    status = data.get('status')
+    
+    print(f"Order {order_id} updated to {status}")
+    
+    return jsonify({"status": "success"})`
             },
         },
     ];

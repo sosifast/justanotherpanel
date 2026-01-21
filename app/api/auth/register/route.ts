@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hash } from 'bcryptjs';
+import { createAdminNotification } from '@/lib/admin-notifications';
 
 export async function POST(req: Request) {
   try {
@@ -25,16 +26,16 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
-        if (existingUser.email === email) {
-            return NextResponse.json(
-                { error: 'Email already exists' },
-                { status: 400 }
-            );
-        }
+      if (existingUser.email === email) {
         return NextResponse.json(
-            { error: 'Username already exists' },
-            { status: 400 }
+          { error: 'Email already exists' },
+          { status: 400 }
         );
+      }
+      return NextResponse.json(
+        { error: 'Username already exists' },
+        { status: 400 }
+      );
     }
 
     // Hash password
@@ -52,6 +53,14 @@ export async function POST(req: Request) {
         balance: 0
       }
     });
+
+    // Notify Admin
+    await createAdminNotification(
+      'New User Registered',
+      `User ${username} has registered.`,
+      'NEW_USER',
+      user.id
+    );
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;

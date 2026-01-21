@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createAdminNotification } from '@/lib/admin-notifications';
 import paypal from '@paypal/checkout-server-sdk';
 
 export async function POST(req: Request) {
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
         }
 
         // Create deposit record
-        await prisma.deposits.create({
+        const deposit = await prisma.deposits.create({
             data: {
                 id_user: userId,
                 amount: amount,
@@ -72,6 +73,14 @@ export async function POST(req: Request) {
                 }
             }
         });
+
+        // Notify Admin
+        await createAdminNotification(
+            'New Deposit Initiated',
+            `User #${userId} initiated a $${amount} deposit via PayPal.`,
+            'NEW_DEPOSIT',
+            deposit.id
+        );
 
         return NextResponse.json({ url: approveLink });
 

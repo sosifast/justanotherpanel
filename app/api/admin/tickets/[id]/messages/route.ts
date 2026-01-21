@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
+import { createNotification } from '@/lib/notifications';
 
 type TicketMessage = {
     sender: string;
@@ -72,10 +73,19 @@ export async function POST(
         await prisma.ticket.update({
             where: { id: ticketId },
             data: {
-                messages: updatedMessages,
+                messages: updatedMessages as any,
                 status: 'ANSWERED'
             }
         });
+
+        // Notify user
+        await createNotification(
+            ticket.id_user,
+            `Ticket #${ticket.id} Updated`,
+            `Support has replied to your ticket: "${newMessage.content.substring(0, 50)}${newMessage.content.length > 50 ? '...' : ''}"`,
+            'TICKET',
+            ticket.id
+        );
 
         return NextResponse.json({ message: newMessage }, { status: 201 });
     } catch (error: any) {

@@ -20,6 +20,8 @@ model User {
   apikey               String?    @unique
   created_at           DateTime   @default(now())
   updated_at           DateTime   @updatedAt
+  webhook_url          String?
+
 
   orders                   Order[]
   deposits                 Deposits[]
@@ -27,6 +29,7 @@ model User {
   tickets                  Ticket[]
   sessions                 UserSession[]
   notification_preferences NotificationPreferences?
+  notifications            Notification[]
   reseller                 Reseller?
 
   @@map("user")
@@ -122,6 +125,10 @@ model Setting {
   imagekit_privatekey  String?
   google_analytic_code String?
   google_search_code   String?
+  pusher_app_id        String?
+  pusher_app_key       String?
+  pusher_app_secret    String?
+  pusher_app_cluster   String?
   created_at           DateTime @default(now())
   updated_at           DateTime @updatedAt
   reseller_fee         Decimal  @default(100000) @db.Decimal(10, 2)
@@ -386,4 +393,49 @@ enum TicketPriority {
   HIGH
   MEDIUM
   LOW
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  id_user     Int
+  title       String
+  message     String
+  type        NotificationType
+  is_read     Boolean  @default(false)
+  related_id  Int?     // ID of the order or deposit
+  created_at  DateTime @default(now())
+
+  user User @relation(fields: [id_user], references: [id], onDelete: Cascade)
+
+  @@map("notification")
+}
+
+enum NotificationType {
+  ORDER
+  DEPOSIT
+  TICKET
+  SYSTEM
+}
+
+model AdminNotification {
+  id          Int      @id @default(autoincrement())
+  title       String
+  message     String
+  type        AdminNotificationType
+  is_read     Boolean  @default(false)
+  related_id  Int?     // User ID, Order ID, Deposit ID
+  created_at  DateTime @default(now())
+
+  @@map("admin_notification")
+}
+
+enum AdminNotificationType {
+  NEW_USER
+  NEW_ORDER
+  ORDER_UPDATE
+  NEW_DEPOSIT
+  DEPOSIT_UPDATE
+  NEW_TICKET
+  TICKET_UPDATE
+  SYSTEM
 }

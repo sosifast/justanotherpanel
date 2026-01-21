@@ -32,6 +32,10 @@ export async function GET() {
             google_analytic_code: settings.google_analytic_code,
             google_search_code: settings.google_search_code,
             reseller_fee: (settings as any).reseller_fee ? parseFloat((settings as any).reseller_fee.toString()) : 100000,
+            pusher_app_id: (settings as any).pusher_app_id,
+            pusher_app_key: (settings as any).pusher_app_key,
+            pusher_app_secret: (settings as any).pusher_app_secret,
+            pusher_app_cluster: (settings as any).pusher_app_cluster,
             created_at: settings.created_at,
             updated_at: settings.updated_at,
         };
@@ -61,7 +65,11 @@ export async function PUT(req: Request) {
             imagekit_privatekey,
             google_analytic_code,
             google_search_code,
-            reseller_fee
+            reseller_fee,
+            pusher_app_id,
+            pusher_app_key,
+            pusher_app_secret,
+            pusher_app_cluster
         } = body;
 
         // Get existing settings or create if not exists
@@ -85,6 +93,10 @@ export async function PUT(req: Request) {
                     google_analytic_code: google_analytic_code || null,
                     google_search_code: google_search_code || null,
                     reseller_fee: reseller_fee !== undefined ? reseller_fee : 100000,
+                    pusher_app_id: pusher_app_id || null,
+                    pusher_app_key: pusher_app_key || null,
+                    pusher_app_secret: pusher_app_secret || null,
+                    pusher_app_cluster: pusher_app_cluster || null,
                 } as any
             });
         } else {
@@ -106,6 +118,10 @@ export async function PUT(req: Request) {
                     google_analytic_code: google_analytic_code !== undefined ? google_analytic_code : settings.google_analytic_code,
                     google_search_code: google_search_code !== undefined ? google_search_code : settings.google_search_code,
                     reseller_fee: reseller_fee !== undefined ? reseller_fee : (settings as any).reseller_fee,
+                    pusher_app_id: pusher_app_id !== undefined ? pusher_app_id : (settings as any).pusher_app_id,
+                    pusher_app_key: pusher_app_key !== undefined ? pusher_app_key : (settings as any).pusher_app_key,
+                    pusher_app_secret: pusher_app_secret !== undefined ? pusher_app_secret : (settings as any).pusher_app_secret,
+                    pusher_app_cluster: pusher_app_cluster !== undefined ? pusher_app_cluster : (settings as any).pusher_app_cluster,
                 } as any
             });
         }
@@ -127,6 +143,10 @@ export async function PUT(req: Request) {
             google_analytic_code: settings.google_analytic_code,
             google_search_code: settings.google_search_code,
             reseller_fee: (settings as any).reseller_fee ? parseFloat((settings as any).reseller_fee.toString()) : 100000,
+            pusher_app_id: (settings as any).pusher_app_id,
+            pusher_app_key: (settings as any).pusher_app_key,
+            pusher_app_secret: (settings as any).pusher_app_secret,
+            pusher_app_cluster: (settings as any).pusher_app_cluster,
             created_at: settings.created_at,
             updated_at: settings.updated_at,
         };

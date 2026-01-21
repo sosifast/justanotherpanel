@@ -115,9 +115,9 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
       id_api_provider: service.id_api_provider?.toString() || '',
       min: service.min.toString(),
       max: service.max.toString(),
-      price_api: Number(service.price_api).toFixed(4),
-      price_sale: Number(service.price_sale).toFixed(4),
-      price_reseller: Number(service.price_reseller).toFixed(4),
+      price_api: Number(service.price_api).toString(),
+      price_sale: Number(service.price_sale).toString(),
+      price_reseller: Number(service.price_reseller).toString(),
       refill: service.refill,
       type: service.type,
       status: service.status,
@@ -374,9 +374,9 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
                   </td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
-                      <div className="text-xs text-slate-400">API: ${Number(service.price_api).toFixed(4)}</div>
-                      <div className="font-medium text-emerald-600">Sale: ${Number(service.price_sale).toFixed(4)}</div>
-                      <div className="text-xs text-blue-600">Reseller: ${Number(service.price_reseller).toFixed(4)}</div>
+                      <div className="text-xs text-slate-400">API: ${Number(service.price_api)}</div>
+                      <div className="font-medium text-emerald-600">Sale: ${Number(service.price_sale)}</div>
+                      <div className="text-xs text-blue-600">Reseller: ${Number(service.price_reseller)}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-slate-500 text-xs">

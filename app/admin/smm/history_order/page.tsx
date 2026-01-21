@@ -10,5 +10,22 @@ export default async function OrdersPage() {
         }
     });
 
-    return <OrdersClient initialOrders={orders} />;
+    const serializedOrders = orders.map(order => ({
+        ...order,
+        price_api: Number(order.price_api),
+        price_sale: Number(order.price_sale),
+        price_seller: Number(order.price_seller),
+        service: {
+            ...order.service,
+            price_api: Number(order.service.price_api),
+            price_sale: Number(order.service.price_sale),
+            price_reseller: Number(order.service.price_reseller),
+        },
+        user: {
+            ...order.user,
+            balance: Number(order.user.balance)
+        }
+    }));
+
+    return <OrdersClient initialOrders={serializedOrders} />;
 }

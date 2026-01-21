@@ -28,7 +28,9 @@ export async function GET(req: Request) {
                 email: true,
                 apikey: true,
                 reseller: true,
+                webhook_url: true,
                 created_at: true
+
             } as any
         });
 
@@ -62,7 +64,7 @@ export async function PATCH(req: Request) {
         const { payload } = await jwtVerify(token, secret);
         const userId = parseInt(payload.sub as string);
 
-        const { full_name, username, profile_imagekit_url } = await req.json();
+        const { full_name, username, profile_imagekit_url, webhook_url } = await req.json();
 
         // Validate username uniqueness if changing
         if (username) {
@@ -86,6 +88,7 @@ export async function PATCH(req: Request) {
         if (full_name !== undefined) updateData.full_name = full_name;
         if (username !== undefined) updateData.username = username;
         if (profile_imagekit_url !== undefined) updateData.profile_imagekit_url = profile_imagekit_url;
+        if (webhook_url !== undefined) updateData.webhook_url = webhook_url;
 
         const user = await prisma.user.update({
             where: { id: userId },
@@ -96,7 +99,8 @@ export async function PATCH(req: Request) {
                 username: true,
                 email: true,
                 balance: true,
-                profile_imagekit_url: true
+                profile_imagekit_url: true,
+                webhook_url: true
             }
         });
 

@@ -21,6 +21,10 @@ export default async function AdminSettingsPage() {
         google_analytic_code: settings.google_analytic_code,
         google_search_code: settings.google_search_code,
         reseller_fee: (settings as any).reseller_fee ? parseFloat((settings as any).reseller_fee.toString()) : 100000,
+        pusher_app_id: settings.pusher_app_id,
+        pusher_app_key: settings.pusher_app_key,
+        pusher_app_secret: settings.pusher_app_secret,
+        pusher_app_cluster: settings.pusher_app_cluster,
     } : null;
 
     return <SettingsClient initialSettings={mappedSettings} />;

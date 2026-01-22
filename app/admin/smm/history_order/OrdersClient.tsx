@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Download, ShoppingCart, User, Link as LinkIcon, DollarSign, CheckCircle, XCircle, Clock, Loader, RefreshCw } from 'lucide-react';
+import { Search, Filter, MoreVertical, Download, ShoppingCart, User, Link as LinkIcon, DollarSign, CheckCircle, XCircle, Clock, Loader, RefreshCw, Trash2, Edit } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'react-hot-toast';
 
 type OrderData = {
   id: number;
+  id_api_provider: number | null;
   user: { username: string };
   service: { name: string };
   link: string;
@@ -20,17 +22,18 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
   const [orders, setOrders] = useState(initialOrders);
   const [updating, setUpdating] = useState<number | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'COMPLETED': return 'bg-emerald-100 text-emerald-800';
+      case 'SUCCESS': return 'bg-emerald-100 text-emerald-800';
       case 'PROCESSING': return 'bg-blue-100 text-blue-800';
       case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
       case 'PENDING': return 'bg-orange-100 text-orange-800';
       case 'PARTIAL': return 'bg-indigo-100 text-indigo-800';
       case 'CANCELED': return 'bg-red-100 text-red-800';
       case 'ERROR': return 'bg-red-100 text-red-800';
-      case 'SUCCESS': return 'bg-emerald-100 text-emerald-800';
       default: return 'bg-slate-100 text-slate-800';
     }
   };
@@ -58,25 +61,78 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
       const data = await res.json();
 
       if (res.ok) {
-        // Update local state
         setOrders(prev => prev.map(o => o.id === orderId ? {
           ...o,
           status: data.order.status,
           start_count: data.order.start_count,
-          // include remains if OrderData types updated, else ignore
         } : o));
-
-        // Show success toast
-        // You might want to import toast from react-hot-toast
+        toast.success('Status updated from provider');
       } else {
-        console.error(data.error);
-        alert(`Failed: ${data.error}`);
+        toast.error(data.error);
       }
     } catch (e) {
-      console.error(e);
-      alert('Error updating status');
+      toast.error('Error updating status');
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const handleManualUpdate = async (orderId: number) => {
+    const newStatus = prompt('Enter new status (PENDING, PROCESSING, COMPLETED, CANCELED, PARTIAL, ERROR):');
+    if (!newStatus) return;
+
+    const upperStatus = newStatus.toUpperCase();
+    const validStatuses = ['PENDING', 'PROCESSING', 'IN_PROGRESS', 'COMPLETED', 'CANCELED', 'PARTIAL', 'ERROR', 'SUCCESS'];
+
+    if (!validStatuses.includes(upperStatus)) {
+      toast.error('Invalid status');
+      return;
+    }
+
+    try {
+      setUpdating(orderId);
+      setDropdownOpen(null);
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: upperStatus })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
+        toast.success('Order status updated successfully');
+      } else {
+        toast.error(data.error);
+      }
+    } catch (e) {
+      toast.error('Error updating order');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: number) => {
+    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
+
+    try {
+      setIsDeleting(orderId);
+      setDropdownOpen(null);
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+        toast.success('Order deleted successfully');
+      } else {
+        const data = await res.json();
+        toast.error(data.error);
+      }
+    } catch (e) {
+      toast.error('Error deleting order');
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -168,21 +224,41 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
                   <td className="px-6 py-4 text-right relative">
                     <button
                       onClick={() => setDropdownOpen(dropdownOpen === order.id ? null : order.id)}
+                      disabled={isDeleting === order.id}
                       className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                     >
-                      <MoreVertical className="w-4 h-4" />
+                      {isDeleting === order.id ? <Loader className="w-4 h-4 animate-spin" /> : <MoreVertical className="w-4 h-4" />}
                     </button>
 
                     {dropdownOpen === order.id && (
-                      <div className="absolute right-6 top-10 z-10 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[140px]">
-                        <button
-                          onClick={() => handleUpdateStatus(order.id)}
-                          disabled={updating === order.id}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2"
-                        >
-                          {updating === order.id ? <Loader className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                          Check Status
-                        </button>
+                      <div className="absolute right-6 top-10 z-10 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[160px]">
+                        {order.id_api_provider ? (
+                          <button
+                            onClick={() => handleUpdateStatus(order.id)}
+                            disabled={updating === order.id}
+                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {updating === order.id ? <Loader className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                            Check Status
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleManualUpdate(order.id)}
+                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-blue-600"
+                            >
+                              <Edit className="w-3 h-3" />
+                              Update Status
+                            </button>
+                            <button
+                              onClick={() => handleDeleteOrder(order.id)}
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Delete Order
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
                   </td>

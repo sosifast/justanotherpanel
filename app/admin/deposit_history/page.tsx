@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import DepositsClient from './DepositsClient';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Deposits",
+    description: "View deposit history."
+};
 
 export default async function DepositHistoryPage() {
     const deposits = await prisma.deposits.findMany({

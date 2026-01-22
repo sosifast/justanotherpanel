@@ -1,20 +1,33 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Download, ShoppingCart, User, Link as LinkIcon, DollarSign, CheckCircle, XCircle, Clock, Loader, RefreshCw, Trash2, Edit } from 'lucide-react';
+import { Search, Filter, MoreVertical, Download, ShoppingCart, User, Link as LinkIcon, DollarSign, CheckCircle, XCircle, Clock, Loader, RefreshCw, Trash2, Edit, Eye, X, Clipboard, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
 type OrderData = {
   id: number;
+  invoice_number: string;
   id_api_provider: number | null;
-  user: { username: string };
-  service: { name: string };
+  pid: string | null;
+  user: {
+    username: string;
+    email: string;
+    balance: number;
+  };
+  service: {
+    id: number;
+    name: string;
+  };
   link: string;
   quantity: number;
-  price_sale: any; // Decimal
+  price_api: any;
+  price_sale: any;
+  price_seller: any;
+  remains: number | null;
   start_count: number | null;
   status: string;
+  refill: boolean;
   created_at: Date;
 };
 
@@ -23,6 +36,16 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
   const [updating, setUpdating] = useState<number | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    status: '',
+    link: '',
+    quantity: 0,
+    start_count: 0,
+    remains: 0
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -136,6 +159,64 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
     }
   };
 
+  const handleShowDetails = (order: OrderData) => {
+    setSelectedOrder(order);
+    setShowDetailModal(true);
+    setDropdownOpen(null);
+  };
+
+  const handleEditClick = (order: OrderData) => {
+    setSelectedOrder(order);
+    setEditFormData({
+      status: order.status,
+      link: order.link,
+      quantity: order.quantity,
+      start_count: order.start_count || 0,
+      remains: order.remains || 0
+    });
+    setShowEditModal(true);
+    setDropdownOpen(null);
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: name === 'link' || name === 'status' ? value : parseInt(value) || 0
+    }));
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedOrder) return;
+
+    try {
+      setUpdating(selectedOrder.id);
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editFormData)
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setOrders(prev => prev.map(o => o.id === selectedOrder.id ? data.order : o));
+        toast.success('Order updated successfully');
+        setShowEditModal(false);
+      } else {
+        toast.error(data.error);
+      }
+    } catch (e) {
+      toast.error('Error updating order');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -231,7 +312,14 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
                     </button>
 
                     {dropdownOpen === order.id && (
-                      <div className="absolute right-6 top-10 z-10 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[160px]">
+                      <div className="absolute right-6 top-10 z-10 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[170px]">
+                        <button
+                          onClick={() => handleShowDetails(order)}
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                        >
+                          <Eye className="w-3 h-3" />
+                          View Details
+                        </button>
                         {order.id_api_provider ? (
                           <button
                             onClick={() => handleUpdateStatus(order.id)}
@@ -244,11 +332,11 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
                         ) : (
                           <>
                             <button
-                              onClick={() => handleManualUpdate(order.id)}
+                              onClick={() => handleEditClick(order)}
                               className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-blue-600"
                             >
                               <Edit className="w-3 h-3" />
-                              Update Status
+                              Edit Order
                             </button>
                             <button
                               onClick={() => handleDeleteOrder(order.id)}
@@ -281,6 +369,266 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
           </div>
         </div>
       </div>
+
+      {/* Details Modal */}
+      {showDetailModal && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowDetailModal(false)}></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Order Details</h3>
+                <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">#{selectedOrder.invoice_number}</p>
+              </div>
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Status and User Section */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Status</label>
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(selectedOrder.status)}`}>
+                      {getStatusIcon(selectedOrder.status)}
+                      {selectedOrder.status}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Customer</label>
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">
+                          {selectedOrder.user.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">{selectedOrder.user.username}</p>
+                          <p className="text-xs text-slate-500">{selectedOrder.user.email}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Pricing</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">Sale Price</p>
+                        <p className="text-sm font-bold text-slate-900">${Number(selectedOrder.price_sale).toFixed(4)}</p>
+                      </div>
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">Cost (API)</p>
+                        <p className="text-sm font-bold text-slate-900">${Number(selectedOrder.price_api).toFixed(4)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Service and Details Section */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Service Information</label>
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                      <p className="text-xs font-bold text-slate-900 mb-1">{selectedOrder.service.name}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          onClick={() => copyToClipboard(selectedOrder.link)}
+                          className="flex items-center gap-1.5 px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                        >
+                          <Clipboard className="w-3 h-3" /> Copy Link
+                        </button>
+                        <a
+                          href={selectedOrder.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-2 py-1 bg-blue-600 rounded-lg text-[10px] font-bold text-white hover:bg-blue-700 transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" /> Visit
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Quantity</label>
+                      <p className="text-sm font-bold text-slate-900">{selectedOrder.quantity.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Start Count</label>
+                      <p className="text-sm font-bold text-slate-900">{selectedOrder.start_count?.toLocaleString() || '0'}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Execution</label>
+                    <div className="flex gap-2">
+                      <div className={`px-2 py-1 rounded-lg text-[10px] font-bold ${selectedOrder.refill ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'}`}>
+                        Refill: {selectedOrder.refill ? 'Enabled' : 'Disabled'}
+                      </div>
+                      <div className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold">
+                        Remains: {selectedOrder.remains?.toLocaleString() || '0'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Provider Information */}
+              {selectedOrder.id_api_provider && (
+                <div className="mt-6 pt-6 border-t border-slate-100">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Provider Metadata</label>
+                  <div className="grid grid-cols-2 gap-4 bg-amber-50/50 border border-amber-100 rounded-xl p-4">
+                    <div>
+                      <p className="text-[10px] text-amber-600 font-bold uppercase">Provider ID</p>
+                      <p className="text-sm font-bold text-slate-900">#{selectedOrder.id_api_provider}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-amber-600 font-bold uppercase">External Order ID</p>
+                      <p className="text-sm font-bold text-slate-900">{selectedOrder.pid || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 pt-6 border-t border-slate-100">
+                <div className="flex justify-between items-center text-[10px] font-medium text-slate-400 italic">
+                  <span>Created: {new Date(selectedOrder.created_at).toLocaleString()}</span>
+                  <span>Internal ID: #{selectedOrder.id}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="px-6 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => !updating && setShowEditModal(false)}></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Edit Order</h3>
+                <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">#{selectedOrder.invoice_number}</p>
+              </div>
+              <button
+                onClick={() => setShowEditModal(false)}
+                disabled={!!updating}
+                className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all text-slate-400 hover:text-slate-600 disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Status</label>
+                  <select
+                    name="status"
+                    value={editFormData.status}
+                    onChange={handleEditInputChange}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-700"
+                  >
+                    <option value="PENDING">PENDING</option>
+                    <option value="PROCESSING">PROCESSING</option>
+                    <option value="IN_PROGRESS">IN_PROGRESS</option>
+                    <option value="COMPLETED">COMPLETED</option>
+                    <option value="PARTIAL">PARTIAL</option>
+                    <option value="CANCELED">CANCELED</option>
+                    <option value="ERROR">ERROR</option>
+                    <option value="SUCCESS">SUCCESS</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Link</label>
+                  <input
+                    type="text"
+                    name="link"
+                    value={editFormData.link}
+                    onChange={handleEditInputChange}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-700"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Quantity</label>
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={editFormData.quantity}
+                      onChange={handleEditInputChange}
+                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Start Count</label>
+                    <input
+                      type="number"
+                      name="start_count"
+                      value={editFormData.start_count}
+                      onChange={handleEditInputChange}
+                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Remains</label>
+                  <input
+                    type="number"
+                    name="remains"
+                    value={editFormData.remains}
+                    onChange={handleEditInputChange}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-700"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-3">
+              <button
+                onClick={() => setShowEditModal(false)}
+                disabled={!!updating}
+                className="px-6 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={!!updating}
+                className="px-6 py-2 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center gap-2 disabled:opacity-50"
+              >
+                {updating ? <Loader className="w-4 h-4 animate-spin" /> : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

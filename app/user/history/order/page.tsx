@@ -2,6 +2,12 @@ import { prisma } from "@/lib/prisma";
 import OrderHistoryView from "./view";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Order History",
+    description: "View and track your previous SMM orders.",
+};
 
 export default async function OrderHistoryPage() {
     const cookieStore = await cookies();

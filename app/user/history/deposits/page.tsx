@@ -2,6 +2,12 @@ import { prisma } from "@/lib/prisma";
 import DepositsView from "./view";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Deposit History",
+    description: "View your previous balance top-ups and deposits.",
+};
 
 export default async function DepositsPage() {
     const cookieStore = await cookies();

@@ -22,7 +22,6 @@ model User {
   updated_at           DateTime   @updatedAt
   webhook_url          String?
 
-
   orders                   Order[]
   deposits                 Deposits[]
   discount_usages          DiscountUsage[]
@@ -31,10 +30,10 @@ model User {
   notification_preferences NotificationPreferences?
   notifications            Notification[]
   reseller                 Reseller?
+  redeem_used              RedeemUsed[]
 
   @@map("user")
 }
-
 
 model Ticket {
   id         Int            @id @default(autoincrement())
@@ -94,7 +93,6 @@ model Reseller {
 
   @@map("reseller")
 }
-
 
 model Platform {
   id                Int            @id @default(autoincrement())
@@ -209,7 +207,7 @@ model Order {
   invoice_number  String      @unique
   id_user         Int
   id_api_provider Int?
-  pid             String?     // Provider order ID
+  pid             String? // Provider order ID
   id_service      Int
   link            String
   price_api       Decimal     @db.Decimal(10, 4)
@@ -259,18 +257,18 @@ model News {
 }
 
 model Discount {
-  id              Int            @id @default(autoincrement())
-  name_discount   String
-  min_transaction Decimal        @db.Decimal(10, 2)
-  max_transaction Decimal        @db.Decimal(10, 2)
-  discount_max_get Decimal       @default(0) @db.Decimal(10, 2)
-  type            DiscountType
-  amount          Decimal        @db.Decimal(10, 2)
-  expired_date    DateTime
-  max_used        Int
-  status          DiscountStatus @default(ACTIVE)
-  created_at      DateTime       @default(now())
-  updated_at      DateTime       @updatedAt
+  id               Int            @id @default(autoincrement())
+  name_discount    String
+  min_transaction  Decimal        @db.Decimal(10, 2)
+  max_transaction  Decimal        @db.Decimal(10, 2)
+  discount_max_get Decimal        @default(0) @db.Decimal(10, 2)
+  type             DiscountType
+  amount           Decimal        @db.Decimal(10, 2)
+  expired_date     DateTime
+  max_used         Int
+  status           DiscountStatus @default(ACTIVE)
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
 
   discount_usages DiscountUsage[]
 
@@ -290,6 +288,35 @@ model DiscountUsage {
   order    Order?   @relation(fields: [id_order], references: [id])
 
   @@map("discount_usage")
+}
+
+model RedeemCode {
+  id           Int          @id @default(autoincrement())
+  name_code    String       @unique
+  quota        Int
+  expired_date DateTime
+  get_balance  Decimal      @db.Decimal(10, 2)
+  status       RedeemStatus @default(ACTIVE)
+  total_info   String?      @db.Text
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+
+  used_by RedeemUsed[]
+
+  @@map("reedem_code")
+}
+
+model RedeemUsed {
+  id             Int      @id @default(autoincrement())
+  id_user        Int
+  id_redeem_code Int
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  user        User       @relation(fields: [id_user], references: [id])
+  redeem_code RedeemCode @relation(fields: [id_redeem_code], references: [id])
+
+  @@map(  "reedem_used")
 }
 
 // Enums
@@ -396,14 +423,14 @@ enum TicketPriority {
 }
 
 model Notification {
-  id          Int      @id @default(autoincrement())
-  id_user     Int
-  title       String
-  message     String
-  type        NotificationType
-  is_read     Boolean  @default(false)
-  related_id  Int?     // ID of the order or deposit
-  created_at  DateTime @default(now())
+  id         Int              @id @default(autoincrement())
+  id_user    Int
+  title      String
+  message    String
+  type       NotificationType
+  is_read    Boolean          @default(false)
+  related_id Int? // ID of the order or deposit
+  created_at DateTime         @default(now())
 
   user User @relation(fields: [id_user], references: [id], onDelete: Cascade)
 
@@ -418,13 +445,13 @@ enum NotificationType {
 }
 
 model AdminNotification {
-  id          Int      @id @default(autoincrement())
-  title       String
-  message     String
-  type        AdminNotificationType
-  is_read     Boolean  @default(false)
-  related_id  Int?     // User ID, Order ID, Deposit ID
-  created_at  DateTime @default(now())
+  id         Int                   @id @default(autoincrement())
+  title      String
+  message    String
+  type       AdminNotificationType
+  is_read    Boolean               @default(false)
+  related_id Int? // User ID, Order ID, Deposit ID
+  created_at DateTime              @default(now())
 
   @@map("admin_notification")
 }
@@ -438,4 +465,9 @@ enum AdminNotificationType {
   NEW_TICKET
   TICKET_UPDATE
   SYSTEM
+}
+
+enum RedeemStatus {
+  ACTIVE
+  NOT_ACTIVE
 }

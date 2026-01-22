@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import ApiProvidersClient from './ApiProvidersClient';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Providers",
+    description: "Manage API providers."
+};
 
 export default async function ApiProviderPage() {
     const providers = await prisma.apiProvider.findMany({

@@ -26,10 +26,35 @@ interface OrdersViewProps {
     initialOrders: OrderWithService[];
 }
 
+import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
+
 const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
+    const router = useRouter();
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState('all');
     const [platform, setPlatform] = useState('all');
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    const handleSyncStatus = async () => {
+        setIsSyncing(true);
+        try {
+            const res = await fetch('/api/user/orders/sync-all', { method: 'POST' });
+            const data = await res.json();
+
+            if (res.ok) {
+                toast.success(data.message);
+                router.refresh();
+            } else {
+                toast.error(data.error || 'Failed to sync orders');
+            }
+        } catch (error) {
+            toast.error('An error occurred during sync');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
 
     const platforms = ['all', 'Instagram', 'TikTok', 'YouTube', 'Twitter', 'Facebook'];
     const statuses = ['all', 'COMPLETED', 'IN_PROGRESS', 'PROCESSING', 'PENDING', 'PARTIAL', 'ERROR', 'CANCELED', 'SUCCESS'];
@@ -72,7 +97,7 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
                 return null;
         }
     };
-    
+
     const getStatusLabel = (status: string) => {
         // Convert CONSTANT_CASE to Title Case if needed, or just return as is
         return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
@@ -100,9 +125,19 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
 
     return (
         <div>
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-slate-900">Order History</h1>
-                <p className="text-slate-500">View and track all your orders</p>
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-8">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Order History</h1>
+                    <p className="text-slate-500">View and track all your orders</p>
+                </div>
+                <button
+                    onClick={handleSyncStatus}
+                    disabled={isSyncing}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 transition-all"
+                >
+                    <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? 'Syncing...' : 'Sync Order Status'}
+                </button>
             </div>
 
             {/* Stats Cards */}

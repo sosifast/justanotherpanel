@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import SettingsClient from './SettingsClient';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Settings",
+    description: "System settings."
+};
 
 export default async function AdminSettingsPage() {
     const settings = await prisma.setting.findFirst();

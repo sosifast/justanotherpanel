@@ -9,21 +9,24 @@ export async function PATCH(
     try {
         const { id } = await params;
         const body = await request.json();
-        const { status } = body;
+        const { status, link, quantity, remains, start_count } = body;
 
-        if (!status) {
-            return NextResponse.json({ error: 'Status is required' }, { status: 400 });
-        }
+        const updateData: any = {};
+        if (status) updateData.status = status as OrderStatus;
+        if (link !== undefined) updateData.link = link;
+        if (quantity !== undefined) updateData.quantity = parseInt(quantity.toString());
+        if (remains !== undefined) updateData.remains = parseInt(remains.toString());
+        if (start_count !== undefined) updateData.start_count = parseInt(start_count.toString());
 
         const order = await prisma.order.update({
             where: { id: parseInt(id) },
-            data: { status: status as OrderStatus },
+            data: updateData,
             include: {
                 user: {
-                    select: { username: true }
+                    select: { username: true, email: true, balance: true }
                 },
                 service: {
-                    select: { name: true }
+                    select: { id: true, name: true }
                 }
             }
         });
@@ -34,6 +37,10 @@ export async function PATCH(
             price_api: Number(order.price_api),
             price_sale: Number(order.price_sale),
             price_seller: Number(order.price_seller),
+            user: {
+                ...order.user,
+                balance: Number(order.user.balance)
+            }
         };
 
         return NextResponse.json({ message: 'Order updated successfully', order: serializedOrder });

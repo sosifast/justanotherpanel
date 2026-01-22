@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import CategoriesClient from './CategoriesClient';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Categories",
+    description: "Manage service categories."
+};
 
 export default async function SmmCategoryPage() {
     const categories = await prisma.category.findMany({

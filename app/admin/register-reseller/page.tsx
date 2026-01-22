@@ -1,6 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { Shield, Mail, Wallet, Calendar, Search, User as UserIcon } from "lucide-react";
 import Image from "next/image";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Resellers",
+    description: "Manage registered resellers."
+};
 
 export default async function AdminResellerPage() {
     const resellers = await prisma.reseller.findMany({
@@ -94,8 +100,8 @@ export default async function AdminResellerPage() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${reseller.status === 'ACTIVE'
-                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                            : 'bg-slate-100 text-slate-700 border border-slate-200'
                                             }`}>
                                             {reseller.status}
                                         </span>

@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import AddFundsClient from './AddFundsClient';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Add Funds",
+    description: "Add balance to your account using various payment gateways."
+};
 
 export default async function AddFundsPage() {
     const gateways = await prisma.paymentGateway.findMany({

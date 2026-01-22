@@ -3,6 +3,12 @@ import { Users, ShoppingBag, LifeBuoy, DollarSign, TrendingUp, AlertCircle, More
 import { prisma } from '@/lib/prisma';
 import { formatDistanceToNow } from 'date-fns';
 
+export const metadata = {
+  title: "Dashboard",
+  description: "Monitor and manage your SMM panel operations."
+};
+
+
 async function getStats() {
   const totalRevenue = await prisma.deposits.aggregate({
     _sum: { amount: true },
@@ -109,12 +115,12 @@ const AdminDashboard = async () => {
                     <td className="px-6 py-4">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-bold ${order.status === 'COMPLETED' || order.status === 'SUCCESS'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : order.status === 'PROCESSING' || order.status === 'IN_PROGRESS'
-                              ? 'bg-blue-100 text-blue-700'
-                              : order.status === 'PENDING'
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-red-100 text-red-700'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : order.status === 'PROCESSING' || order.status === 'IN_PROGRESS'
+                            ? 'bg-blue-100 text-blue-700'
+                            : order.status === 'PENDING'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-red-100 text-red-700'
                           }`}
                       >
                         {order.status}

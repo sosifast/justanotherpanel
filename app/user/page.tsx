@@ -1,6 +1,12 @@
 import { prisma } from '@/lib/prisma';
 import DashboardClient from './DashboardClient';
 
+export const metadata = {
+  title: "Dashboard",
+  description: "View your SMM stats and recent activities."
+};
+
+
 export default async function UserDashboardPage() {
   // TODO: Get userId from session/auth
   const userId = 1;

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, Search, ChevronDown, Settings, Wallet, LogOut, ShoppingCart, CreditCard, Check, X, Ticket } from 'lucide-react';
+import { Bell, Search, ChevronDown, Settings, Wallet, LogOut, ShoppingCart, CreditCard, Check, X, Ticket, History } from 'lucide-react';
 import Image from 'next/image';
 import Pusher from 'pusher-js';
 import { toast } from 'react-hot-toast';
@@ -34,6 +34,7 @@ const UserLayout = ({ children }: UserLayoutProps) => {
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isRedeemOpen, setIsRedeemOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   // Notification & Ticket State
@@ -278,6 +279,47 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                 <Link href="/user/voucher" className={linkClass('/user/voucher')}>
                   Voucher
                 </Link>
+
+                {/* Redeem Dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsRedeemOpen(!isRedeemOpen)}
+                    onBlur={() => setTimeout(() => setIsRedeemOpen(false), 150)}
+                    className={`flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${pathname?.startsWith('/user/redeem')
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      }`}
+                  >
+                    Redeem
+                    <ChevronDown className={`w-4 h-4 transition-transform ${isRedeemOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isRedeemOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50">
+                      <Link
+                        href="/user/redeem/claim"
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${isActive('/user/redeem/claim')
+                          ? 'text-blue-600 bg-blue-50'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600'
+                          }`}
+                      >
+                        <Ticket className="w-4 h-4" />
+                        Claim Code
+                      </Link>
+                      <Link
+                        href="/user/redeem/used-redeem"
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${isActive('/user/redeem/used-redeem')
+                          ? 'text-blue-600 bg-blue-50'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600'
+                          }`}
+                      >
+                        <History className="w-4 h-4" />
+                        Redeem History
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

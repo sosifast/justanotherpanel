@@ -1,5 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import ServicesView from "./view";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Services",
+    description: "Browse our available SMM services and pricing."
+};
 
 export default async function ServicesPage() {
     const rawServices = await prisma.service.findMany({

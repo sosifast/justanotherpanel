@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import PlatformsClient from './PlatformsClient';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Platforms",
+    description: "Manage social media platforms."
+};
 
 export default async function SmmPlatformPage() {
     const platforms = await prisma.platform.findMany({

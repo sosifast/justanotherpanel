@@ -1,6 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Metadata } from 'next';
+
+// Note: This is a client component, we'll need to refactor or just accept the lack of metadata if we can't move it. 
+// Actually, I'll refactor it to use TicketsView.
 import {
   Search,
   Filter,
@@ -370,8 +374,8 @@ const AdminTicketsPage = () => {
                       >
                         <div
                           className={`max-w-[80%] rounded-2xl px-5 py-3 ${msg.sender === 'support'
-                              ? 'bg-blue-600 text-white rounded-br-none'
-                              : 'bg-slate-100 text-slate-800 rounded-bl-none'
+                            ? 'bg-blue-600 text-white rounded-br-none'
+                            : 'bg-slate-100 text-slate-800 rounded-bl-none'
                             }`}
                         >
                           <p className="text-xs font-medium mb-1 opacity-75">

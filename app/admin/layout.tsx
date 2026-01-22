@@ -25,7 +25,9 @@ import {
   MessageSquare,
   DollarSign,
   Shield,
-  Check
+  Check,
+  Ticket,
+  History
 } from 'lucide-react';
 import Pusher from 'pusher-js';
 import { toast } from 'react-hot-toast';
@@ -339,6 +341,22 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           />
 
           <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-2">
+            Redeem System
+          </p>
+          <SidebarItem
+            icon={<Ticket className="w-5 h-5" />}
+            label="Generate Code"
+            href="/admin/reedem/generate"
+            isActive={isActive('/admin/reedem/generate')}
+          />
+          <SidebarItem
+            icon={<History className="w-5 h-5" />}
+            label="Usage History"
+            href="/admin/reedem/used_code"
+            isActive={isActive('/admin/reedem/used_code')}
+          />
+
+          <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-2">
             Support
           </p>
           <SidebarItem
@@ -402,7 +420,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
         </div>
 
-        <header className="py-6 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 z-10 sticky top-0">
+        <header className="py-6 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 z-30 sticky top-0">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(true)}

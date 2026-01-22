@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import ServicesClient from './ServicesClient';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Services",
+    description: "Manage SMM services."
+};
 
 export default async function ServicesPage() {
     const services = await prisma.service.findMany({

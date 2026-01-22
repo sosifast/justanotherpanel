@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import NewOrderClient from './NewOrderClient';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "New Order",
+    description: "Place a new SMM order."
+};
 
 type Props = {
     searchParams: Promise<{

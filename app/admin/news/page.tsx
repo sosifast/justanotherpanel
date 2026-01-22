@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import NewsClient from './NewsClient';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "News",
+    description: "Manage news."
+};
 
 export default async function NewsPage() {
     const news = await prisma.news.findMany({

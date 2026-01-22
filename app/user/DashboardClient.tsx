@@ -10,7 +10,9 @@ import {
     AlertCircle,
     Globe,
     ChevronRight,
-    Package
+    Package,
+    X,
+    Eye
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -69,6 +71,8 @@ type Props = {
 };
 
 const DashboardClient = ({ data }: Props) => {
+    const [selectedNews, setSelectedNews] = React.useState<News | null>(null);
+
     // Format currency
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', {
@@ -297,7 +301,16 @@ const DashboardClient = ({ data }: Props) => {
                                             <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">News</span>
                                             <span className="text-xs text-slate-400">{formatDate(item.created_at)}</span>
                                         </div>
-                                        <h4 className="font-medium text-slate-800 text-sm mb-1">{item.subject}</h4>
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h4 className="font-medium text-slate-800 text-sm mb-1">{item.subject}</h4>
+                                            <button
+                                                onClick={() => setSelectedNews(item)}
+                                                className="p-1 hover:bg-white rounded text-blue-600 transition-colors"
+                                                title="View Details"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                         <p className="text-sm text-slate-600 leading-snug line-clamp-2">
                                             {item.content}
                                         </p>
@@ -311,6 +324,41 @@ const DashboardClient = ({ data }: Props) => {
                             )}
                         </div>
                     </div>
+
+                    {/* News Modal */}
+                    {selectedNews && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedNews(null)}></div>
+                            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+                                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                    <div className="flex items-center gap-2">
+                                        <AlertCircle className="w-5 h-5 text-amber-500" />
+                                        <h3 className="font-bold text-slate-800">News Details</h3>
+                                    </div>
+                                    <button onClick={() => setSelectedNews(null)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">News Update</span>
+                                        <span className="text-xs text-slate-400 font-medium">{new Date(selectedNews.created_at).toLocaleString()}</span>
+                                    </div>
+                                    <h2 className="text-xl font-black text-slate-900 leading-tight">{selectedNews.subject}</h2>
+                                    <div className="prose prose-slate prose-sm max-w-none">
+                                        <p className="text-slate-600 whitespace-pre-wrap leading-relaxed text-base">
+                                            {selectedNews.content}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                                    <button onClick={() => setSelectedNews(null)} className="px-6 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Help Card */}
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 text-center">

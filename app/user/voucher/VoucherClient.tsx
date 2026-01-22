@@ -5,11 +5,15 @@ import { Tag, Calendar, Copy, CheckCircle, Percent, DollarSign, ArrowRight, Aler
 import { Discount } from '@prisma/client';
 import toast from 'react-hot-toast';
 
-type SerializedDiscount = Omit<Discount, 'min_transaction' | 'max_transaction' | 'amount'> & {
+type SerializedDiscount = Omit<Discount, 'min_transaction' | 'max_transaction' | 'amount' | 'discount_max_get' | 'expired_date' | 'created_at' | 'updated_at'> & {
     min_transaction: number;
     max_transaction: number;
+    discount_max_get: number;
     amount: number;
     usage_count: number;
+    expired_date: string;
+    created_at: string;
+    updated_at: string;
 };
 
 const VoucherClient = ({ discounts }: { discounts: SerializedDiscount[] }) => {

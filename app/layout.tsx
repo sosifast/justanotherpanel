@@ -22,9 +22,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: settings?.site_name || "JustAnotherPanel - SMM Panel Solutions",
     description: "The most advanced and reliable SMM panel provider for all your social media marketing needs.",
-    verification: {
-      google: settings?.google_search_code || undefined,
-    }
   };
 }
 

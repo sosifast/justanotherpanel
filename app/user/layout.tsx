@@ -7,6 +7,7 @@ import { Bell, Search, ChevronDown, Settings, Wallet, LogOut, ShoppingCart, Cred
 import Image from 'next/image';
 import Pusher from 'pusher-js';
 import { toast } from 'react-hot-toast';
+import { Analytics } from "@vercel/analytics/next";
 
 type UserLayoutProps = {
   children: React.ReactNode;
@@ -452,6 +453,7 @@ const UserLayout = ({ children }: UserLayoutProps) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {children}
       </div>
+      <Analytics />
     </div>
   );
 };

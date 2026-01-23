@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { Analytics } from "@vercel/analytics/next";
 
 const ForgetPassword = () => {
   const [email, setEmail] = useState('');
@@ -107,6 +108,7 @@ const ForgetPassword = () => {
           </Link>
         </p>
       </div>
+      <Analytics />
     </div>
   );
 };

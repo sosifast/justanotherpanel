@@ -1,5 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
+import { Analytics } from "@vercel/analytics/next";
 import RegisterView from './RegisterView';
 
 export const metadata: Metadata = {
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-    return <RegisterView />;
+    return (
+        <>
+            <RegisterView />
+            <Analytics />
+        </>
+    );
 }

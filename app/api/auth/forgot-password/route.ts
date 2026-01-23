@@ -18,9 +18,9 @@ export async function POST(req: Request) {
 
     // In a real application, we would generate a token, save it to DB, and send an email.
     // For now, we just simulate success to avoid enumeration attacks.
-    
+
     if (user) {
-        console.log(`[Mock] Password reset requested for ${email}`);
+      // In a real application, we would generate a token, save it to DB, and send an email.
     }
 
     return NextResponse.json(

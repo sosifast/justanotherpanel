@@ -40,8 +40,6 @@ export async function sendOrderWebhook(orderId: number) {
         );
 
         // 4. Send webhook (External)
-        console.log(`Sending webhook for Order #${orderId} to ${order.user.webhook_url}`);
-
         await axios.post(order.user.webhook_url, payload, {
             headers: {
                 'Content-Type': 'application/json',

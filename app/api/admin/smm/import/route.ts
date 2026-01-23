@@ -7,8 +7,6 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { providerId, services, categoryId, markupSale, markupReseller } = body;
 
-        console.log('Import started with:', { providerId, categoryId, servicesCount: services?.length });
-
         if (!providerId || !services || !categoryId || !Array.isArray(services)) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }

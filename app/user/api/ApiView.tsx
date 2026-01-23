@@ -51,7 +51,7 @@ const ApiDocumentationPage = () => {
                     setSamples(sampleData);
                 }
             } catch (error) {
-                console.error('Failed to fetch user data for API docs');
+                // Silently fail or handle error appropriately in UI
             } finally {
                 setLoading(false);
             }
@@ -147,7 +147,7 @@ params.append('action', 'services');
 
 axios.post(apiUrl, params)
   .then(response => {
-    console.log(response.data);
+    // Handle response
   })
   .catch(error => {
     console.error('Error:', error);
@@ -229,7 +229,7 @@ params.append('quantity', '1000');
 
 axios.post(apiUrl, params)
   .then(response => {
-    console.log(response.data);
+    // Handle response
   })
   .catch(error => {
     console.error('Error:', error);
@@ -310,7 +310,7 @@ params.append('order', '123456');
 
 axios.post(apiUrl, params)
   .then(response => {
-    console.log(response.data);
+    // Handle response
   })
   .catch(error => {
     console.error('Error:', error);
@@ -382,7 +382,7 @@ params.append('action', 'balance');
 
 axios.post(apiUrl, params)
   .then(response => {
-    console.log(response.data);
+    // Handle response
   })
   .catch(error => {
     console.error('Error:', error);
@@ -453,7 +453,7 @@ params.append('order', '123456');
 
 axios.post(apiUrl, params)
   .then(response => {
-    console.log(response.data);
+    // Handle response
   })
   .catch(error => {
     console.error('Error:', error);
@@ -515,8 +515,6 @@ if ($data) {
                 node: `// Handle Incoming Webhook using Express
 app.post('/webhook', (req, res) => {
     const { order, status, charge } = req.body;
-    
-    console.log(\`Order \${order} update: \${status}\`);
     
     // Update your database
     

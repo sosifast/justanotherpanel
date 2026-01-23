@@ -78,28 +78,34 @@ export async function POST(req: Request) {
             }
 
             case 'add': {
-                const { service: serviceId, link, quantity } = body;
+                const { service: serviceIdStr, link, quantity: quantityStr } = body;
 
-                if (!serviceId || !link || !quantity) {
+                if (!serviceIdStr || !link || !quantityStr) {
+                    return NextResponse.json({ error: 'invalid_parameters' }, { status: 400 });
+                }
+
+                const serviceId = parseInt(serviceIdStr);
+                const qty = parseInt(quantityStr);
+
+                if (isNaN(serviceId) || isNaN(qty)) {
                     return NextResponse.json({ error: 'invalid_parameters' }, { status: 400 });
                 }
 
                 const service = await prisma.service.findUnique({
-                    where: { id: parseInt(serviceId) }
+                    where: { id: serviceId }
                 });
 
                 if (!service || service.status !== 'ACTIVE') {
                     return NextResponse.json({ error: 'invalid_service' }, { status: 400 });
                 }
 
-                const qty = parseInt(quantity);
                 if (qty < service.min || qty > service.max) {
                     return NextResponse.json({ error: 'invalid_quantity' }, { status: 400 });
                 }
 
                 // Calculate cost
                 const rate = isReseller ? service.price_reseller : service.price_sale;
-                const cost = new Decimal(rate).mul(qty).div(1000);
+                const cost = new Decimal(rate as any).mul(qty).div(1000);
 
                 if (new Decimal(user.balance).lt(cost)) {
                     return NextResponse.json({ error: 'insufficient_balance' }, { status: 400 });

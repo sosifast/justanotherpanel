@@ -19,7 +19,6 @@ export async function POST(request: Request) {
     if (user) {
       // TODO: Implement actual email sending logic here
       // For now, we simulate the process
-      console.log(`[Forgot Password] Reset link requested for: ${email}`);
     }
 
     // Always return success to prevent email enumeration

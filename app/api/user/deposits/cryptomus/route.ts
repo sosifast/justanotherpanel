@@ -83,7 +83,6 @@ export async function POST(req: Request) {
 
             return NextResponse.json({ url: result.result.url });
         } else {
-            console.error('Cryptomus response:', result);
             return NextResponse.json({ error: 'Failed to create payment link' }, { status: 500 });
         }
 

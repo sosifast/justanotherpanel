@@ -72,8 +72,6 @@ export async function POST(
             const response = await axios.request(config);
             const data = response.data;
 
-            console.log('Provider Response:', JSON.stringify(data));
-
             // Map Provider Status to Local Status
             // Expected: charge, start_count, status, remains, currency
             // Statuses often vary, need to normalize. assuming typical SMM pane statuses

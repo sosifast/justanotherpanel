@@ -7,10 +7,7 @@ export const prisma = (() => {
     return globalForPrisma.prisma;
   }
 
-  console.log('--- INITIALIZING NEW PRISMA CLIENT ---');
-  return new PrismaClient({
-    log: ['query'],
-  });
+  return new PrismaClient();
 })();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;

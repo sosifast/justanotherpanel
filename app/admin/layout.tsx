@@ -99,10 +99,27 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
+    checkAuth();
     fetchCounts();
     fetchNotifications();
     fetchPusherSettings();
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/auth/check');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user?.role !== 'ADMIN') {
+          router.push(data.user?.role === 'STAFF' ? '/staff' : '/user');
+        }
+      } else {
+        router.push('/auth/login');
+      }
+    } catch (e) {
+      router.push('/auth/login');
+    }
+  };
 
   useEffect(() => {
     if (!pusherSettings) return;

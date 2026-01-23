@@ -19,18 +19,30 @@ export async function middleware(request: NextRequest) {
             const { payload } = await jwtVerify(token, secret);
             const role = payload.role as string;
 
-            // Admin Protection
+            // Define home routes for each role
+            const roleHomes: Record<string, string> = {
+                'ADMIN': '/admin',
+                'STAFF': '/staff',
+                'MEMBER': '/user'
+            };
+
+            const userHome = roleHomes[role] || '/user';
+
+            // Admin Area Protection: Only ADMIN allowed
             if (pathname.startsWith('/admin') && role !== 'ADMIN') {
-                return NextResponse.redirect(new URL('/user', request.url));
+                return NextResponse.redirect(new URL(userHome, request.url));
             }
 
-            // Staff Protection (Allow Admin and Staff)
-            if (pathname.startsWith('/staff') && role !== 'STAFF' && role !== 'ADMIN') {
-                return NextResponse.redirect(new URL('/user', request.url));
+            // Staff Area Protection: Only STAFF allowed (or ADMIN if allowed to manage staff area)
+            // User requested strict separation, so STAFF area is for STAFF
+            if (pathname.startsWith('/staff') && role !== 'STAFF') {
+                return NextResponse.redirect(new URL(userHome, request.url));
             }
 
-            // User Protection (Any valid role is allowed)
-            // No extra check needed as long as token is valid
+            // User Area Protection: Only MEMBER allowed
+            if (pathname.startsWith('/user') && role !== 'MEMBER') {
+                return NextResponse.redirect(new URL(userHome, request.url));
+            }
 
         } catch (error) {
             // Invalid token -> Redirect to login
@@ -45,9 +57,19 @@ export async function middleware(request: NextRequest) {
                 const secret = new TextEncoder().encode(
                     process.env.JWT_SECRET || 'default-secret-key-change-it'
                 );
-                await jwtVerify(token, secret);
-                // If token is valid, redirect to user dashboard
-                return NextResponse.redirect(new URL('/user', request.url));
+                const { payload } = await jwtVerify(token, secret);
+                const role = payload.role as string;
+
+                const roleHomes: Record<string, string> = {
+                    'ADMIN': '/admin',
+                    'STAFF': '/staff',
+                    'MEMBER': '/user'
+                };
+
+                const userHome = roleHomes[role] || '/user';
+
+                // If token is valid, redirect to appropriate dashboard
+                return NextResponse.redirect(new URL(userHome, request.url));
             } catch (error) {
                 // If token is invalid, allow access to auth pages (and maybe clear cookie?)
                 // For now just allow access, the login process will overwrite the invalid cookie

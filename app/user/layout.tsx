@@ -46,11 +46,28 @@ const UserLayout = ({ children }: UserLayoutProps) => {
   const [pusherSettings, setPusherSettings] = useState<{ key: string; cluster: string } | null>(null);
 
   useEffect(() => {
+    checkAuth();
     fetchUserProfile();
     fetchTicketCount();
     fetchNotifications();
     fetchPusherSettings();
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/auth/check');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user?.role !== 'MEMBER') {
+          router.push(data.user?.role === 'ADMIN' ? '/admin' : '/staff');
+        }
+      } else {
+        router.push('/auth/login');
+      }
+    } catch (e) {
+      router.push('/auth/login');
+    }
+  };
 
   useEffect(() => {
     if (!userProfile?.id || !pusherSettings) return;

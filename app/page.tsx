@@ -53,9 +53,6 @@ export async function generateMetadata(): Promise<Metadata> {
         alternates: {
             canonical: process.env.NEXT_PUBLIC_APP_URL || 'https://justanotherpanel.online',
         },
-        verification: {
-            google: settings?.google_search_code || undefined,
-        },
         category: 'technology',
     };
 }

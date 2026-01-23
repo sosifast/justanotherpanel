@@ -37,24 +37,16 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        {settings?.google_search_code && (
+          <div dangerouslySetInnerHTML={{ __html: settings.google_search_code }} />
+        )}
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {settings?.google_analytic_code && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${settings.google_analytic_code}`}
-              strategy="afterInteractive"
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${settings.google_analytic_code}');
-              `}
-            </Script>
-          </>
+          <div dangerouslySetInnerHTML={{ __html: settings.google_analytic_code }} />
         )}
         <Toaster position="top-right" />
         {children}

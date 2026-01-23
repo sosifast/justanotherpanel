@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
+import { getSettings } from "@/lib/settings";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,21 +16,46 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "JustAnotherPanel - SMM Panel Solutions",
-  description: "The most advanced and reliable SMM panel provider for all your social media marketing needs.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings();
 
-export default function RootLayout({
+  return {
+    title: settings?.site_name || "JustAnotherPanel - SMM Panel Solutions",
+    description: "The most advanced and reliable SMM panel provider for all your social media marketing needs.",
+    verification: {
+      google: settings?.google_search_code || undefined,
+    }
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await getSettings();
+
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {settings?.google_analytic_code && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${settings.google_analytic_code}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${settings.google_analytic_code}');
+              `}
+            </Script>
+          </>
+        )}
         <Toaster position="top-right" />
         {children}
         <Analytics />

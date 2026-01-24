@@ -10,7 +10,13 @@ export const getSettings = cache(async () => {
         const settings = await prisma.setting.findFirst();
         if (!settings) return null;
 
-        return JSON.parse(JSON.stringify(settings));
+        // Manually map to ensure plain objects and handle Decimal/Date
+        return {
+            ...settings,
+            reseller_fee: settings.reseller_fee ? Number(settings.reseller_fee) : 100000,
+            created_at: settings.created_at.toISOString(),
+            updated_at: settings.updated_at.toISOString(),
+        };
     } catch (error) {
         console.error('Error fetching settings:', error);
         return null;

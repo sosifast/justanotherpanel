@@ -34,7 +34,14 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <Toaster position="top-right" />
+        {children}
+        <Analytics />
+
+        {/* Safely inject SEO and Analytic codes at the end of the body to prevent breaking CSS/Layout */}
         {settings?.google_search_code && (
           <script
             id="google-search-console"
@@ -44,23 +51,33 @@ export default async function RootLayout({
                   const temp = document.createElement('div');
                   temp.innerHTML = ${JSON.stringify(settings.google_search_code)}.trim();
                   while (temp.firstChild) {
-                    document.head.appendChild(temp.firstChild);
+                    if (temp.firstChild.nodeType === 1 || temp.firstChild.nodeType === 3) {
+                      document.head.appendChild(temp.firstChild);
+                    } else {
+                      temp.removeChild(temp.firstChild);
+                    }
                   }
                 })();
               `,
             }}
           />
         )}
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
         {settings?.google_analytic_code && (
-          <div dangerouslySetInnerHTML={{ __html: settings.google_analytic_code }} />
+          <script
+            id="google-analytics"
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  const temp = document.createElement('div');
+                  temp.innerHTML = ${JSON.stringify(settings.google_analytic_code)}.trim();
+                  while (temp.firstChild) {
+                    document.body.appendChild(temp.firstChild);
+                  }
+                })();
+              `,
+            }}
+          />
         )}
-        <Toaster position="top-right" />
-        {children}
-        <Analytics />
       </body>
     </html>
   );

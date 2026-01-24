@@ -57,6 +57,9 @@ export async function generateMetadata(): Promise<Metadata> {
     };
 }
 
-export default function Page() {
-    return <App />;
+export const dynamic = "force-dynamic";
+
+export default async function Page() {
+    const settings = await getSettings();
+    return <App settings={settings} />;
 }

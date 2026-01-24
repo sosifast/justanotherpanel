@@ -34,10 +34,12 @@ const TelegramIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const App = () => {
+const App = ({ settings }: { settings: any }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const siteName = settings?.site_name || "JustAnotherPanel";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -100,9 +102,9 @@ const App = () => {
           <div className="flex justify-between items-center">
             <Link href="/" className="flex items-center gap-2 group" aria-label="JustAnotherPanel Home">
               <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-lg group-hover:bg-blue-600 transition-colors">
-                J
+                {siteName.charAt(0)}
               </div>
-              <span className="font-bold text-xl tracking-tight text-slate-900">JustAnotherPanel</span>
+              <span className="font-bold text-xl tracking-tight text-slate-900">{siteName}</span>
             </Link>
 
             <nav className="hidden md:flex items-center space-x-8" aria-label="Main Navigation">
@@ -405,9 +407,9 @@ const App = () => {
             <div className="col-span-1 md:col-span-2">
               <Link href="/" className="flex items-center gap-2 mb-4 group">
                 <div className="w-8 h-8 bg-slate-900 rounded flex items-center justify-center text-white font-bold text-sm group-hover:bg-blue-600 transition-colors">
-                  J
+                  {siteName.charAt(0)}
                 </div>
-                <span className="font-bold text-xl text-slate-900">JustAnotherPanel</span>
+                <span className="font-bold text-xl text-slate-900">{siteName}</span>
               </Link>
               <p className="text-slate-500 max-w-xs text-sm leading-relaxed">
                 The #1 SMM Panel in the World. Engineered for speed, designed for leaders who want to maximize their social media presence.
@@ -436,18 +438,24 @@ const App = () => {
           </div>
 
           <div className="border-t border-slate-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-400">
-            <div>&copy; {new Date().getFullYear()} JustAnotherPanel. All rights reserved.</div>
+            <div>&copy; {new Date().getFullYear()} {siteName}. All rights reserved.</div>
             <div className="flex gap-6 items-center">
               <div className="flex items-center gap-4">
-                <a href="#" aria-label="Telegram" className="text-slate-400 hover:text-blue-500 transition-colors">
-                  <TelegramIcon className="w-5 h-5" />
-                </a>
-                <a href="#" aria-label="Facebook" className="text-slate-400 hover:text-blue-600 transition-colors">
-                  <Facebook className="w-5 h-5" />
-                </a>
-                <a href="#" aria-label="Instagram" className="text-slate-400 hover:text-pink-600 transition-colors">
-                  <Instagram className="w-5 h-5" />
-                </a>
+                {settings?.telegram && (
+                  <a href={settings.telegram} target="_blank" rel="noopener noreferrer" aria-label="Telegram" className="text-slate-400 hover:text-blue-500 transition-colors">
+                    <TelegramIcon className="w-5 h-5" />
+                  </a>
+                )}
+                {settings?.facebook_url && (
+                  <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-slate-400 hover:text-blue-600 transition-colors">
+                    <Facebook className="w-5 h-5" />
+                  </a>
+                )}
+                {settings?.instagram_url && (
+                  <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-slate-400 hover:text-pink-600 transition-colors">
+                    <Instagram className="w-5 h-5" />
+                  </a>
+                )}
               </div>
               <div className="w-px h-4 bg-slate-200 hidden sm:block"></div>
               <div className="flex items-center gap-2">

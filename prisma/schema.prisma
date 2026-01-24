@@ -8,29 +8,28 @@ datasource db {
 }
 
 model User {
-  id                   Int        @id @default(autoincrement())
-  full_name            String
-  username             String     @unique
-  email                String     @unique
-  password             String
-  balance              Decimal    @default(0) @db.Decimal(10, 2)
-  role                 Role       @default(MEMBER)
-  status               UserStatus @default(ACTIVE)
-  profile_imagekit_url String?
-  apikey               String?    @unique
-  created_at           DateTime   @default(now())
-  updated_at           DateTime   @updatedAt
-  webhook_url          String?
-
-  orders                   Order[]
+  id                       Int                      @id @default(autoincrement())
+  full_name                String
+  username                 String                   @unique
+  email                    String                   @unique
+  password                 String
+  balance                  Decimal                  @default(0) @db.Decimal(10, 2)
+  role                     Role                     @default(MEMBER)
+  status                   UserStatus               @default(ACTIVE)
+  profile_imagekit_url     String?
+  apikey                   String?                  @unique
+  created_at               DateTime                 @default(now())
+  updated_at               DateTime                 @updatedAt
+  webhook_url              String?
   deposits                 Deposits[]
   discount_usages          DiscountUsage[]
+  notifications            Notification[]
+  notification_preferences NotificationPreferences?
+  orders                   Order[]
+  redeem_used              RedeemUsed[]
+  reseller                 Reseller?
   tickets                  Ticket[]
   sessions                 UserSession[]
-  notification_preferences NotificationPreferences?
-  notifications            Notification[]
-  reseller                 Reseller?
-  redeem_used              RedeemUsed[]
 
   @@map("user")
 }
@@ -42,11 +41,10 @@ model Ticket {
   category   String
   status     TicketStatus   @default(OPEN)
   priority   TicketPriority @default(MEDIUM)
-  messages   Json           @default("[]")
   created_at DateTime       @default(now())
   updated_at DateTime       @updatedAt
-
-  user User @relation(fields: [id_user], references: [id])
+  messages   Json           @default("[]")
+  user       User           @relation(fields: [id_user], references: [id])
 
   @@map("ticket")
 }
@@ -61,8 +59,7 @@ model UserSession {
   location    String?
   last_active DateTime @default(now())
   created_at  DateTime @default(now())
-
-  user User @relation(fields: [id_user], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [id_user], references: [id], onDelete: Cascade)
 
   @@map("user_session")
 }
@@ -76,8 +73,7 @@ model NotificationPreferences {
   email_marketing       Boolean  @default(false)
   created_at            DateTime @default(now())
   updated_at            DateTime @updatedAt
-
-  user User @relation(fields: [id_user], references: [id], onDelete: Cascade)
+  user                  User     @relation(fields: [id_user], references: [id], onDelete: Cascade)
 
   @@map("notification_preferences")
 }
@@ -88,8 +84,7 @@ model Reseller {
   status     ResellerStatus @default(ACTIVE)
   created_at DateTime       @default(now())
   updated_at DateTime       @updatedAt
-
-  user User @relation(fields: [id_user], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [id_user], references: [id], onDelete: Cascade)
 
   @@map("reseller")
 }
@@ -102,8 +97,7 @@ model Platform {
   status            PlatformStatus @default(ACTIVE)
   created_at        DateTime       @default(now())
   updated_at        DateTime       @updatedAt
-
-  categories Category[]
+  categories        Category[]
 
   @@map("platform")
 }
@@ -123,13 +117,13 @@ model Setting {
   imagekit_privatekey  String?
   google_analytic_code String?
   google_search_code   String?
-  pusher_app_id        String?
-  pusher_app_key       String?
-  pusher_app_secret    String?
-  pusher_app_cluster   String?
   created_at           DateTime @default(now())
   updated_at           DateTime @updatedAt
   reseller_fee         Decimal  @default(100000) @db.Decimal(10, 2)
+  pusher_app_cluster   String?
+  pusher_app_id        String?
+  pusher_app_key       String?
+  pusher_app_secret    String?
 
   @@map("setting")
 }
@@ -141,9 +135,8 @@ model Category {
   status      CategoryStatus @default(ACTIVE)
   created_at  DateTime       @default(now())
   updated_at  DateTime       @updatedAt
-
-  platform Platform  @relation(fields: [id_platform], references: [id])
-  services Service[]
+  platform    Platform       @relation(fields: [id_platform], references: [id])
+  services    Service[]
 
   @@map("category")
 }
@@ -162,13 +155,12 @@ model Service {
   refill          Boolean       @default(false)
   type            ServiceType   @default(DEFAULT)
   status          ServiceStatus @default(ACTIVE)
-  note            String?       @db.Text
+  note            String?
   created_at      DateTime      @default(now())
   updated_at      DateTime      @updatedAt
-
-  category     Category     @relation(fields: [id_category], references: [id])
-  api_provider ApiProvider? @relation(fields: [id_api_provider], references: [id])
-  orders       Order[]
+  orders          Order[]
+  api_provider    ApiProvider?  @relation(fields: [id_api_provider], references: [id])
+  category        Category      @relation(fields: [id_category], references: [id])
 
   @@map("service")
 }
@@ -183,9 +175,8 @@ model ApiProvider {
   status     ApiProviderStatus @default(ACTIVE)
   created_at DateTime          @default(now())
   updated_at DateTime          @updatedAt
-
-  services Service[]
-  orders   Order[]
+  orders     Order[]
+  services   Service[]
 
   @@map("api_provider")
 }
@@ -203,30 +194,29 @@ model PaymentGateway {
 }
 
 model Order {
-  id              Int         @id @default(autoincrement())
-  invoice_number  String      @unique
+  id              Int             @id @default(autoincrement())
   id_user         Int
   id_api_provider Int?
-  pid             String? // Provider order ID
   id_service      Int
   link            String
-  price_api       Decimal     @db.Decimal(10, 4)
-  price_sale      Decimal     @db.Decimal(10, 4)
-  price_seller    Decimal     @db.Decimal(10, 4) // As per text, likely price_reseller
+  price_api       Decimal         @db.Decimal(10, 4)
+  price_sale      Decimal         @db.Decimal(10, 4)
+  price_seller    Decimal         @db.Decimal(10, 4)
   remains         Int?
   start_count     Int?
   quantity        Int
-  status          OrderStatus @default(PENDING)
-  refill          Boolean     @default(false)
+  status          OrderStatus     @default(PENDING)
+  refill          Boolean         @default(false)
   runs            Int?
   interval        Int?
-  created_at      DateTime    @default(now())
-  updated_at      DateTime    @updatedAt
-
-  user            User            @relation(fields: [id_user], references: [id])
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  invoice_number  String          @unique
+  pid             String?
+  discount_usages DiscountUsage[]
   api_provider    ApiProvider?    @relation(fields: [id_api_provider], references: [id])
   service         Service         @relation(fields: [id_service], references: [id])
-  discount_usages DiscountUsage[]
+  user            User            @relation(fields: [id_user], references: [id])
 
   @@map("order")
 }
@@ -239,8 +229,7 @@ model Deposits {
   status             DepositStatus @default(PENDING)
   created_at         DateTime      @default(now())
   updated_at         DateTime      @updatedAt
-
-  user User @relation(fields: [id_user], references: [id])
+  user               User          @relation(fields: [id_user], references: [id])
 
   @@map("deposits")
 }
@@ -248,7 +237,7 @@ model Deposits {
 model News {
   id         Int        @id @default(autoincrement())
   subject    String
-  content    String     @db.Text
+  content    String
   status     NewsStatus @default(ACTIVE)
   created_at DateTime   @default(now())
   updated_at DateTime   @updatedAt
@@ -257,20 +246,19 @@ model News {
 }
 
 model Discount {
-  id               Int            @id @default(autoincrement())
+  id               Int             @id @default(autoincrement())
   name_discount    String
-  min_transaction  Decimal        @db.Decimal(10, 2)
-  max_transaction  Decimal        @db.Decimal(10, 2)
-  discount_max_get Decimal        @default(0) @db.Decimal(10, 2)
+  min_transaction  Decimal         @db.Decimal(10, 2)
+  max_transaction  Decimal         @db.Decimal(10, 2)
   type             DiscountType
-  amount           Decimal        @db.Decimal(10, 2)
+  amount           Decimal         @db.Decimal(10, 2)
   expired_date     DateTime
   max_used         Int
-  status           DiscountStatus @default(ACTIVE)
-  created_at       DateTime       @default(now())
-  updated_at       DateTime       @updatedAt
-
-  discount_usages DiscountUsage[]
+  status           DiscountStatus  @default(ACTIVE)
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @updatedAt
+  discount_max_get Decimal         @default(0) @db.Decimal(10, 2)
+  discount_usages  DiscountUsage[]
 
   @@map("discount")
 }
@@ -282,10 +270,9 @@ model DiscountUsage {
   id_order    Int?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-
-  discount Discount @relation(fields: [id_discount], references: [id])
-  user     User     @relation(fields: [id_users], references: [id])
-  order    Order?   @relation(fields: [id_order], references: [id])
+  discount    Discount @relation(fields: [id_discount], references: [id])
+  order       Order?   @relation(fields: [id_order], references: [id])
+  user        User     @relation(fields: [id_users], references: [id])
 
   @@map("discount_usage")
 }
@@ -296,30 +283,52 @@ model RedeemCode {
   quota        Int
   expired_date DateTime
   get_balance  Decimal      @db.Decimal(10, 2)
-  status       RedeemStatus @default(ACTIVE)
-  total_info   String?      @db.Text
+  total_info   String?
   created_at   DateTime     @default(now())
   updated_at   DateTime     @updatedAt
-
-  used_by RedeemUsed[]
+  status       RedeemStatus @default(ACTIVE)
+  used_by      RedeemUsed[]
 
   @@map("reedem_code")
 }
 
 model RedeemUsed {
-  id             Int      @id @default(autoincrement())
+  id             Int        @id @default(autoincrement())
   id_user        Int
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @updatedAt
   id_redeem_code Int
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  redeem_code    RedeemCode @relation(fields: [id_redeem_code], references: [id])
+  user           User       @relation(fields: [id_user], references: [id])
 
-  user        User       @relation(fields: [id_user], references: [id])
-  redeem_code RedeemCode @relation(fields: [id_redeem_code], references: [id])
-
-  @@map(  "reedem_used")
+  @@map("reedem_used")
 }
 
-// Enums
+model Notification {
+  id         Int              @id @default(autoincrement())
+  id_user    Int
+  title      String
+  message    String
+  type       NotificationType
+  is_read    Boolean          @default(false)
+  related_id Int?
+  created_at DateTime         @default(now())
+  user       User             @relation(fields: [id_user], references: [id], onDelete: Cascade)
+
+  @@map("notification")
+}
+
+model AdminNotification {
+  id         Int                   @id @default(autoincrement())
+  title      String
+  message    String
+  type       AdminNotificationType
+  is_read    Boolean               @default(false)
+  related_id Int?
+  created_at DateTime              @default(now())
+
+  @@map("admin_notification")
+}
 
 enum Role {
   MEMBER
@@ -391,7 +400,7 @@ enum DepositStatus {
   PENDING
   ERROR
   CANCELED
-  PAYMENT // Text says Payment, maybe PAID? Keeping as per text
+  PAYMENT
 }
 
 enum NewsStatus {
@@ -422,38 +431,11 @@ enum TicketPriority {
   LOW
 }
 
-model Notification {
-  id         Int              @id @default(autoincrement())
-  id_user    Int
-  title      String
-  message    String
-  type       NotificationType
-  is_read    Boolean          @default(false)
-  related_id Int? // ID of the order or deposit
-  created_at DateTime         @default(now())
-
-  user User @relation(fields: [id_user], references: [id], onDelete: Cascade)
-
-  @@map("notification")
-}
-
 enum NotificationType {
   ORDER
   DEPOSIT
   TICKET
   SYSTEM
-}
-
-model AdminNotification {
-  id         Int                   @id @default(autoincrement())
-  title      String
-  message    String
-  type       AdminNotificationType
-  is_read    Boolean               @default(false)
-  related_id Int? // User ID, Order ID, Deposit ID
-  created_at DateTime              @default(now())
-
-  @@map("admin_notification")
 }
 
 enum AdminNotificationType {

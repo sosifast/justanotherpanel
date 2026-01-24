@@ -34,9 +34,30 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        {settings?.google_search_code && (
+          <script
+            id="google-search-console"
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  const temp = document.createElement('div');
+                  temp.innerHTML = ${JSON.stringify(settings.google_search_code)}.trim();
+                  while (temp.firstChild) {
+                    document.head.appendChild(temp.firstChild);
+                  }
+                })();
+              `,
+            }}
+          />
+        )}
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {settings?.google_analytic_code && (
+          <div dangerouslySetInnerHTML={{ __html: settings.google_analytic_code }} />
+        )}
         <Toaster position="top-right" />
         {children}
         <Analytics />

@@ -8,7 +8,9 @@ import { cache } from 'react';
 export const getSettings = cache(async () => {
     try {
         const settings = await prisma.setting.findFirst();
-        return settings;
+        if (!settings) return null;
+
+        return JSON.parse(JSON.stringify(settings));
     } catch (error) {
         console.error('Error fetching settings:', error);
         return null;

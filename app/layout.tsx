@@ -34,17 +34,9 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <head>
-        {settings?.google_search_code && (
-          <script dangerouslySetInnerHTML={{ __html: settings.google_search_code }} />
-        )}
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {settings?.google_analytic_code && (
-          <script dangerouslySetInnerHTML={{ __html: settings.google_analytic_code }} />
-        )}
         <Toaster position="top-right" />
         {children}
         <Analytics />

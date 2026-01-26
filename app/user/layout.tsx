@@ -43,14 +43,14 @@ const UserLayout = ({ children }: UserLayoutProps) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [pusherSettings, setPusherSettings] = useState<{ key: string; cluster: string } | null>(null);
+  const [settings, setSettings] = useState<{ key: string; cluster: string; site_name?: string; logo_imagekit_url?: string } | null>(null);
 
   useEffect(() => {
     checkAuth();
     fetchUserProfile();
     fetchTicketCount();
     fetchNotifications();
-    fetchPusherSettings();
+    fetchSettings();
   }, []);
 
   const checkAuth = async () => {
@@ -70,10 +70,10 @@ const UserLayout = ({ children }: UserLayoutProps) => {
   };
 
   useEffect(() => {
-    if (!userProfile?.id || !pusherSettings) return;
+    if (!userProfile?.id || !settings) return;
 
-    const pusher = new Pusher(pusherSettings.key, {
-      cluster: pusherSettings.cluster,
+    const pusher = new Pusher(settings.key, {
+      cluster: settings.cluster,
       authEndpoint: '/api/pusher/auth',
     });
 
@@ -109,14 +109,14 @@ const UserLayout = ({ children }: UserLayoutProps) => {
     return () => {
       pusher.unsubscribe(`private-user-${userProfile.id}`);
     };
-  }, [userProfile?.id, pusherSettings]);
+  }, [userProfile?.id, settings]);
 
-  const fetchPusherSettings = async () => {
+  const fetchSettings = async () => {
     try {
       const res = await fetch('/api/settings/public');
       if (res.ok) {
         const data = await res.json();
-        setPusherSettings(data);
+        setSettings(data);
       }
     } catch (e) {
       console.error('Failed to fetch pusher settings');
@@ -223,12 +223,18 @@ const UserLayout = ({ children }: UserLayoutProps) => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-8">
               <Link href="/user" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-sm group-hover:bg-blue-600 transition-colors">
-                  J
-                </div>
-                <span className="font-bold text-lg tracking-tight text-slate-900 hidden md:block">
-                  JustAnotherPanel
-                </span>
+                {settings?.logo_imagekit_url ? (
+                  <img src={settings.logo_imagekit_url} alt="Logo" className="h-8 w-auto object-contain" />
+                ) : (
+                  <>
+                    <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-sm group-hover:bg-blue-600 transition-colors">
+                      {(settings?.site_name || "JustAnotherPanel").charAt(0)}
+                    </div>
+                    <span className="font-bold text-lg tracking-tight text-slate-900 hidden md:block">
+                      {settings?.site_name || "JustAnotherPanel"}
+                    </span>
+                  </>
+                )}
               </Link>
 
               <div className="hidden md:flex items-center space-x-1">

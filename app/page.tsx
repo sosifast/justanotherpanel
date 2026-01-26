@@ -54,6 +54,11 @@ export async function generateMetadata(): Promise<Metadata> {
             canonical: process.env.NEXT_PUBLIC_APP_URL || 'https://justanotherpanel.online',
         },
         category: 'technology',
+        icons: {
+            icon: settings?.favicon_imagekit_url || '/favicon.ico',
+            shortcut: settings?.favicon_imagekit_url || '/favicon.ico',
+            apple: settings?.favicon_imagekit_url || '/apple-icon.png',
+        },
     };
 }
 

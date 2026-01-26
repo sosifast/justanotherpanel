@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
-import { Analytics } from "@vercel/analytics/next";
-import Script from "next/script";
+import { Analytics } from "@vercel/analytics/react";
+
 import { getSettings } from "@/lib/settings";
 import "./globals.css";
 
@@ -22,6 +22,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: settings?.site_name || "JustAnotherPanel - SMM Panel Solutions",
     description: "The most advanced and reliable SMM panel provider for all your social media marketing needs.",
+    icons: {
+      icon: settings?.favicon_imagekit_url || '/favicon.ico',
+      shortcut: settings?.favicon_imagekit_url || '/favicon.ico',
+      apple: settings?.favicon_imagekit_url || '/apple-icon.png',
+    },
   };
 }
 

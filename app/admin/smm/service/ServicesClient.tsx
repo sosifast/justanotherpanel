@@ -79,7 +79,7 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Filter services
   const filteredServices = services.filter(service => {
@@ -473,22 +473,40 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
           </table>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-sm text-slate-500">
-            Showing <span className="font-medium text-slate-900">{Math.min(startIndex + 1, filteredServices.length)}</span> to <span className="font-medium text-slate-900">{Math.min(startIndex + itemsPerPage, filteredServices.length)}</span> of <span className="font-medium text-slate-900">{filteredServices.length}</span> results
-          </p>
-          <div className="flex gap-2">
+        <div className="px-6 py-4 border-t border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex items-center gap-4 text-sm text-slate-500">
+            <span>
+              Showing <span className="font-medium text-slate-900">{Math.min(startIndex + 1, filteredServices.length)}</span> to <span className="font-medium text-slate-900">{Math.min(startIndex + itemsPerPage, filteredServices.length)}</span> of <span className="font-medium text-slate-900">{filteredServices.length}</span> results
+            </span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="20">20 per page</option>
+              <option value="50">50 per page</option>
+              <option value="100">100 per page</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-500 mr-2">
+              Page {currentPage} of {Math.max(1, totalPages)}
+            </span>
             <button
               onClick={handlePrevPage}
-              disabled={currentPage === 1}
-              className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm disabled:opacity-50 disabled:hover:bg-white"
+              disabled={currentPage <= 1}
+              className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm disabled:opacity-50 disabled:hover:bg-white transition-colors"
             >
               Previous
             </button>
             <button
               onClick={handleNextPage}
-              disabled={currentPage === totalPages || totalPages === 0}
-              className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm disabled:opacity-50 disabled:hover:bg-white"
+              disabled={currentPage >= totalPages}
+              className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm disabled:opacity-50 disabled:hover:bg-white transition-colors"
             >
               Next
             </button>

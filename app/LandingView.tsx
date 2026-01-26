@@ -101,10 +101,16 @@ const App = ({ settings }: { settings: any }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <Link href="/" className="flex items-center gap-2 group" aria-label="JustAnotherPanel Home">
-              <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-lg group-hover:bg-blue-600 transition-colors">
-                {siteName.charAt(0)}
-              </div>
-              <span className="font-bold text-xl tracking-tight text-slate-900">{siteName}</span>
+              {settings?.logo_imagekit_url ? (
+                <img src={settings.logo_imagekit_url} alt={siteName} className="h-9 w-auto object-contain" />
+              ) : (
+                <>
+                  <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-lg group-hover:bg-blue-600 transition-colors">
+                    {siteName.charAt(0)}
+                  </div>
+                  <span className="font-bold text-xl tracking-tight text-slate-900">{siteName}</span>
+                </>
+              )}
             </Link>
 
             <nav className="hidden md:flex items-center space-x-8" aria-label="Main Navigation">
@@ -406,10 +412,16 @@ const App = ({ settings }: { settings: any }) => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="col-span-1 md:col-span-2">
               <Link href="/" className="flex items-center gap-2 mb-4 group">
-                <div className="w-8 h-8 bg-slate-900 rounded flex items-center justify-center text-white font-bold text-sm group-hover:bg-blue-600 transition-colors">
-                  {siteName.charAt(0)}
-                </div>
-                <span className="font-bold text-xl text-slate-900">{siteName}</span>
+                {settings?.logo_imagekit_url ? (
+                  <img src={settings.logo_imagekit_url} alt={siteName} className="h-8 w-auto object-contain" />
+                ) : (
+                  <>
+                    <div className="w-8 h-8 bg-slate-900 rounded flex items-center justify-center text-white font-bold text-sm group-hover:bg-blue-600 transition-colors">
+                      {siteName.charAt(0)}
+                    </div>
+                    <span className="font-bold text-xl text-slate-900">{siteName}</span>
+                  </>
+                )}
               </Link>
               <p className="text-slate-500 max-w-xs text-sm leading-relaxed">
                 The #1 SMM Panel in the World. Engineered for speed, designed for leaders who want to maximize their social media presence.

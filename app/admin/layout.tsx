@@ -90,7 +90,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [pusherSettings, setPusherSettings] = useState<{ key: string; cluster: string } | null>(null);
+  const [settings, setSettings] = useState<{ key: string; cluster: string; site_name?: string; logo_imagekit_url?: string } | null>(null);
 
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,7 +102,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     checkAuth();
     fetchCounts();
     fetchNotifications();
-    fetchPusherSettings();
+    fetchSettings();
   }, []);
 
   const checkAuth = async () => {
@@ -122,10 +122,10 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   };
 
   useEffect(() => {
-    if (!pusherSettings) return;
+    if (!settings) return;
 
-    const pusher = new Pusher(pusherSettings.key, {
-      cluster: pusherSettings.cluster,
+    const pusher = new Pusher(settings.key, {
+      cluster: settings.cluster,
       authEndpoint: '/api/pusher/auth',
     });
 
@@ -157,7 +157,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     return () => {
       pusher.unsubscribe('private-admin');
     };
-  }, [pusherSettings]);
+  }, [settings]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -186,12 +186,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   }, [searchQuery]);
 
 
-  const fetchPusherSettings = async () => {
+  const fetchSettings = async () => {
     try {
       const res = await fetch('/api/settings/public');
       if (res.ok) {
         const data = await res.json();
-        setPusherSettings(data);
+        setSettings(data);
       }
     } catch (e) { console.error(e); }
   };
@@ -261,13 +261,19 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       >
         <div className="py-6 flex items-center px-6 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-900/50">
-              A
-            </div>
-            <div>
-              <h1 className="text-white font-bold text-lg leading-tight">AdminPanel</h1>
-              <p className="text-slate-500 text-xs">v2.4.0 Pro</p>
-            </div>
+            {settings?.logo_imagekit_url ? (
+              <img src={settings.logo_imagekit_url} alt="Logo" className="w-auto h-10 object-contain" />
+            ) : (
+              <>
+                <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-900/50">
+                  {(settings?.site_name || "AdminPanel").charAt(0)}
+                </div>
+                <div>
+                  <h1 className="text-white font-bold text-lg leading-tight">{settings?.site_name || "AdminPanel"}</h1>
+                  <p className="text-slate-500 text-xs">v2.4.0 Pro</p>
+                </div>
+              </>
+            )}
           </div>
           <button
             onClick={() => setSidebarOpen(false)}

@@ -30,9 +30,10 @@ type ServiceWithCategory = ServiceClient & {
 
 interface ServicesViewProps {
     initialServices: ServiceWithCategory[];
+    userRole: string;
 }
 
-const ServicesView = ({ initialServices }: ServicesViewProps) => {
+const ServicesView = ({ initialServices, userRole }: ServicesViewProps) => {
     const [search, setSearch] = useState('');
     const [platform, setPlatform] = useState('all');
 
@@ -120,7 +121,9 @@ const ServicesView = ({ initialServices }: ServicesViewProps) => {
                                     <td className="px-6 py-4 text-center text-slate-600">{service.min.toLocaleString()}</td>
                                     <td className="px-6 py-4 text-center text-slate-600">{service.max.toLocaleString()}</td>
                                     <td className="px-6 py-4 text-right">
-                                        <span className="font-semibold text-emerald-600">${Number(service.price_sale).toFixed(2)}</span>
+                                        <span className="font-semibold text-emerald-600">
+                                            ${Number(userRole === 'RESELLER' || userRole === 'STAFF' || userRole === 'ADMIN' ? service.price_reseller : service.price_sale).toFixed(4)}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <span className="inline-flex items-center gap-1 text-xs text-slate-500">

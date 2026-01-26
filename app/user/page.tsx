@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import DashboardClient from './DashboardClient';
+import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 export const metadata = {
   title: "Dashboard",
@@ -8,8 +10,14 @@ export const metadata = {
 
 
 export default async function UserDashboardPage() {
-  // TODO: Get userId from session/auth
-  const userId = 1;
+
+  const session = await getCurrentUser();
+
+  if (!session) {
+    redirect('/auth/login');
+  }
+
+  const userId = session.id;
 
   // Get user data
   const user = await prisma.user.findUnique({

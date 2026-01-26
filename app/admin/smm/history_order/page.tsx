@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import OrdersClient from './OrdersClient';
 import { Metadata } from 'next';
+import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
     title: "Order History",
@@ -8,6 +10,12 @@ export const metadata: Metadata = {
 };
 
 export default async function OrdersPage() {
+    const session = await getCurrentUser();
+
+    if (!session || session.role !== 'ADMIN') {
+        redirect('/auth/login');
+    }
+
     const orders = await prisma.order.findMany({
         orderBy: { created_at: 'desc' },
         include: {

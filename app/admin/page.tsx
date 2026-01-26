@@ -2,6 +2,8 @@ import React from 'react';
 import { Users, ShoppingBag, LifeBuoy, DollarSign, TrendingUp, AlertCircle, MoreVertical } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatDistanceToNow } from 'date-fns';
+import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 export const metadata = {
   title: "Dashboard",
@@ -48,6 +50,12 @@ async function getProviders() {
 }
 
 const AdminDashboard = async () => {
+  const session = await getCurrentUser();
+
+  if (!session || session.role !== 'ADMIN') {
+    redirect('/auth/login');
+  }
+
   const statsData = await getStats();
   const recentOrders = await getRecentOrders();
   const providers = await getProviders();

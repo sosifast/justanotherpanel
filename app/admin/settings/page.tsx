@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import SettingsClient from './SettingsClient';
 import { Metadata } from 'next';
+import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
     title: "Settings",
@@ -8,6 +10,12 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminSettingsPage() {
+    const session = await getCurrentUser();
+
+    if (!session || session.role !== 'ADMIN') {
+        redirect('/auth/login');
+    }
+
     const settings = await prisma.setting.findFirst();
 
     // Map to frontend format (already snake_case in DB)

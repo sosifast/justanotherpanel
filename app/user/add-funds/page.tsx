@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import AddFundsClient from './AddFundsClient';
 import { Metadata } from 'next';
+import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
     title: "Add Funds",
@@ -13,10 +15,14 @@ export default async function AddFundsPage() {
         orderBy: { id: 'asc' }
     });
 
-    // Get user (TODO: from session)
-    const userId = 1;
+    const session = await getCurrentUser();
+
+    if (!session) {
+        redirect('/auth/login');
+    }
+
     const user = await prisma.user.findUnique({
-        where: { id: userId },
+        where: { id: session.id },
         select: {
             balance: true
         }

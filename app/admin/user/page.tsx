@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import UsersClient from './UsersClient';
 import { Metadata } from 'next';
+import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
     title: "Users",
@@ -8,6 +10,12 @@ export const metadata: Metadata = {
 };
 
 export default async function UsersPage() {
+    const session = await getCurrentUser();
+
+    if (!session || session.role !== 'ADMIN') {
+        redirect('/auth/login');
+    }
+
     const users = await prisma.user.findMany({
         orderBy: { created_at: 'desc' }
     });

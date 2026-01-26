@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import ServicesClient from './ServicesClient';
 import { Metadata } from 'next';
+import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
     title: "Services",
@@ -8,6 +10,12 @@ export const metadata: Metadata = {
 };
 
 export default async function ServicesPage() {
+    const session = await getCurrentUser();
+
+    if (!session || session.role !== 'ADMIN') {
+        redirect('/auth/login');
+    }
+
     const services = await prisma.service.findMany({
         orderBy: { id: 'asc' },
         include: {

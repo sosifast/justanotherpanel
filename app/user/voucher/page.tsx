@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import VoucherClient from './VoucherClient';
+import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
     title: 'Vouchers',
@@ -8,6 +10,12 @@ export const metadata: Metadata = {
 };
 
 export default async function VoucherPage() {
+    const session = await getCurrentUser();
+
+    if (!session) {
+        redirect('/auth/login');
+    }
+
     // 1. Fetch discounts
     const discounts = await prisma.discount.findMany({
         where: {

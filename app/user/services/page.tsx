@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import ServicesView from "./view";
 import { Metadata } from 'next';
+import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
     title: "Services",
@@ -8,6 +10,12 @@ export const metadata: Metadata = {
 };
 
 export default async function ServicesPage() {
+    const session = await getCurrentUser();
+
+    if (!session) {
+        redirect('/auth/login');
+    }
+
     const rawServices = await prisma.service.findMany({
         where: {
             status: 'ACTIVE'
@@ -31,5 +39,5 @@ export default async function ServicesPage() {
         price_reseller: service.price_reseller.toNumber(),
     }));
 
-    return <ServicesView initialServices={services} />;
+    return <ServicesView initialServices={services} userRole={session.role} />;
 }

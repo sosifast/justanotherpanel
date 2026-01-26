@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import NewOrderClient from './NewOrderClient';
 import { Metadata } from 'next';
+import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
     title: "New Order",
@@ -48,10 +50,14 @@ export default async function NewOrderPage({ searchParams }: Props) {
         }
     });
 
-    // Get user (TODO: from session)
-    const userId = 1;
+    const session = await getCurrentUser();
+
+    if (!session) {
+        redirect('/auth/login');
+    }
+
     const user = await prisma.user.findUnique({
-        where: { id: userId },
+        where: { id: session.id },
         select: {
             id: true,
             balance: true,

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import DepositsView from "./view";
-import { cookies } from "next/headers";
-import { jwtVerify } from "jose";
+import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -10,24 +10,13 @@ export const metadata: Metadata = {
 };
 
 export default async function DepositsPage() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+    const session = await getCurrentUser();
 
-    if (!token) {
-        return <div>Unauthorized</div>;
+    if (!session) {
+        redirect('/auth/login');
     }
 
-    const secret = new TextEncoder().encode(
-        process.env.JWT_SECRET || 'default-secret-key-change-it'
-    );
-
-    let userId: number;
-    try {
-        const { payload } = await jwtVerify(token, secret);
-        userId = parseInt(payload.sub as string);
-    } catch (error) {
-        return <div>Invalid session</div>;
-    }
+    const userId = session.id;
 
     const deposits = await prisma.deposits.findMany({
         where: {

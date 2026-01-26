@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Search, MoreVertical, Plus, Layers, CheckCircle, XCircle, Edit, Trash2, X, RefreshCw, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
+
 type CategoryData = {
   id: number;
   name: string;
@@ -76,6 +78,9 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
     note: ''
   });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
   // Filter services
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -84,6 +89,28 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
     const matchesCategory = categoryFilter === 'ALL' || service.id_category.toString() === categoryFilter;
     return matchesSearch && matchesStatus && matchesCategory;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedServices = filteredServices.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, categoryFilter]);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
 
   // Open Add Modal
   const openAddModal = () => {
@@ -350,7 +377,7 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredServices.map((service) => (
+              {paginatedServices.map((service) => (
                 <tr key={service.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -447,10 +474,24 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
         </div>
 
         <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-sm text-slate-500">Showing <span className="font-medium text-slate-900">1</span> to <span className="font-medium text-slate-900">{filteredServices.length}</span> of <span className="font-medium text-slate-900">{services.length}</span> results</p>
+          <p className="text-sm text-slate-500">
+            Showing <span className="font-medium text-slate-900">{Math.min(startIndex + 1, filteredServices.length)}</span> to <span className="font-medium text-slate-900">{Math.min(startIndex + itemsPerPage, filteredServices.length)}</span> of <span className="font-medium text-slate-900">{filteredServices.length}</span> results
+          </p>
           <div className="flex gap-2">
-            <button className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm disabled:opacity-50">Previous</button>
-            <button className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm">Next</button>
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm disabled:opacity-50 disabled:hover:bg-white"
+            >
+              Previous
+            </button>
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm disabled:opacity-50 disabled:hover:bg-white"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
@@ -667,41 +708,30 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
             </div>
           )}
 
-          {/* Delete Confirmation Modal */}
-          {modalType === 'delete' && selectedService && (
-            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-              <div className="p-6">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Trash2 className="w-6 h-6 text-red-600" />
-                </div>
-                <h2 className="text-lg font-semibold text-slate-800 text-center mb-2">Delete Service</h2>
-                <p className="text-sm text-slate-500 text-center">
-                  Are you sure you want to delete <span className="font-medium text-slate-700">#{selectedService.id} - {selectedService.name}</span>?
+
+          {/* Confirmation Modal */}
+          <ConfirmationModal
+            isOpen={modalType === 'delete' && !!selectedService}
+            onClose={closeModal}
+            onConfirm={handleDelete}
+            title="Delete Service"
+            variant="danger"
+            loading={loading}
+            message={
+              selectedService && (
+                <span>
+                  Are you sure you want to delete <span className="font-medium text-slate-900">#{selectedService.id} - {selectedService.name}</span>?
+                  This action cannot be undone.
                   {selectedService._count?.orders && selectedService._count.orders > 0 && (
-                    <span className="block mt-2 text-amber-600">
+                    <span className="block mt-2 p-2 bg-amber-50 text-amber-700 rounded-md border border-amber-200">
                       ⚠️ This service has {selectedService._count.orders} orders. You cannot delete it.
                     </span>
                   )}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-center gap-3 p-6 border-t border-slate-200">
-                <button
-                  onClick={closeModal}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
-            </div>
-          )}
+                </span>
+              )
+            }
+            confirmText="Delete Service"
+          />
         </div>
       )}
 

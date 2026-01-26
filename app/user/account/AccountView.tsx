@@ -188,6 +188,42 @@ const AccountPage = () => {
         }
     };
 
+    const handleUpdatePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (passwords.new !== passwords.confirm) {
+            toast.error('New passwords do not match');
+            return;
+        }
+
+        if (passwords.new.length < 6) {
+            toast.error('Password must be at least 6 characters');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/user/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currentPassword: passwords.current,
+                    newPassword: passwords.new
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success('Password updated successfully');
+                setPasswords({ current: '', new: '', confirm: '' });
+            } else {
+                toast.error(data.error || 'Failed to update password');
+            }
+        } catch (error) {
+            toast.error('Failed to update password');
+        }
+    };
+
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -568,7 +604,7 @@ const AccountPage = () => {
                                     <h2 className="font-semibold text-slate-900">Change Password</h2>
                                     <p className="text-sm text-slate-500">Update your password regularly to keep your account secure</p>
                                 </div>
-                                <form className="p-6 space-y-6">
+                                <form onSubmit={handleUpdatePassword} className="p-6 space-y-6">
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-2">Current Password</label>
                                         <div className="relative">

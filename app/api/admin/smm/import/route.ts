@@ -22,26 +22,58 @@ export async function POST(request: Request) {
                 const providerRate = parseFloat(service.rate) || 0;
                 const priceSale = providerRate * (1 + markupSaleVal / 100);
                 const priceReseller = providerRate * (1 + markupResellerVal / 100);
+                const serviceType = (service.type?.toUpperCase() === 'DEFAULT' || !service.type) ? 'DEFAULT' :
+                    (service.type?.toUpperCase() === 'CUSTOM COMMENTS') ? 'CUSTOM_COMMENTS' : 'DEFAULT';
 
-                const newService = await prisma.service.create({
-                    data: {
-                        id_category: parseInt(categoryId),
+                // Check if service exists
+                const existingService = await prisma.service.findFirst({
+                    where: {
                         id_api_provider: parseInt(providerId),
-                        sid: service.service?.toString() || '',
-                        name: service.name || 'Unnamed Service',
-                        min: parseInt(service.min) || 0,
-                        max: parseInt(service.max) || 0,
-                        price_api: new Prisma.Decimal(providerRate),
-                        price_sale: new Prisma.Decimal(priceSale),
-                        price_reseller: new Prisma.Decimal(priceReseller),
-                        type: (service.type?.toUpperCase() === 'DEFAULT' || !service.type) ? 'DEFAULT' :
-                            (service.type?.toUpperCase() === 'CUSTOM COMMENTS') ? 'CUSTOM_COMMENTS' : 'DEFAULT',
-                        refill: !!service.refill,
-                        status: 'ACTIVE',
-                        note: service.desc || ''
+                        sid: service.service?.toString() || ''
                     }
                 });
-                importedServices.push(newService);
+
+                if (existingService) {
+                    // Update existing service
+                    const updatedService = await prisma.service.update({
+                        where: { id: existingService.id },
+                        data: {
+                            // Optionally update name if you want to sync names, or keep local override
+                            // name: service.name || existingService.name, 
+                            min: parseInt(service.min) || 0,
+                            max: parseInt(service.max) || 0,
+                            price_api: new Prisma.Decimal(providerRate),
+                            price_sale: new Prisma.Decimal(priceSale),
+                            price_reseller: new Prisma.Decimal(priceReseller),
+                            type: serviceType as any,
+                            refill: !!service.refill,
+                            // Don't overwrite status or note blindly if user managed it? 
+                            // Usually strict sync overwrites everything except maybe status if user disabled it.
+                            // For now, let's update pricing and constraints primarily
+                        }
+                    });
+                    importedServices.push(updatedService);
+                } else {
+                    // Create new service
+                    const newService = await prisma.service.create({
+                        data: {
+                            id_category: parseInt(categoryId),
+                            id_api_provider: parseInt(providerId),
+                            sid: service.service?.toString() || '',
+                            name: service.name || 'Unnamed Service',
+                            min: parseInt(service.min) || 0,
+                            max: parseInt(service.max) || 0,
+                            price_api: new Prisma.Decimal(providerRate),
+                            price_sale: new Prisma.Decimal(priceSale),
+                            price_reseller: new Prisma.Decimal(priceReseller),
+                            type: serviceType as any,
+                            refill: !!service.refill,
+                            status: 'ACTIVE',
+                            note: service.desc || ''
+                        }
+                    });
+                    importedServices.push(newService);
+                }
             } catch (err: any) {
                 console.error(`Error importing service ${service.service}:`, err.message);
                 errors.push({ serviceId: service.service, error: err.message });

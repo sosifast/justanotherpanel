@@ -114,7 +114,7 @@ const App = ({ settings }: { settings: any }) => {
             </Link>
 
             <nav className="hidden md:flex items-center space-x-8" aria-label="Main Navigation">
-              <a href="#services" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Services</a>
+              <Link href="/services" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Services</Link>
               <a href="#features" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Features</a>
               <a href="#about" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Why Us</a>
             </nav>
@@ -150,7 +150,7 @@ const App = ({ settings }: { settings: any }) => {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <nav className="md:hidden absolute top-full left-0 w-full bg-white border-b border-slate-200 py-4 px-4 flex flex-col space-y-4 shadow-lg" aria-label="Mobile Navigation">
-            <a href="#services" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Services</a>
+            <Link href="/services" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Services</Link>
             <a href="#features" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Features</a>
             <a href="#about" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Why Us</a>
             <div className="pt-2 border-t border-slate-100 flex flex-col gap-3">
@@ -276,6 +276,206 @@ const App = ({ settings }: { settings: any }) => {
             <span className="flex items-center gap-2 mx-4 text-sm font-bold uppercase tracking-wider"><Headphones className="w-4 h-4 text-blue-400" /> 24/7 Support</span>
           </div>
         </div>
+
+        {/* Services Section */}
+        <section id="services" className="py-24 relative z-10" aria-label="Our Services">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wide mb-6">
+                <TrendingUp className="w-3 h-3" />
+                Popular Services
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                Grow Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600">Social Presence</span>
+              </h2>
+              <p className="text-slate-600 max-w-2xl mx-auto text-lg">
+                Premium SMM services across all major platforms. Instant delivery, real engagement, unbeatable prices.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+              {/* Instagram Card */}
+              <div className="bg-gradient-to-br from-pink-50 to-purple-50 border border-pink-100 rounded-2xl p-8 hover:shadow-xl hover:shadow-pink-100 transition-all duration-300 group">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white">
+                    <Instagram className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">Instagram</h3>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-pink-600 flex-shrink-0" />
+                    <span>Followers & Likes</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-pink-600 flex-shrink-0" />
+                    <span>Views & Impressions</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-pink-600 flex-shrink-0" />
+                    <span>Story & Reel Boosts</span>
+                  </li>
+                </ul>
+                <p className="text-sm text-slate-600 mb-4">Starting at <strong className="text-pink-600">$0.001/1k</strong></p>
+                <Link href="/services" className="inline-flex items-center gap-2 text-pink-600 font-semibold group-hover:gap-3 transition-all">
+                  View Services
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {/* TikTok Card */}
+              <div className="bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-200 rounded-2xl p-8 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 group">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-slate-900 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                    TT
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">TikTok</h3>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <span>Followers & Likes</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <span>Video Views</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <span>Shares & Comments</span>
+                  </li>
+                </ul>
+                <p className="text-sm text-slate-600 mb-4">Starting at <strong className="text-blue-600">$0.0001/1k</strong></p>
+                <Link href="/services" className="inline-flex items-center gap-2 text-blue-600 font-semibold group-hover:gap-3 transition-all">
+                  View Services
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {/* YouTube Card */}
+              <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-100 rounded-2xl p-8 hover:shadow-xl hover:shadow-red-100 transition-all duration-300 group">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                    YT
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">YouTube</h3>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    <span>Subscribers & Views</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    <span>Likes & Comments</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    <span>Watch Time Boost</span>
+                  </li>
+                </ul>
+                <p className="text-sm text-slate-600 mb-4">Starting at <strong className="text-red-600">$1.50/1k</strong></p>
+                <Link href="/services" className="inline-flex items-center gap-2 text-red-600 font-semibold group-hover:gap-3 transition-all">
+                  View Services
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {/* Facebook Card */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-8 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 group">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center text-white">
+                    <Facebook className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">Facebook</h3>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <span>Page Likes & Followers</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <span>Post Engagement</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <span>Video Views</span>
+                  </li>
+                </ul>
+                <p className="text-sm text-slate-600 mb-4">Starting at <strong className="text-blue-600">$0.005/1k</strong></p>
+                <Link href="/services" className="inline-flex items-center gap-2 text-blue-600 font-semibold group-hover:gap-3 transition-all">
+                  View Services
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {/* Twitter/X Card */}
+              <div className="bg-gradient-to-br from-slate-50 to-gray-50 border border-slate-200 rounded-2xl p-8 hover:shadow-xl hover:shadow-slate-100 transition-all duration-300 group">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-slate-900 to-slate-700 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                    𝕏
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">Twitter / X</h3>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                    <span>Followers & Retweets</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                    <span>Likes & Views</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                    <span>Impressions Boost</span>
+                  </li>
+                </ul>
+                <p className="text-sm text-slate-600 mb-4">Starting at <strong className="text-slate-700">$0.50/1k</strong></p>
+                <Link href="/services" className="inline-flex items-center gap-2 text-slate-700 font-semibold group-hover:gap-3 transition-all">
+                  View Services
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {/* More Platforms Card */}
+              <div className="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 rounded-2xl p-8 hover:shadow-xl hover:shadow-violet-100 transition-all duration-300 group flex flex-col justify-center items-center text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white mb-4">
+                  <Globe className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">+20 More Platforms</h3>
+                <p className="text-slate-600 mb-6">Telegram, Spotify, LinkedIn, Threads, and many more...</p>
+                <Link href="/services" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-violet-200 transition-all group-hover:gap-3">
+                  Browse All Services
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Service Stats Banner */}
+            <div className="bg-white/60 backdrop-blur-sm border border-slate-200 rounded-2xl p-8 shadow-lg">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <div>
+                  <div className="text-3xl font-bold text-blue-600 mb-2">500+</div>
+                  <div className="text-sm text-slate-600">Active Services</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-indigo-600 mb-2">25+</div>
+                  <div className="text-sm text-slate-600">Platforms</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-violet-600 mb-2">99.9%</div>
+                  <div className="text-sm text-slate-600">Uptime</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-purple-600 mb-2">24/7</div>
+                  <div className="text-sm text-slate-600">Support</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Features Grid */}
         <section id="features" className="py-24 relative z-10" aria-label="Key Features">
@@ -431,7 +631,7 @@ const App = ({ settings }: { settings: any }) => {
             <nav aria-label="Footer Platform Links">
               <h4 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-wider">Platform</h4>
               <ul className="space-y-3 text-sm text-slate-600">
-                <li><a href="/services" className="hover:text-blue-600 transition-colors">Services</a></li>
+                <li><Link href="/services" className="hover:text-blue-600 transition-colors">Services</Link></li>
                 <li><a href="/api" className="hover:text-blue-600 transition-colors">API Documentation</a></li>
                 <li><a href="/auth/register" className="hover:text-blue-600 transition-colors">Sign Up</a></li>
                 <li><a href="/auth/login" className="hover:text-blue-600 transition-colors">Login</a></li>

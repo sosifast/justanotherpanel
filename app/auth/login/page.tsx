@@ -14,12 +14,29 @@ const LoginForm = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [settings, setSettings] = useState<any>(null);
 
     useEffect(() => {
         if (searchParams.get('registered') === 'true') {
             setSuccess('Registration successful. Please sign in.');
         }
     }, [searchParams]);
+
+    useEffect(() => {
+        // Fetch settings for logo
+        const fetchSettings = async () => {
+            try {
+                const res = await fetch('/api/settings/public');
+                if (res.ok) {
+                    const data = await res.json();
+                    setSettings(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch settings:', error);
+            }
+        };
+        fetchSettings();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -65,10 +82,18 @@ const LoginForm = () => {
 
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <a href="#" className="inline-flex items-center gap-2 group mb-6">
-                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-bold text-lg group-hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">
-                            J
-                        </div>
+                    <a href="/" className="inline-flex items-center gap-2 group mb-6">
+                        {settings?.logo_imagekit_url ? (
+                            <img
+                                src={settings.logo_imagekit_url}
+                                alt={settings?.site_name || "Logo"}
+                                className="h-12 w-auto object-contain"
+                            />
+                        ) : (
+                            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-bold text-lg group-hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">
+                                J
+                            </div>
+                        )}
                     </a>
                     <h1 className="text-2xl font-bold text-slate-900 mb-2">Welcome Back</h1>
                     <p className="text-slate-500 text-sm">Enter your credentials to access your account.</p>

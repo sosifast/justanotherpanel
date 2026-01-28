@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { Analytics } from "@vercel/analytics/react";
+import Script from "next/script";
 
 import { getSettings } from "@/lib/settings";
 import "./globals.css";
@@ -46,10 +47,11 @@ export default async function RootLayout({
         {children}
         <Analytics />
 
-        {/* Safely inject SEO and Analytic codes at the end of the body to prevent breaking CSS/Layout */}
+        {/* Safely inject SEO and Analytic codes using Next.js Script component */}
         {settings?.google_search_code && (
-          <script
+          <Script
             id="google-search-console"
+            strategy="afterInteractive"
             dangerouslySetInnerHTML={{
               __html: `
                 (function() {
@@ -68,8 +70,9 @@ export default async function RootLayout({
           />
         )}
         {settings?.google_analytic_code && (
-          <script
+          <Script
             id="google-analytics"
+            strategy="afterInteractive"
             dangerouslySetInnerHTML={{
               __html: `
                 (function() {

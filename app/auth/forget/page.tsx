@@ -10,6 +10,23 @@ const ForgetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [settings, setSettings] = useState<any>(null);
+
+  React.useEffect(() => {
+    // Fetch settings for logo
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings/public');
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,9 +68,17 @@ const ForgetPassword = () => {
       <div className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 p-8 relative z-10">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 group mb-6">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-bold text-lg group-hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">
-              J
-            </div>
+            {settings?.logo_imagekit_url ? (
+              <img
+                src={settings.logo_imagekit_url}
+                alt={settings?.site_name || "Logo"}
+                className="h-12 w-auto object-contain"
+              />
+            ) : (
+              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-bold text-lg group-hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">
+                J
+              </div>
+            )}
           </Link>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Forgot Password</h1>
           <p className="text-slate-500 text-sm">

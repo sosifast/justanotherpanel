@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
 
 import { getSettings } from "@/lib/settings";
+import ScriptsInjector from "@/components/ScriptsInjector";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -47,45 +48,10 @@ export default async function RootLayout({
         {children}
         <Analytics />
 
-        {/* Safely inject SEO and Analytic codes using Next.js Script component */}
-        {settings?.google_search_code && (
-          <Script
-            id="google-search-console"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `
-                (function() {
-                  const temp = document.createElement('div');
-                  temp.innerHTML = ${JSON.stringify(settings.google_search_code)}.trim();
-                  while (temp.firstChild) {
-                    if (temp.firstChild.nodeType === 1 || temp.firstChild.nodeType === 3) {
-                      document.head.appendChild(temp.firstChild);
-                    } else {
-                      temp.removeChild(temp.firstChild);
-                    }
-                  }
-                })();
-              `,
-            }}
-          />
-        )}
-        {settings?.google_analytic_code && (
-          <Script
-            id="google-analytics"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `
-                (function() {
-                  const temp = document.createElement('div');
-                  temp.innerHTML = ${JSON.stringify(settings.google_analytic_code)}.trim();
-                  while (temp.firstChild) {
-                    document.body.appendChild(temp.firstChild);
-                  }
-                })();
-              `,
-            }}
-          />
-        )}
+        <ScriptsInjector
+          headerCode={settings?.google_search_code}
+          footerCode={settings?.google_analytic_code}
+        />
       </body>
     </html>
   );

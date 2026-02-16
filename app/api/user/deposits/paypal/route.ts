@@ -3,11 +3,17 @@ import { prisma } from '@/lib/prisma';
 import { createAdminNotification } from '@/lib/admin-notifications';
 import paypal from '@paypal/checkout-server-sdk';
 
+import { getUserIdFromAuth } from '@/lib/auth';
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();
         const { gatewayId, amount } = body;
-        const userId = 1; // TODO: Session
+
+        const userId = await getUserIdFromAuth();
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
         // Validate gateway
         const gateway = await prisma.paymentGateway.findUnique({

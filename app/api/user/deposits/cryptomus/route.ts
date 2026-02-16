@@ -4,11 +4,17 @@ import { createAdminNotification } from '@/lib/admin-notifications';
 import axios from 'axios';
 import crypto from 'crypto'; // Node crypto is sufficient, no need for crypto-js if we just use md5
 
+import { getUserIdFromAuth } from '@/lib/auth';
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();
         const { gatewayId, amount } = body;
-        const userId = 1; // TODO: Session
+
+        const userId = await getUserIdFromAuth();
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
         // Validate gateway
         const gateway = await prisma.paymentGateway.findUnique({

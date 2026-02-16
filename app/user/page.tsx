@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import DashboardClient from './DashboardClient';
-import { getCurrentUser } from '@/lib/session';
-import { redirect } from 'next/navigation';
+
+import { getUserIdFromAuth } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 export const metadata = {
   title: "Dashboard",
@@ -10,14 +11,10 @@ export const metadata = {
 
 
 export default async function UserDashboardPage() {
-
-  const session = await getCurrentUser();
-
-  if (!session) {
-    redirect('/auth/login');
-  }
-
-  const userId = session.id;
+  // Ensure route is dynamic + resolve authenticated user
+  await cookies();
+  const userId = await getUserIdFromAuth();
+  if (!userId) return <div>Unauthorized</div>;
 
   // Get user data
   const user = await prisma.user.findUnique({

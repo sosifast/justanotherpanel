@@ -32,6 +32,10 @@ import {
 import Pusher from 'pusher-js';
 import { toast } from 'react-hot-toast';
 
+// Prevent Next.js from statically prerendering admin routes at build time.
+// Admin pages query the database and depend on request-time auth.
+export const dynamic = 'force-dynamic';
+
 type AdminLayoutProps = {
   children: React.ReactNode;
 };

@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Download, DollarSign, User, Calendar, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
+import React, { useState, useTransition } from 'react';
+import { Search, Filter, MoreVertical, Download, DollarSign, User, Calendar, CreditCard, CheckCircle, XCircle, Clock, RefreshCw, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { checkCryptomusStatus } from './actions';
+import toast from 'react-hot-toast';
 
 type DepositData = {
   id: number;
@@ -15,16 +17,33 @@ type DepositData = {
 
 const DepositsClient = ({ initialDeposits }: { initialDeposits: DepositData[] }) => {
   const [deposits, setDeposits] = useState(initialDeposits);
+  const [isPending, startTransition] = useTransition();
+  const [checkingId, setCheckingId] = useState<number | null>(null);
 
   const getMethod = (detail: any) => {
-    // Assuming detail_transaction has method/provider info. 
-    // Adapting to schema structure which uses Json.
-    // Defaulting to "Unknown" if structure varies.
     return detail?.provider || detail?.method || 'Manual';
   };
 
   const getTxnId = (detail: any) => {
     return detail?.transactionId || detail?.txn_id || '-';
+  };
+
+  const handleCheckStatus = async (id: number) => {
+    setCheckingId(id);
+    startTransition(async () => {
+      try {
+        const result = await checkCryptomusStatus(id);
+        if (result.success) {
+          toast.success(result.message);
+        } else {
+          toast.error(result.message);
+        }
+      } catch (error) {
+        toast.error('Failed to check status');
+      } finally {
+        setCheckingId(null);
+      }
+    });
   };
 
   return (
@@ -113,9 +132,25 @@ const DepositsClient = ({ initialDeposits }: { initialDeposits: DepositData[] })
                     {format(new Date(deposit.created_at), 'dd MMM yyyy, HH:mm')}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      {getMethod(deposit.detail_transaction) === 'CRYPTOMUS' && deposit.status !== 'PAYMENT' && (
+                        <button
+                          onClick={() => handleCheckStatus(deposit.id)}
+                          disabled={checkingId === deposit.id}
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Check Status"
+                        >
+                          {checkingId === deposit.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-4 h-4" />
+                          )}
+                        </button>
+                      )}
+                      <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

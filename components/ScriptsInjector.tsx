@@ -3,8 +3,8 @@
 import { useEffect, useRef } from 'react';
 
 type ScriptsInjectorProps = {
-    headerCode?: string;
-    footerCode?: string;
+    headerCode?: string | null;
+    footerCode?: string | null;
 };
 
 export default function ScriptsInjector({ headerCode, footerCode }: ScriptsInjectorProps) {

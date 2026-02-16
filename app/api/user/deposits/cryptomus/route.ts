@@ -37,12 +37,17 @@ export async function POST(req: Request) {
         // Create a unique order ID
         const orderId = `DEP-${userId}-${Date.now()}`;
 
+        // Determine base URL dynamically
+        const protocol = req.headers.get('x-forwarded-proto') || 'https';
+        const host = req.headers.get('host');
+        const baseUrl = `${protocol}://${host}`;
+
         const payload = {
             amount: amount.toString(),
             currency: 'USD',
             order_id: orderId,
-            url_return: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/user/add-funds/success`,
-            url_callback: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/cryptomus`,
+            url_return: `${baseUrl}/user/add-funds/success`,
+            url_callback: `${baseUrl}/api/webhooks/cryptomus`,
             is_payment_multiple: true,
             lifetime: '3600'
         };

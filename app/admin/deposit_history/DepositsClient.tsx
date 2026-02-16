@@ -20,6 +20,8 @@ const DepositsClient = ({ initialDeposits }: { initialDeposits: DepositData[] })
   const [isPending, startTransition] = useTransition();
   const [checkingId, setCheckingId] = useState<number | null>(null);
 
+  const [isUpdatingAll, setIsUpdatingAll] = useState(false);
+
   const getMethod = (detail: any) => {
     return detail?.provider || detail?.method || 'Manual';
   };
@@ -46,6 +48,38 @@ const DepositsClient = ({ initialDeposits }: { initialDeposits: DepositData[] })
     });
   };
 
+  const handleUpdateAll = async () => {
+    setIsUpdatingAll(true);
+    const pendingCryptomus = deposits.filter(d =>
+      getMethod(d.detail_transaction) === 'CRYPTOMUS' &&
+      !['PAYMENT', 'CANCELED', 'ERROR'].includes(d.status)
+    );
+
+    if (pendingCryptomus.length === 0) {
+      toast.error('No pending Cryptomus deposits found');
+      setIsUpdatingAll(false);
+      return;
+    }
+
+    toast.loading(`Updating ${pendingCryptomus.length} deposits...`, { id: 'update-all' });
+
+    let successCount = 0;
+
+    // Process sequentially to avoid overwhelming the server/API
+    for (const deposit of pendingCryptomus) {
+      try {
+        const result = await checkCryptomusStatus(deposit.id);
+        if (result.success) successCount++;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    toast.dismiss('update-all');
+    toast.success(`Updated ${successCount}/${pendingCryptomus.length} deposits`);
+    setIsUpdatingAll(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -53,10 +87,20 @@ const DepositsClient = ({ initialDeposits }: { initialDeposits: DepositData[] })
           <h1 className="text-2xl font-bold text-slate-800">Deposit History</h1>
           <p className="text-slate-500 text-sm">View and manage user deposit transactions.</p>
         </div>
-        <button className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
-          <Download className="w-4 h-4" />
-          Export CSV
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleUpdateAll}
+            disabled={isUpdatingAll || isPending}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isUpdatingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Update All (Cryptomus)
+          </button>
+          <button className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+        </div>
       </div>
 
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
@@ -133,7 +177,7 @@ const DepositsClient = ({ initialDeposits }: { initialDeposits: DepositData[] })
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {getMethod(deposit.detail_transaction) === 'CRYPTOMUS' && deposit.status !== 'PAYMENT' && (
+                      {getMethod(deposit.detail_transaction) === 'CRYPTOMUS' && !['PAYMENT', 'CANCELED', 'ERROR'].includes(deposit.status) && (
                         <button
                           onClick={() => handleCheckStatus(deposit.id)}
                           disabled={checkingId === deposit.id}

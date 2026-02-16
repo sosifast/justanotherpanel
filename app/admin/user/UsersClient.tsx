@@ -36,6 +36,11 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
     balance: '0'
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const pageSizeOptions = [10, 20, 50, 100, 150];
+
   // Filter users
   const filteredUsers = users.filter(user => {
     const matchesSearch =
@@ -47,6 +52,25 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
 
     return matchesSearch && matchesRole;
   });
+
+  // Calculate pagination
+  const totalItems = filteredUsers.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter, pageSize]);
+
+  // Handlers
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   // Open Add Modal
   const openAddModal = () => {
@@ -254,7 +278,7 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -315,7 +339,7 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
                   </td>
                 </tr>
               ))}
-              {filteredUsers.length === 0 && (
+              {paginatedUsers.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-slate-500">No users found.</td>
                 </tr>
@@ -324,11 +348,38 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
           </table>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-sm text-slate-500">Showing <span className="font-medium text-slate-900">1</span> to <span className="font-medium text-slate-900">{filteredUsers.length}</span> of <span className="font-medium text-slate-900">{users.length}</span> results</p>
+        <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-slate-500">Rows per page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="px-2 py-1 border border-slate-200 rounded text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {pageSizeOptions.map(size => (
+                <option key={size} value={size}>{size}</option>
+              ))}
+            </select>
+            <p className="text-sm text-slate-500">
+              Showing <span className="font-medium text-slate-900">{startIndex + 1}</span> to <span className="font-medium text-slate-900">{endIndex}</span> of <span className="font-medium text-slate-900">{totalItems}</span> results
+            </p>
+          </div>
+
           <div className="flex gap-2">
-            <button className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm disabled:opacity-50">Previous</button>
-            <button className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm">Next</button>
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm disabled:opacity-50"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>

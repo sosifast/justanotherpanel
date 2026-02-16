@@ -59,8 +59,12 @@ const LoginForm = () => {
                 throw new Error(data.error || 'Login failed');
             }
 
-            // Redirect to user dashboard
-            window.location.href = '/user';
+            // Redirect based on role
+            if (data.user.role === 'ADMIN') {
+                window.location.href = '/admin';
+            } else {
+                window.location.href = '/user';
+            }
         } catch (err: any) {
             setError(err.message);
         } finally {

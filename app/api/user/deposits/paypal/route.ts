@@ -42,6 +42,11 @@ export async function POST(req: Request) {
             new Environment(config.clientId, config.clientSecret)
         );
 
+        // Determine base URL dynamically
+        const protocol = req.headers.get('x-forwarded-proto') || 'https';
+        const host = req.headers.get('host');
+        const baseUrl = `${protocol}://${host}`;
+
         const request = new paypal.orders.OrdersCreateRequest();
         request.prefer("return=representation");
         request.requestBody({
@@ -53,8 +58,8 @@ export async function POST(req: Request) {
                 }
             }],
             application_context: {
-                return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/user/add-funds/success`,
-                cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/user/add-funds/cancel`
+                return_url: `${baseUrl}/user/add-funds/success`,
+                cancel_url: `${baseUrl}/user/add-funds/cancel`
             }
         });
 

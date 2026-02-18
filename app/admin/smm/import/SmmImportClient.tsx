@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Plus, CloudDownload, Check, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { Search, Filter, Download, Plus, CloudDownload, Check, AlertCircle, ArrowRight, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const PAGE_SIZE = 10;
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
@@ -41,6 +43,7 @@ const SmmImportClient = () => {
     const [markupSale, setMarkupSale] = useState('20');
     const [markupReseller, setMarkupReseller] = useState('10');
     const [selectedServices, setSelectedServices] = useState<Set<string | number>>(new Set());
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         fetchInitialData();
@@ -62,6 +65,7 @@ const SmmImportClient = () => {
 
     const handleProviderChange = async (providerId: string) => {
         setSelectedProvider(providerId);
+        setCurrentPage(1);
         if (!providerId) {
             setServices([]);
             return;
@@ -94,9 +98,11 @@ const SmmImportClient = () => {
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            setSelectedServices(new Set(filteredServices.map(s => s.service)));
+            setSelectedServices(new Set(paginatedServices.map(s => s.service)));
         } else {
-            setSelectedServices(new Set());
+            const newSelected = new Set(selectedServices);
+            paginatedServices.forEach(s => newSelected.delete(s.service));
+            setSelectedServices(newSelected);
         }
     };
 
@@ -133,6 +139,15 @@ const SmmImportClient = () => {
             category.toLowerCase().includes(searchTerm.toLowerCase());
     });
 
+    const totalPages = Math.max(1, Math.ceil(filteredServices.length / PAGE_SIZE));
+    const safePage = Math.min(currentPage, totalPages);
+    const paginatedServices = filteredServices.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+    const handleSearchChange = (value: string) => {
+        setSearchTerm(value);
+        setCurrentPage(1);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -152,9 +167,9 @@ const SmmImportClient = () => {
                 </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-md space-y-3 sticky top-0 z-10">
+                <div className="flex flex-wrap items-end gap-3">
+                    <div className="flex-1 min-w-[160px]">
                         <label className="block text-sm font-medium text-slate-700 mb-1">Select Provider</label>
                         <select
                             value={selectedProvider}
@@ -167,7 +182,7 @@ const SmmImportClient = () => {
                             ))}
                         </select>
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-[140px]">
                         <label className="block text-sm font-medium text-slate-700 mb-1">Target Category</label>
                         <select
                             value={selectedCategory}
@@ -180,35 +195,34 @@ const SmmImportClient = () => {
                             ))}
                         </select>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Markup Sale (%)</label>
+                    <div className="w-28">
+                        <label className="block text-xs font-medium text-slate-700 mb-1">Sale (%)</label>
                         <input
                             type="number"
                             value={markupSale}
                             onChange={(e) => setMarkupSale(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-600 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-600 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Markup Reseller (%)</label>
+                    <div className="w-28">
+                        <label className="block text-xs font-medium text-slate-700 mb-1">Reseller (%)</label>
                         <input
                             type="number"
                             value={markupReseller}
                             onChange={(e) => setMarkupReseller(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-600 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-600 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
-                </div>
-                <div className="pt-4 border-t border-slate-100">
-                    <div className="relative">
+                    <div className="flex-1 min-w-[180px] relative">
+                        <label className="block text-xs font-medium text-slate-700 mb-1">Search</label>
                         <input
                             type="text"
                             placeholder="Search service name or category..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onChange={(e) => handleSearchChange(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                        <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                        <Search className="absolute left-3 top-[calc(100%-1.85rem)] w-4 h-4 text-slate-400" />
                     </div>
                 </div>
             </div>
@@ -222,7 +236,7 @@ const SmmImportClient = () => {
                                     <input
                                         type="checkbox"
                                         onChange={handleSelectAll}
-                                        checked={filteredServices.length > 0 && selectedServices.size === filteredServices.length}
+                                        checked={paginatedServices.length > 0 && paginatedServices.every(s => selectedServices.has(s.service))}
                                         className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                     />
                                 </th>
@@ -244,7 +258,7 @@ const SmmImportClient = () => {
                                     </td>
                                 </tr>
                             ) : filteredServices.length > 0 ? (
-                                filteredServices.map((service) => (
+                                paginatedServices.map((service) => (
                                     <tr key={service.service} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <input
@@ -281,6 +295,55 @@ const SmmImportClient = () => {
                         </tbody>
                     </table>
                 </div>
+                {/* Pagination */}
+                {filteredServices.length > 0 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+                        <p className="text-xs text-slate-500">
+                            Showing <span className="font-medium text-slate-700">{(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filteredServices.length)}</span> of <span className="font-medium text-slate-700">{filteredServices.length}</span> services
+                            {selectedServices.size > 0 && <span className="ml-2 text-blue-600">· {selectedServices.size} selected</span>}
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={safePage === 1}
+                                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                                .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                                    if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
+                                    acc.push(p);
+                                    return acc;
+                                }, [])
+                                .map((p, idx) =>
+                                    p === '...' ? (
+                                        <span key={`ellipsis-${idx}`} className="px-2 text-slate-400 text-xs">…</span>
+                                    ) : (
+                                        <button
+                                            key={p}
+                                            onClick={() => setCurrentPage(p as number)}
+                                            className={`min-w-[2rem] h-8 px-2 rounded-lg text-xs font-medium transition-colors ${safePage === p
+                                                    ? 'bg-blue-600 text-white shadow-sm'
+                                                    : 'text-slate-600 hover:bg-slate-200'
+                                                }`}
+                                        >
+                                            {p}
+                                        </button>
+                                    )
+                                )
+                            }
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={safePage === totalPages}
+                                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

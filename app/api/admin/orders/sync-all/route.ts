@@ -75,11 +75,18 @@ export async function POST() {
                     const remains = statusInfo.remains !== undefined ? parseInt(statusInfo.remains) : order.remains;
 
                     if (newStatus !== order.status || startCount !== order.start_count || remains !== order.remains) {
-                        await prisma.order.update({
-                            where: { id: order.id },
-                            data: { status: newStatus as any, start_count: startCount, remains }
-                        });
-                        updatedCount++;
+                        try {
+                            const { updateOrderStatus } = await import('@/lib/order-service');
+                            await updateOrderStatus({
+                                orderId: order.id,
+                                newStatus: newStatus as any,
+                                newRemains: remains ?? undefined,
+                                newStartCount: startCount ?? undefined
+                            });
+                            updatedCount++;
+                        } catch (e) {
+                            console.error(`Failed to update order ${order.id}`, e);
+                        }
                     }
                 }
             } catch (err) {

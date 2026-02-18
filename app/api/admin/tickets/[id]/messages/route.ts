@@ -5,8 +5,11 @@ import { prisma } from '@/lib/prisma';
 import { createNotification } from '@/lib/notifications';
 
 type TicketMessage = {
+    id: number;
+    id_ticket: number;
     sender: string;
     content: string;
+    image_url?: string | null;
     created_at: string;
 };
 
@@ -35,13 +38,11 @@ export async function POST(
 
         const { id } = await params;
         const ticketId = parseInt(id);
-        const { content } = await req.json();
+        const body = await req.json();
+        const { content, image_url } = body;
 
-        if (!content) {
-            return NextResponse.json(
-                { error: 'Message content is required' },
-                { status: 400 }
-            );
+        if (!content && !image_url) {
+            return NextResponse.json({ error: 'Content or image is required' }, { status: 400 });
         }
 
         // Verify ticket exists
@@ -62,8 +63,11 @@ export async function POST(
             : [];
 
         const newMessage: TicketMessage = {
+            id: existingMessages.length + 1,
+            id_ticket: ticket.id,
             sender: 'support',
-            content,
+            content: content || '',
+            image_url: image_url || null,
             created_at: new Date().toISOString()
         };
 

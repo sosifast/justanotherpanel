@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Search,
     Filter,
@@ -12,16 +12,19 @@ import {
     Send,
     AlertCircle,
     CheckCircle,
-    XCircle
+    XCircle,
+    Image as ImageIcon
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { IKContext, IKUpload } from 'imagekitio-react';
 
 type TicketMessage = {
     id: number;
     id_ticket: number;
     sender: string;
     content: string;
+    image_url?: string | null;
     created_at: string;
 };
 
@@ -66,12 +69,37 @@ const AdminTicketsClient = () => {
     const [newStatus, setNewStatus] = useState('');
     const [newPriority, setNewPriority] = useState('');
 
+    // Image Upload State
+    const [imageUploading, setImageUploading] = useState(false);
+    const [newMessageImage, setNewMessageImage] = useState<string | null>(null);
+    const [settings, setSettings] = useState<any>(null);
+
     const statuses = ['all', 'OPEN', 'PENDING', 'ANSWERED', 'CLOSED'];
     const priorities = ['all', 'HIGH', 'MEDIUM', 'LOW'];
+    const PER_PAGE_OPTIONS = [10, 20, 50, 100, 200];
+    const [perPage, setPerPage] = useState(10);
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const paginatedTickets = useMemo(() => {
+        const start = (currentPage - 1) * perPage;
+        return tickets.slice(start, start + perPage);
+    }, [tickets, currentPage, perPage]);
+    const totalPages = Math.max(1, Math.ceil(tickets.length / perPage));
+
+    const handlePerPage = (val: number) => { setPerPage(val); setCurrentPage(1); };
+
+    // Fetch settings for ImageKit
+    useEffect(() => {
+        fetch('/api/settings/public')
+            .then(res => res.json())
+            .then(data => setSettings(data))
+            .catch(err => console.error('Failed to load settings', err));
+    }, []);
 
     // Fetch tickets
     useEffect(() => {
         if (view === 'list') {
+            setCurrentPage(1);
             fetchTickets();
         }
     }, [view, statusFilter, priorityFilter, search]);
@@ -117,23 +145,49 @@ const AdminTicketsClient = () => {
         }
     };
 
+    const handleUploadDefaultError = (err: any) => {
+        setImageUploading(false);
+        toast.error('Image upload failed');
+        console.log(err);
+    };
+
+    const handleUploadDefaultSuccess = (res: any) => {
+        setImageUploading(false);
+        setNewMessageImage(res.url);
+        toast.success('Image uploaded');
+    };
+
+    const authenticator = async () => {
+        try {
+            const response = await fetch('/api/imagekit/auth');
+            if (!response.ok) throw new Error('Authentication failed');
+            return await response.json();
+        } catch (error) {
+            throw error;
+        }
+    };
+
     const handleSendReply = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!selectedTicket || !newMessage.trim()) return;
+        if (!selectedTicket || (!newMessage.trim() && !newMessageImage)) return;
 
         try {
             setSending(true);
             const response = await fetch(`/api/admin/tickets/${selectedTicket.id}/messages`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: newMessage })
+                body: JSON.stringify({
+                    content: newMessage,
+                    image_url: newMessageImage
+                })
             });
 
             const data = await response.json();
 
             if (response.ok) {
                 setNewMessage('');
+                setNewMessageImage(null);
                 await fetchTicketDetail(selectedTicket.id);
                 toast.success('Reply sent!');
             } else {
@@ -263,6 +317,12 @@ const AdminTicketsClient = () => {
                                 </select>
                                 <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
                             </div>
+                            <div className="flex items-center gap-2 text-sm text-slate-500 flex-shrink-0">
+                                <span>Per page:</span>
+                                <select value={perPage} onChange={e => handlePerPage(Number(e.target.value))} className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    {PER_PAGE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -286,7 +346,7 @@ const AdminTicketsClient = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {tickets.map((ticket) => (
+                                        {paginatedTickets.map((ticket) => (
                                             <tr
                                                 key={ticket.id}
                                                 onClick={() => fetchTicketDetail(ticket.id)}
@@ -341,6 +401,25 @@ const AdminTicketsClient = () => {
                             </div>
                         )}
                     </div>
+                    {!loading && totalPages > 1 && (
+                        <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
+                            <p className="text-sm text-slate-500">
+                                Showing {Math.min((currentPage - 1) * perPage + 1, tickets.length)}–{Math.min(currentPage * perPage, tickets.length)} of {tickets.length}
+                            </p>
+                            <div className="flex items-center gap-1">
+                                <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-2 py-1 text-xs rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-100 transition-colors">«</button>
+                                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 text-xs rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-100 transition-colors">‹</button>
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+                                    return start + i;
+                                }).map(page => (
+                                    <button key={page} onClick={() => setCurrentPage(page)} className={`px-2.5 py-1 text-xs rounded border transition-colors ${currentPage === page ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 hover:bg-slate-100'}`}>{page}</button>
+                                ))}
+                                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-2 py-1 text-xs rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-100 transition-colors">›</button>
+                                <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-2 py-1 text-xs rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-100 transition-colors">»</button>
+                            </div>
+                        </div>
+                    )}
                 </>
             ) : (
                 /* Ticket Detail View */
@@ -377,7 +456,20 @@ const AdminTicketsClient = () => {
                                                     <p className="text-xs font-medium mb-1 opacity-75">
                                                         {msg.sender === 'support' ? 'Support' : selectedTicket.user.username}
                                                     </p>
-                                                    <p className="text-sm">{msg.content}</p>
+
+                                                    {msg.image_url && (
+                                                        <div className="mb-2">
+                                                            <a href={msg.image_url} target="_blank" rel="noopener noreferrer">
+                                                                <img
+                                                                    src={msg.image_url}
+                                                                    alt="Attachment"
+                                                                    className="max-w-full rounded-lg max-h-48 object-cover hover:opacity-90 transition-opacity"
+                                                                />
+                                                            </a>
+                                                        </div>
+                                                    )}
+
+                                                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                                                     <p className={`text-[10px] mt-1 ${msg.sender === 'support' ? 'text-blue-200' : 'text-slate-400'
                                                         }`}>
                                                         {new Date(msg.created_at).toLocaleString()}
@@ -388,7 +480,46 @@ const AdminTicketsClient = () => {
                                     </div>
 
                                     <div className="p-4 border-t border-slate-100 bg-slate-50">
+                                        {newMessageImage && (
+                                            <div className="mb-2 flex items-center gap-2">
+                                                <div className="relative">
+                                                    <img src={newMessageImage} alt="Preview" className="h-16 w-16 object-cover rounded-lg border border-slate-200" />
+                                                    <button
+                                                        onClick={() => setNewMessageImage(null)}
+                                                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600"
+                                                    >
+                                                        <XCircle className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                                <span className="text-xs text-slate-500">Image attached</span>
+                                            </div>
+                                        )}
                                         <form onSubmit={handleSendReply} className="flex gap-4">
+                                            {settings?.imagekit_publickey && (
+                                                <div className="flex items-center">
+                                                    <IKContext
+                                                        publicKey={settings.imagekit_publickey}
+                                                        urlEndpoint={settings.imagekit_url}
+                                                        authenticator={authenticator}
+                                                    >
+                                                        <IKUpload
+                                                            onError={handleUploadDefaultError}
+                                                            onSuccess={handleUploadDefaultSuccess}
+                                                            style={{ display: 'none' }}
+                                                            id="chat-file-upload"
+                                                            onUploadStart={() => setImageUploading(true)}
+                                                        />
+                                                        <label
+                                                            htmlFor="chat-file-upload"
+                                                            className={`p-2.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-blue-600 hover:border-blue-200 transition-colors cursor-pointer flex items-center justify-center ${imageUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                                                            title="Upload Image"
+                                                        >
+                                                            {imageUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImageIcon className="w-5 h-5" />}
+                                                        </label>
+                                                    </IKContext>
+                                                </div>
+                                            )}
+
                                             <input
                                                 type="text"
                                                 value={newMessage}
@@ -399,7 +530,7 @@ const AdminTicketsClient = () => {
                                             />
                                             <button
                                                 type="submit"
-                                                disabled={sending || !newMessage.trim()}
+                                                disabled={sending || (!newMessage.trim() && !newMessageImage)}
                                                 className="px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                             >
                                                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

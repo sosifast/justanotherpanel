@@ -27,7 +27,8 @@ import {
   Shield,
   Check,
   Ticket,
-  History
+  History,
+  Image
 } from 'lucide-react';
 import Pusher from 'pusher-js';
 import { toast } from 'react-hot-toast';
@@ -398,6 +399,16 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             label="News"
             href="/admin/news"
             isActive={isActive('/admin/news')}
+          />
+
+          <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-2">
+            Content
+          </p>
+          <SidebarItem
+            icon={<Image className="w-5 h-5" />}
+            label="Slider"
+            href="/admin/slider"
+            isActive={isActive('/admin/slider')}
           />
 
           <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-2">

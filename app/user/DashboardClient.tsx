@@ -11,10 +11,11 @@ import {
     Globe,
     ChevronRight,
     Package,
-    X,
-    Eye,
     Send,
-    Facebook
+    Facebook,
+    Image as ImageIcon,
+    Eye,
+    X
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -78,6 +79,12 @@ type DashboardData = {
         facebook: string | null;
         telegram: string | null;
     };
+    sliders: {
+        id: number;
+        name: string;
+        imagekit_url_banner: string;
+        slug: string;
+    }[];
 };
 
 type Props = {
@@ -182,47 +189,87 @@ const DashboardClient = ({ data }: Props) => {
                 ))}
             </div>
 
-            {/* Platforms Card */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
-                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                    <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-blue-600" /> SMM Services
-                    </h2>
+            {/* Platforms & Slider Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {/* SMM Services */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-full">
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+                            <Globe className="w-4 h-4 text-blue-600" /> SMM Services
+                        </h2>
+                    </div>
+
+                    <div className="p-6">
+                        {data.platforms.length === 0 ? (
+                            <div className="text-center py-12 text-slate-500">
+                                <Globe className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                                <p>No platforms available at the moment.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-6">
+                                {data.platforms.map((platform) => (
+                                    <Link
+                                        key={platform.id}
+                                        href={`/user/new-order?platform=${platform.slug}`}
+                                        className="group flex flex-col items-center text-center transition-all hover:scale-105"
+                                    >
+                                        <div className="w-14 h-14 rounded-full flex items-center justify-center mb-2 group-hover:shadow-lg transition-shadow overflow-hidden bg-slate-100">
+                                            {platform.icon_imagekit_url ? (
+                                                <img
+                                                    src={platform.icon_imagekit_url}
+                                                    alt={platform.name}
+                                                    className="w-10 h-10 object-contain"
+                                                />
+                                            ) : (
+                                                <Globe className="w-6 h-6 text-slate-400" />
+                                            )}
+                                        </div>
+                                        <h3 className="font-medium text-sm text-slate-700 group-hover:text-blue-600 transition-colors">{platform.name}</h3>
+                                        <p className="text-xs text-slate-400">
+                                            {platform._count?.categories || 0} services
+                                        </p>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <div className="p-6">
-                    {data.platforms.length === 0 ? (
-                        <div className="text-center py-12 text-slate-500">
-                            <Globe className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                            <p>No platforms available at the moment.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-6">
-                            {data.platforms.map((platform) => (
-                                <Link
-                                    key={platform.id}
-                                    href={`/user/new-order?platform=${platform.slug}`}
-                                    className="group flex flex-col items-center text-center transition-all hover:scale-105"
-                                >
-                                    <div className="w-14 h-14 rounded-full flex items-center justify-center mb-2 group-hover:shadow-lg transition-shadow overflow-hidden bg-slate-100">
-                                        {platform.icon_imagekit_url ? (
+                {/* Slider */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col">
+                    <div className="p-0 flex-1 relative group">
+                        {data.sliders.length > 0 ? (
+                            <div className="relative w-full h-full min-h-[300px] bg-slate-100">
+                                {/* Simple CSS Slider implementation since we can't easily add swiper/slick without installing packages */}
+                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+                                    {data.sliders.map((slider) => (
+                                        <div key={slider.id} className="w-full flex-shrink-0 snap-center relative">
                                             <img
-                                                src={platform.icon_imagekit_url}
-                                                alt={platform.name}
-                                                className="w-10 h-10 object-contain"
+                                                src={slider.imagekit_url_banner}
+                                                alt={slider.name}
+                                                className="w-full h-full object-cover"
                                             />
-                                        ) : (
-                                            <Globe className="w-6 h-6 text-slate-400" />
-                                        )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="absolute top-1/2 left-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    <div className="w-8 h-8 bg-black/30 backdrop-blur rounded-full flex items-center justify-center text-white">
+                                        <ChevronRight className="w-5 h-5 rotate-180" />
                                     </div>
-                                    <h3 className="font-medium text-sm text-slate-700 group-hover:text-blue-600 transition-colors">{platform.name}</h3>
-                                    <p className="text-xs text-slate-400">
-                                        {platform._count?.categories || 0} services
-                                    </p>
-                                </Link>
-                            ))}
-                        </div>
-                    )}
+                                </div>
+                                <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    <div className="w-8 h-8 bg-black/30 backdrop-blur rounded-full flex items-center justify-center text-white">
+                                        <ChevronRight className="w-5 h-5" />
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-slate-400 bg-slate-50">
+                                <ImageIcon className="w-12 h-12 mb-2 opacity-50" />
+                                <p>No highlights available</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

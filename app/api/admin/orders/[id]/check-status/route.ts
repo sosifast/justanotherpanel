@@ -94,16 +94,13 @@ export async function POST(
             const startCount = data.start_count ? parseInt(data.start_count) : order.start_count;
             const remains = data.remains ? parseInt(data.remains) : order.remains;
 
-            // Update Order in DB
-            const updatedOrder = await prisma.order.update({
-                where: { id: orderId },
-                data: {
-                    status: newStatus,
-                    start_count: startCount,
-                    remains: remains,
-                    // Optionally update cost if provider price changes? usually we don't change historic price.
-                }
-            });
+            // Update Order in DB via Service (handles refunds)
+            const updatedOrder = await import('@/lib/order-service').then(m => m.updateOrderStatus({
+                orderId: orderId,
+                newStatus: newStatus as any,
+                newRemains: remains ?? undefined,
+                newStartCount: startCount ?? undefined
+            }));
 
             return NextResponse.json({
                 success: true,

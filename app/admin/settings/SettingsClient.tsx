@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Save, Globe2, Image, Instagram, Facebook, Mail, Phone, MessageCircle, Code, Key, CheckCircle, Loader2, DollarSign } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import ImageUpload from '@/components/ui/ImageUpload';
 
 type SettingData = {
@@ -76,15 +77,16 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
 
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error || 'Failed to save settings');
+        toast.error(data.error || 'Failed to save settings');
         return;
       }
 
       setSaved(true);
+      toast.success('Settings saved successfully!');
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Failed to save settings');
+      toast.error('Failed to save settings');
     } finally {
       setLoading(false);
     }

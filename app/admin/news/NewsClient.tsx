@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, Search, Edit2, Trash2, CheckCircle, XCircle, Clock, Volume2 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -16,17 +16,27 @@ type NewsData = {
     updated_at: string | Date;
 };
 
+const PER_PAGE_OPTIONS = [10, 20, 50, 100, 200];
+
 const NewsClient = ({ initialNews }: { initialNews: NewsData[] }) => {
     const router = useRouter();
     const [search, setSearch] = useState('');
+    const [perPage, setPerPage] = useState(10);
+    const [currentPage, setCurrentPage] = useState(1);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedNews, setSelectedNews] = useState<NewsData | undefined>(undefined);
 
-    const filteredNews = initialNews.filter(
+    const filteredNews = useMemo(() => initialNews.filter(
         (item) =>
             item.subject.toLowerCase().includes(search.toLowerCase()) ||
             item.content.toLowerCase().includes(search.toLowerCase())
-    );
+    ), [initialNews, search]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredNews.length / perPage));
+    const paginatedNews = filteredNews.slice((currentPage - 1) * perPage, currentPage * perPage);
+
+    const handleSearch = (val: string) => { setSearch(val); setCurrentPage(1); };
+    const handlePerPage = (val: number) => { setPerPage(val); setCurrentPage(1); };
 
     const handleCreate = () => {
         setSelectedNews(undefined);
@@ -104,16 +114,22 @@ const NewsClient = ({ initialNews }: { initialNews: NewsData[] }) => {
                 </button>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="relative w-full md:w-96">
                     <input
                         type="text"
                         placeholder="Search news..."
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={(e) => handleSearch(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                     />
                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <span>Per page:</span>
+                    <select value={perPage} onChange={e => handlePerPage(Number(e.target.value))} className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        {PER_PAGE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
                 </div>
             </div>
 
@@ -129,7 +145,7 @@ const NewsClient = ({ initialNews }: { initialNews: NewsData[] }) => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {filteredNews.map((item) => (
+                            {paginatedNews.map((item) => (
                                 <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <p className="font-semibold text-slate-800 text-base mb-1">{item.subject}</p>
@@ -174,7 +190,7 @@ const NewsClient = ({ initialNews }: { initialNews: NewsData[] }) => {
                                     </td>
                                 </tr>
                             ))}
-                            {filteredNews.length === 0 && (
+                            {paginatedNews.length === 0 && (
                                 <tr>
                                     <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
                                         No news found.
@@ -184,6 +200,25 @@ const NewsClient = ({ initialNews }: { initialNews: NewsData[] }) => {
                         </tbody>
                     </table>
                 </div>
+                {totalPages > 1 && (
+                    <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
+                        <p className="text-sm text-slate-500">
+                            Showing {Math.min((currentPage - 1) * perPage + 1, filteredNews.length)}–{Math.min(currentPage * perPage, filteredNews.length)} of {filteredNews.length}
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-2 py-1 text-xs rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-100 transition-colors">«</button>
+                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 text-xs rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-100 transition-colors">‹</button>
+                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+                                return start + i;
+                            }).map(page => (
+                                <button key={page} onClick={() => setCurrentPage(page)} className={`px-2.5 py-1 text-xs rounded border transition-colors ${currentPage === page ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 hover:bg-slate-100'}`}>{page}</button>
+                            ))}
+                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-2 py-1 text-xs rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-100 transition-colors">›</button>
+                            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-2 py-1 text-xs rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-100 transition-colors">»</button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <NewsModal

@@ -140,6 +140,17 @@ model ImagekitApi {
   @@map("imagekit_api")
 }
 
+model Slider {
+  id                  Int      @id @default(autoincrement())
+  name                String
+  slug                String   @unique
+  imagekit_url_banner String
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  @@map("slider")
+}
+
 model Category {
   id          Int            @id @default(autoincrement())
   id_platform Int

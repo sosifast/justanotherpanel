@@ -1,0 +1,8 @@
+export default function CountryPage() {
+    return (
+        <div className="p-6">
+            <h1 className="text-2xl font-bold mb-4">Countries</h1>
+            <p>Coming soon...</p>
+        </div>
+    );
+}

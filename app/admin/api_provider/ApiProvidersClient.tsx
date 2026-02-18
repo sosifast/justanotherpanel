@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { Search, MoreVertical, Plus, Server, Globe, CheckCircle, XCircle, Edit, Trash2, RefreshCw } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import ApiProviderModal from './ApiProviderModal';
+import ApiProviderDeleteModal from './ApiProviderDeleteModal';
 
 type ApiProviderData = {
   id: number;
@@ -28,6 +30,8 @@ const ApiProvidersClient = ({ initialProviders }: { initialProviders: ApiProvide
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [selectedProvider, setSelectedProvider] = useState<ApiProviderData | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [providerToDelete, setProviderToDelete] = useState<ApiProviderData | null>(null);
   const [loading, setLoading] = useState(false);
   const [updatingBalance, setUpdatingBalance] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,14 +58,17 @@ const ApiProvidersClient = ({ initialProviders }: { initialProviders: ApiProvide
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (provider: ApiProviderData) => {
-    if (!confirm(`Are you sure you want to delete "${provider.name}"? This action cannot be undone.`)) {
-      return;
-    }
+  const handleDelete = (provider: ApiProviderData) => {
+    setProviderToDelete(provider);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!providerToDelete) return;
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/api-providers/${provider.id}`, {
+      const response = await fetch(`/api/admin/api-providers/${providerToDelete.id}`, {
         method: 'DELETE'
       });
 
@@ -70,10 +77,12 @@ const ApiProvidersClient = ({ initialProviders }: { initialProviders: ApiProvide
         throw new Error(error.error || 'Failed to delete provider');
       }
 
-      setProviders(prev => prev.filter(p => p.id !== provider.id));
-      alert('Provider deleted successfully');
+      setProviders(prev => prev.filter(p => p.id !== providerToDelete.id));
+      toast.success('Provider deleted successfully');
+      setDeleteModalOpen(false);
+      setProviderToDelete(null);
     } catch (error: any) {
-      alert(error.message || 'Failed to delete provider');
+      toast.error(error.message || 'Failed to delete provider');
     } finally {
       setLoading(false);
     }
@@ -98,9 +107,9 @@ const ApiProvidersClient = ({ initialProviders }: { initialProviders: ApiProvide
         p.id === provider.id ? { ...p, balance: result.balance } : p
       ));
 
-      alert(`Balance updated successfully: $${Number(result.balance).toFixed(2)} ${result.currency || 'USD'}`);
+      toast.success(`Balance updated: $${Number(result.balance).toFixed(2)} ${result.currency || 'USD'}`);
     } catch (error: any) {
-      alert(error.message || 'Failed to update balance');
+      toast.error(error.message || 'Failed to update balance');
     } finally {
       setUpdatingBalance(null);
     }
@@ -128,8 +137,10 @@ const ApiProvidersClient = ({ initialProviders }: { initialProviders: ApiProvide
 
     if (modalMode === 'add') {
       setProviders(prev => [...prev, savedProvider]);
+      toast.success('Provider added successfully');
     } else {
       setProviders(prev => prev.map(p => p.id === savedProvider.id ? savedProvider : p));
+      toast.success('Provider updated successfully');
     }
   };
 
@@ -278,6 +289,17 @@ const ApiProvidersClient = ({ initialProviders }: { initialProviders: ApiProvide
         onSubmit={handleSubmit}
         provider={selectedProvider}
         mode={modalMode}
+      />
+
+      <ApiProviderDeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setProviderToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        providerName={providerToDelete?.name || ''}
+        loading={loading}
       />
     </div>
   );

@@ -101,6 +101,17 @@ export default async function UserDashboardPage() {
     }
   });
 
+  // Get active sliders
+  const sliders = await prisma.slider.findMany({
+    orderBy: { created_at: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      imagekit_url_banner: true,
+      slug: true
+    }
+  });
+
   const dashboardData = {
     user: user ? {
       ...user,
@@ -133,7 +144,8 @@ export default async function UserDashboardPage() {
       instagram: settings?.instagram_url || null,
       facebook: settings?.facebook_url || null,
       telegram: settings?.telegram || null
-    }
+    },
+    sliders
   };
 
   return <DashboardClient data={dashboardData} />;

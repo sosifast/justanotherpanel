@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 type TicketMessage = {
     sender: string;
     content: string;
+    image_url?: string | null;
     created_at: string;
 };
 
@@ -30,11 +31,11 @@ export async function POST(
 
         const { id } = await params;
         const ticketId = parseInt(id);
-        const { content } = await req.json();
+        const { content, image_url } = await req.json();
 
-        if (!content) {
+        if (!content && !image_url) {
             return NextResponse.json(
-                { error: 'Message content is required' },
+                { error: 'Message content or image is required' },
                 { status: 400 }
             );
         }
@@ -68,7 +69,8 @@ export async function POST(
 
         const newMessage: TicketMessage = {
             sender: 'user',
-            content,
+            content: content || '',
+            image_url: image_url || null,
             created_at: new Date().toISOString()
         };
 

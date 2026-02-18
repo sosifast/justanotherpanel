@@ -4,7 +4,7 @@ import ImageKit from 'imagekit';
 
 export async function GET() {
     try {
-        // Get ImageKit credentials from settings
+        // Get ImageKit credentials from Setting model
         const settings = await prisma.setting.findFirst();
 
         if (!settings?.imagekit_publickey || !settings?.imagekit_privatekey || !settings?.imagekit_url) {
@@ -22,7 +22,11 @@ export async function GET() {
 
         const authenticationParameters = imagekit.getAuthenticationParameters();
 
-        return NextResponse.json(authenticationParameters);
+        return NextResponse.json({
+            ...authenticationParameters,
+            publicKey: settings.imagekit_publickey,
+            urlEndpoint: settings.imagekit_url,
+        });
     } catch (error) {
         console.error('Error generating ImageKit auth:', error);
         return NextResponse.json({ error: 'Failed to generate authentication' }, { status: 500 });

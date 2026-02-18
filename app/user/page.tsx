@@ -92,6 +92,15 @@ export default async function UserDashboardPage() {
     }
   });
 
+  // Get site settings for social media links
+  const settings = await prisma.setting.findFirst({
+    select: {
+      instagram_url: true,
+      facebook_url: true,
+      telegram: true
+    }
+  });
+
   const dashboardData = {
     user: user ? {
       ...user,
@@ -119,7 +128,12 @@ export default async function UserDashboardPage() {
     news: news.map(n => ({
       ...n,
       created_at: n.created_at.toISOString()
-    }))
+    })),
+    socialMedia: {
+      instagram: settings?.instagram_url || null,
+      facebook: settings?.facebook_url || null,
+      telegram: settings?.telegram || null
+    }
   };
 
   return <DashboardClient data={dashboardData} />;

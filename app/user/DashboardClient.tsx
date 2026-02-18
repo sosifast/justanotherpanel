@@ -12,9 +12,18 @@ import {
     ChevronRight,
     Package,
     X,
-    Eye
+    Eye,
+    Send,
+    Facebook
 } from 'lucide-react';
 import Link from 'next/link';
+
+// Instagram icon (not in lucide)
+const InstagramIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+    </svg>
+);
 
 type Platform = {
     id: number;
@@ -64,6 +73,11 @@ type DashboardData = {
     recentOrders: Order[];
     platforms: Platform[];
     news: News[];
+    socialMedia: {
+        instagram: string | null;
+        facebook: string | null;
+        telegram: string | null;
+    };
 };
 
 type Props = {
@@ -172,11 +186,8 @@ const DashboardClient = ({ data }: Props) => {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
                 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                     <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-blue-600" /> Available Platforms
+                        <Globe className="w-4 h-4 text-blue-600" /> SMM Services
                     </h2>
-                    <Link href="/user/new-order" className="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
-                        New Order <ChevronRight className="w-3 h-3" />
-                    </Link>
                 </div>
 
                 <div className="p-6">
@@ -269,22 +280,66 @@ const DashboardClient = ({ data }: Props) => {
                 </div>
 
                 <div className="space-y-6">
-                    {/* Balance Card */}
-                    <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-8 -mt-8 blur-2xl"></div>
-                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-6 -mb-6 blur-xl"></div>
-                        <div className="relative">
-                            <p className="text-blue-100 text-sm mb-1">Available Balance</p>
-                            <h3 className="text-3xl font-bold mb-4">{formatCurrency(data.stats.balance)}</h3>
-                            <Link
-                                href="/user/deposit"
-                                className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                            >
-                                <Wallet className="w-4 h-4" />
-                                Add Funds
-                            </Link>
+                    {/* Social Media Card */}
+                    {(data.socialMedia.instagram || data.socialMedia.facebook || data.socialMedia.telegram) && (
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                                <h2 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                                    <Globe className="w-4 h-4 text-blue-600" /> Follow Us
+                                </h2>
+                            </div>
+                            <div className="p-4 flex flex-col gap-3">
+                                {data.socialMedia.instagram && (
+                                    <a
+                                        href={data.socialMedia.instagram}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-pink-50 transition-colors group"
+                                    >
+                                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center shadow-sm">
+                                            <InstagramIcon className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-800 group-hover:text-pink-600 transition-colors">Instagram</p>
+                                            <p className="text-xs text-slate-400 truncate max-w-[160px]">{data.socialMedia.instagram.replace(/^https?:\/\/(www\.)?/, '')}</p>
+                                        </div>
+                                    </a>
+                                )}
+                                {data.socialMedia.facebook && (
+                                    <a
+                                        href={data.socialMedia.facebook}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 transition-colors group"
+                                    >
+                                        <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm">
+                                            <Facebook className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">Facebook</p>
+                                            <p className="text-xs text-slate-400 truncate max-w-[160px]">{data.socialMedia.facebook.replace(/^https?:\/\/(www\.)?/, '')}</p>
+                                        </div>
+                                    </a>
+                                )}
+                                {data.socialMedia.telegram && (
+                                    <a
+                                        href={data.socialMedia.telegram.startsWith('http') ? data.socialMedia.telegram : `https://t.me/${data.socialMedia.telegram.replace(/^@/, '')}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-sky-50 transition-colors group"
+                                    >
+                                        <div className="w-9 h-9 rounded-xl bg-sky-500 flex items-center justify-center shadow-sm">
+                                            <Send className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-800 group-hover:text-sky-500 transition-colors">Telegram</p>
+                                            <p className="text-xs text-slate-400 truncate max-w-[160px]">{data.socialMedia.telegram.replace(/^https?:\/\/(www\.)?/, '')}</p>
+                                        </div>
+                                    </a>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* News & Updates */}
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

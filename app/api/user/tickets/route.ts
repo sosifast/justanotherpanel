@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 type TicketMessage = {
     sender: string;
     content: string;
+    image_url?: string | null;
     created_at: string;
 };
 
@@ -91,9 +92,9 @@ export async function POST(req: Request) {
         const { payload } = await jwtVerify(token, secret);
         const userId = parseInt(payload.sub as string);
 
-        const { subject, category, message } = await req.json();
+        const { subject, category, message, image_url } = await req.json();
 
-        if (!subject || !category || !message) {
+        if (!subject || !category || (!message && !image_url)) {
             return NextResponse.json(
                 { error: 'Missing required fields' },
                 { status: 400 }
@@ -103,7 +104,8 @@ export async function POST(req: Request) {
         // Create ticket with initial message in JSON
         const initialMessage: TicketMessage = {
             sender: 'user',
-            content: message,
+            content: message || '',
+            image_url: image_url || null,
             created_at: new Date().toISOString()
         };
 

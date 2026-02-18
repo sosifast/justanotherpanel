@@ -1,5 +1,8 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Mobile API
+Documentation for the mobile backend can be found in [MOBILE_API_DOCS.md](file:///Volumes/Project/Web/justanotherpanel/MOBILE_API_DOCS.md).
+
 ## Getting Started
 
 First, run the development server:

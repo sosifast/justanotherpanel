@@ -190,6 +190,11 @@ export async function POST(req: Request) {
             }
         }
 
+        // Calculate actual prices based on quantity
+        const totalPriceApi = (Number(service.price_api) / 1000) * orderQuantity;
+        const totalPriceSale = (Number(service.price_sale) / 1000) * orderQuantity;
+        const totalPriceSeller = (Number(service.price_reseller) / 1000) * orderQuantity;
+
         // Create order in database
         const order = await prisma.order.create({
             data: {
@@ -200,9 +205,9 @@ export async function POST(req: Request) {
                 pid: pid,
                 link: link,
                 quantity: orderQuantity,
-                price_api: service.price_api,
-                price_sale: service.price_sale,
-                price_seller: service.price_reseller,
+                price_api: totalPriceApi,
+                price_sale: finalPrice,           // actual price paid by user (after discount)
+                price_seller: totalPriceSeller,
                 status: orderStatus as any,
                 refill: service.refill,
                 runs: runs ? parseInt(runs) : null,

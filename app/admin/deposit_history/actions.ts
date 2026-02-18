@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import axios from 'axios';
 import crypto from 'crypto';
 import { revalidatePath } from 'next/cache';
+import paypal from '@paypal/checkout-server-sdk';
 
 export async function checkCryptomusStatus(depositId: number) {
     try {
@@ -117,4 +118,85 @@ export async function checkCryptomusStatus(depositId: number) {
         console.error('Check Cryptomus Status Error:', error);
         return { success: false, message: error.message || 'Failed to check status' };
     }
+}
+
+export async function checkPaypalStatus(depositId: number) {
+    try {
+        const deposit = await prisma.deposits.findUnique({
+            where: { id: depositId },
+            include: { user: true }
+        });
+
+        if (!deposit) return { success: false, message: 'Deposit not found' };
+
+        const detail = deposit.detail_transaction as any;
+        if (detail?.provider !== 'PAYPAL') {
+            return { success: false, message: 'Not a PayPal deposit' };
+        }
+
+        if (!detail.paypal_order_id) {
+            return { success: false, message: 'No PayPal order ID found' };
+        }
+
+        let gateway = null;
+        if (detail.gateway_id) {
+            gateway = await prisma.paymentGateway.findUnique({ where: { id: detail.gateway_id } });
+        }
+        if (!gateway) {
+            gateway = await prisma.paymentGateway.findFirst({ where: { provider: 'PAYPAL' } });
+        }
+        if (!gateway) return { success: false, message: 'PayPal gateway configuration not found' };
+
+        const config = gateway.api_config as any;
+        if (!config.clientId || !config.clientSecret) {
+            return { success: false, message: 'Invalid PayPal configuration' };
+        }
+
+        const Environment = config.mode === 'live'
+            ? paypal.core.LiveEnvironment
+            : paypal.core.SandboxEnvironment;
+
+        const client = new paypal.core.PayPalHttpClient(
+            new Environment(config.clientId, config.clientSecret)
+        );
+
+        const request = new paypal.orders.OrdersGetRequest(detail.paypal_order_id);
+        const order = await client.execute(request);
+        const ppStatus = order.result.status;
+
+        let newStatus = deposit.status;
+        if (ppStatus === 'COMPLETED') newStatus = 'PAYMENT';
+        else if (ppStatus === 'VOIDED') newStatus = 'CANCELED';
+
+        if (newStatus !== deposit.status) {
+            await prisma.$transaction(async (tx) => {
+                await tx.deposits.update({
+                    where: { id: deposit.id },
+                    data: { status: newStatus as any }
+                });
+                if (newStatus === 'PAYMENT') {
+                    await tx.user.update({
+                        where: { id: deposit.id_user },
+                        data: { balance: { increment: deposit.amount } }
+                    });
+                }
+            });
+        }
+
+        revalidatePath('/admin/deposit_history');
+        return { success: true, message: `PayPal status: ${ppStatus} -> ${newStatus}`, status: newStatus };
+
+    } catch (error: any) {
+        console.error('Check PayPal Status Error:', error);
+        return { success: false, message: error.message || 'Failed to check PayPal status' };
+    }
+}
+
+export async function checkDepositStatus(depositId: number) {
+    const deposit = await prisma.deposits.findUnique({ where: { id: depositId } });
+    if (!deposit) return { success: false, message: 'Deposit not found' };
+    const provider = (deposit.detail_transaction as any)?.provider;
+    if (provider === 'PAYPAL') return checkPaypalStatus(depositId);
+    if (provider === 'CRYPTOMUS') return checkCryptomusStatus(depositId);
+    return { success: false, message: 'No auto-check available for this payment method' };
 }

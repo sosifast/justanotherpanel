@@ -128,6 +128,18 @@ model Setting {
   @@map("setting")
 }
 
+model ImagekitApi {
+  id          Int               @id @default(autoincrement())
+  url_endpoint String
+  public_key  String
+  private_key String
+  status      ImagekitApiStatus @default(ACTIVE)
+  created_at  DateTime          @default(now())
+  updated_at  DateTime          @updatedAt
+
+  @@map("imagekit_api")
+}
+
 model Category {
   id          Int            @id @default(autoincrement())
   id_platform Int
@@ -450,6 +462,11 @@ enum AdminNotificationType {
 }
 
 enum RedeemStatus {
+  ACTIVE
+  NOT_ACTIVE
+}
+
+enum ImagekitApiStatus {
   ACTIVE
   NOT_ACTIVE
 }

@@ -28,6 +28,7 @@ interface OrdersViewProps {
 
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
     const router = useRouter();
@@ -280,9 +281,9 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
                                     </td>
                                     <td className="px-4 py-4">
                                         <div className="flex items-center justify-center gap-1">
-                                            <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details">
+                                            <Link href={`/user/history/order/${order.id}`} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details">
                                                 <Eye className="w-4 h-4" />
-                                            </button>
+                                            </Link>
                                             {order.status === 'PARTIAL' && (
                                                 <button className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Request Refill">
                                                     <RefreshCw className="w-4 h-4" />

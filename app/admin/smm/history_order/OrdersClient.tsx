@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Download, ShoppingCart, User, Link as LinkIcon, DollarSign, CheckCircle, XCircle, Clock, Loader, RefreshCw, Trash2, Edit, Eye, X, Clipboard, ExternalLink } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search, Filter, MoreVertical, ShoppingCart, User, Link as LinkIcon, DollarSign, CheckCircle, XCircle, Clock, Loader, RefreshCw, Trash2, Edit, Eye, X, Clipboard, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
@@ -46,6 +46,11 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
     start_count: 0,
     remains: 0
   });
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [perPage, setPerPage] = useState(10);
+  const [page, setPage] = useState(1);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -217,6 +222,42 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
     toast.success('Copied to clipboard');
   };
 
+  const handleSyncAll = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await fetch('/api/admin/orders/sync-all', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message);
+        // Refresh orders list from server by reloading
+        window.location.reload();
+      } else {
+        toast.error(data.error || 'Sync failed');
+      }
+    } catch {
+      toast.error('Error syncing orders');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter(o => {
+      const matchSearch = search === '' ||
+        o.id.toString().includes(search) ||
+        o.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
+        o.user.username.toLowerCase().includes(search.toLowerCase()) ||
+        o.link.toLowerCase().includes(search.toLowerCase()) ||
+        o.service.name.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = statusFilter === 'all' || o.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [orders, search, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const pagedOrders = filteredOrders.slice((safePage - 1) * perPage, safePage * perPage);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -224,9 +265,13 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
           <h1 className="text-2xl font-bold text-slate-800">Order History</h1>
           <p className="text-slate-500 text-sm">View and manage user SMM orders.</p>
         </div>
-        <button className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
-          <Download className="w-4 h-4" />
-          Export CSV
+        <button
+          onClick={handleSyncAll}
+          disabled={isSyncing}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-colors shadow-sm"
+        >
+          <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+          {isSyncing ? 'Syncing...' : 'Update All Status'}
         </button>
       </div>
 
@@ -234,23 +279,41 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
         <div className="relative w-full md:w-96">
           <input
             type="text"
-            placeholder="Search order ID, link or user..."
+            placeholder="Search order ID, invoice, user, link..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
           />
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 text-sm font-medium transition-colors">
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
-          <select className="flex-1 md:flex-none px-4 py-2 border border-slate-200 rounded-lg text-slate-600 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>All Status</option>
-            <option>Completed</option>
-            <option>Processing</option>
-            <option>Pending</option>
-            <option>Canceled</option>
+          <div className="relative flex-1 md:flex-none">
+            <Filter className="absolute left-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
+            <select
+              value={statusFilter}
+              onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+              className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-slate-600 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+            >
+              <option value="all">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="PROCESSING">Processing</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="SUCCESS">Success</option>
+              <option value="PARTIAL">Partial</option>
+              <option value="CANCELED">Canceled</option>
+              <option value="ERROR">Error</option>
+            </select>
+          </div>
+          <select
+            value={perPage}
+            onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
+            className="px-3 py-2 border border-slate-200 rounded-lg text-slate-600 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {[10, 20, 50, 100, 200].map(n => (
+              <option key={n} value={n}>{n} / page</option>
+            ))}
           </select>
         </div>
       </div>
@@ -270,7 +333,7 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {orders.map((order) => (
+              {pagedOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="font-medium text-slate-900">#{order.id}</div>
@@ -352,7 +415,7 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
                   </td>
                 </tr>
               ))}
-              {orders.length === 0 && (
+              {pagedOrders.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-8 text-center text-slate-500">No orders found.</td>
                 </tr>
@@ -361,11 +424,42 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
           </table>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-sm text-slate-500">Showing <span className="font-medium text-slate-900">1</span> to <span className="font-medium text-slate-900">{orders.length}</span> of <span className="font-medium text-slate-900">{orders.length}</span> results</p>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm disabled:opacity-50">Previous</button>
-            <button className="px-3 py-1 border border-slate-200 rounded hover:bg-slate-50 text-sm">Next</button>
+        <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-sm text-slate-500">
+            Showing <span className="font-medium text-slate-900">{filteredOrders.length === 0 ? 0 : (safePage - 1) * perPage + 1}</span>–<span className="font-medium text-slate-900">{Math.min(safePage * perPage, filteredOrders.length)}</span> of <span className="font-medium text-slate-900">{filteredOrders.length}</span> orders
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={safePage <= 1}
+              className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 text-slate-600" />
+            </button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              const start = Math.max(1, safePage - 2);
+              const pg = start + i;
+              if (pg > totalPages) return null;
+              return (
+                <button
+                  key={pg}
+                  onClick={() => setPage(pg)}
+                  className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${pg === safePage
+                      ? 'bg-slate-900 text-white border-slate-900'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                    }`}
+                >
+                  {pg}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={safePage >= totalPages}
+              className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 transition-colors"
+            >
+              <ChevronRight className="w-4 h-4 text-slate-600" />
+            </button>
           </div>
         </div>
       </div>

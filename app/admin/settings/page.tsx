@@ -39,6 +39,8 @@ export default async function AdminSettingsPage() {
         pusher_app_key: settings.pusher_app_key,
         pusher_app_secret: settings.pusher_app_secret,
         pusher_app_cluster: settings.pusher_app_cluster,
+        plausible_domain: settings.plausible_domain,
+        plausible_api_key: settings.plausible_api_key,
     } : null;
 
     return <SettingsClient initialSettings={mappedSettings} />;

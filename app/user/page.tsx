@@ -9,6 +9,8 @@ export const metadata = {
   description: "View your SMM stats and recent activities."
 };
 
+export const dynamic = 'force-dynamic';
+
 
 export default async function UserDashboardPage() {
   // Ensure route is dynamic + resolve authenticated user

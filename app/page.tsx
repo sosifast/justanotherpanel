@@ -2,12 +2,16 @@ import React from 'react';
 import { Metadata } from 'next';
 import App from './LandingView';
 import { getSettings } from '@/lib/settings';
+import { prisma } from '@/lib/prisma';
 
 export async function generateMetadata(): Promise<Metadata> {
-    const settings = await getSettings();
+    const [settings, seo] = await Promise.all([
+        getSettings(),
+        prisma.seoPage.findFirst()
+    ]);
     const siteName = settings?.site_name || "JustAnotherPanel";
-    const title = `${siteName} - #1 SMM Panel in the World`;
-    const description = "The #1 SMM Panel in the World. We lead, they follow. Get instant social media marketing services with the best prices and fastest delivery.";
+    const title = seo?.home_title || `${siteName} - #1 SMM Panel in the World`;
+    const description = seo?.home_desc || "The #1 SMM Panel in the World. We lead, they follow. Get instant social media marketing services with the best prices and fastest delivery.";
 
     return {
         title,

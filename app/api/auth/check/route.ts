@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
+import { getJwtSecret } from '@/lib/auth';
 
 export async function GET() {
     try {
@@ -12,10 +13,7 @@ export async function GET() {
         }
 
         try {
-            const secret = new TextEncoder().encode(
-                process.env.JWT_SECRET || 'default-secret-key-change-it'
-            );
-            const { payload } = await jwtVerify(token, secret);
+            const { payload } = await jwtVerify(token, getJwtSecret());
 
             return NextResponse.json({
                 isAuthenticated: true,

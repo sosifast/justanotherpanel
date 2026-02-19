@@ -33,10 +33,6 @@ import {
 import Pusher from 'pusher-js';
 import { toast } from 'react-hot-toast';
 
-// Prevent Next.js from statically prerendering admin routes at build time.
-// Admin pages query the database and depend on request-time auth.
-export const dynamic = 'force-dynamic';
-
 type AdminLayoutProps = {
   children: React.ReactNode;
 };
@@ -127,7 +123,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   };
 
   useEffect(() => {
-    if (!settings) return;
+    if (!settings?.key || !settings?.cluster) return;
 
     const pusher = new Pusher(settings.key, {
       cluster: settings.cluster,
@@ -409,6 +405,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             label="Slider"
             href="/admin/slider"
             isActive={isActive('/admin/slider')}
+          />
+          <SidebarItem
+            icon={<Search className="w-5 h-5" />}
+            label="SEO Manager"
+            href="/admin/seopage"
+            isActive={isActive('/admin/seopage')}
           />
 
           <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-2">

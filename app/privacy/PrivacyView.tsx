@@ -3,10 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Menu, X, Globe, Shield, Eye, Database, Cookie, Lock, Users, Mail } from 'lucide-react';
+import Footer from '@/components/Footer';
 
-const PrivacyPage = () => {
+const PrivacyPage = ({ settings }: { settings: any }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+
+    const siteName = settings?.site_name || "JustAnotherPanel";
 
     useEffect(() => {
         const handleScroll = () => {
@@ -204,11 +207,17 @@ const PrivacyPage = () => {
             <header className={`fixed w-full z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/80 backdrop-blur-md border-slate-200 py-3' : 'bg-transparent border-transparent py-5'}`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center">
-                        <Link href="/" className="flex items-center gap-2 group" aria-label="JustAnotherPanel Home">
-                            <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-lg group-hover:bg-blue-600 transition-colors">
-                                J
-                            </div>
-                            <span className="font-bold text-xl tracking-tight text-slate-900">JustAnotherPanel</span>
+                        <Link href="/" className="flex items-center gap-2 group" aria-label={`${siteName} Home`}>
+                            {settings?.logo_imagekit_url ? (
+                                <img src={settings.logo_imagekit_url} alt={siteName} className="h-9 w-auto object-contain" />
+                            ) : (
+                                <>
+                                    <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-lg group-hover:bg-blue-600 transition-colors">
+                                        {siteName.charAt(0)}
+                                    </div>
+                                    <span className="font-bold text-xl tracking-tight text-slate-900">{siteName}</span>
+                                </>
+                            )}
                         </Link>
 
                         <nav className="hidden md:flex items-center space-x-8" aria-label="Main Navigation">
@@ -361,53 +370,7 @@ const PrivacyPage = () => {
             </main>
 
             {/* Footer */}
-            <footer className="bg-white border-t border-slate-200 pt-16 pb-8 z-10 relative" role="contentinfo">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-                        <div className="col-span-1 md:col-span-2">
-                            <Link href="/" className="flex items-center gap-2 mb-4 group">
-                                <div className="w-8 h-8 bg-slate-900 rounded flex items-center justify-center text-white font-bold text-sm group-hover:bg-blue-600 transition-colors">
-                                    J
-                                </div>
-                                <span className="font-bold text-xl text-slate-900">JustAnotherPanel</span>
-                            </Link>
-                            <p className="text-slate-500 max-w-xs text-sm leading-relaxed">
-                                The #1 SMM Panel in the World. Engineered for speed, designed for leaders who want to maximize their social media presence.
-                            </p>
-                        </div>
-
-                        <nav aria-label="Footer Platform Links">
-                            <h4 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-wider">Platform</h4>
-                            <ul className="space-y-3 text-sm text-slate-600">
-                                <li><Link href="/services" className="hover:text-blue-600 transition-colors">Services</Link></li>
-                                <li><Link href="/api" className="hover:text-blue-600 transition-colors">API Documentation</Link></li>
-                                <li><Link href="/auth/register" className="hover:text-blue-600 transition-colors">Sign Up</Link></li>
-                                <li><Link href="/auth/login" className="hover:text-blue-600 transition-colors">Login</Link></li>
-                            </ul>
-                        </nav>
-
-                        <nav aria-label="Footer Company Links">
-                            <h4 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-wider">Company</h4>
-                            <ul className="space-y-3 text-sm text-slate-600">
-                                <li><Link href="/about" className="hover:text-blue-600 transition-colors">About Us</Link></li>
-                                <li><Link href="/terms" className="hover:text-blue-600 transition-colors">Terms of Service</Link></li>
-                                <li><Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link></li>
-                                <li><Link href="/support" className="hover:text-blue-600 transition-colors">Support</Link></li>
-                            </ul>
-                        </nav>
-                    </div>
-
-                    <div className="border-t border-slate-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-400">
-                        <div>&copy; {new Date().getFullYear()} JustAnotherPanel. All rights reserved.</div>
-                        <div className="flex gap-6">
-                            <div className="flex items-center gap-2">
-                                <Globe className="w-4 h-4" />
-                                <span>English (US)</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </footer>
+            <Footer settings={settings} />
         </div>
     );
 };

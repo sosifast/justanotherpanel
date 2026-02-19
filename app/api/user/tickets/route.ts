@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
+import { getJwtSecret } from '@/lib/auth';
 
 type TicketMessage = {
     sender: string;
@@ -20,10 +21,7 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const secret = new TextEncoder().encode(
-            process.env.JWT_SECRET || 'default-secret-key-change-it'
-        );
-        const { payload } = await jwtVerify(token, secret);
+        const { payload } = await jwtVerify(token, getJwtSecret());
         const userId = parseInt(payload.sub as string);
 
         // Parse query params
@@ -86,10 +84,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const secret = new TextEncoder().encode(
-            process.env.JWT_SECRET || 'default-secret-key-change-it'
-        );
-        const { payload } = await jwtVerify(token, secret);
+        const { payload } = await jwtVerify(token, getJwtSecret());
         const userId = parseInt(payload.sub as string);
 
         const { subject, category, message, image_url } = await req.json();

@@ -154,9 +154,9 @@ const PaymentGatewaysClient = ({ initialGateways }: { initialGateways: PaymentGa
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getType(gateway.api_config) === 'Automatic' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getType(gateway) === 'Automatic' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
                       }`}>
-                      {getType(gateway.api_config)}
+                      {getType(gateway)}
                     </span>
                   </td>
                   <td className="px-6 py-4 font-medium text-slate-700">${Number(gateway.min_deposit).toFixed(2)}</td>

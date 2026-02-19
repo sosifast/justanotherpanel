@@ -124,6 +124,8 @@ model Setting {
   pusher_app_id        String?
   pusher_app_key       String?
   pusher_app_secret    String?
+  plausible_domain     String?
+  plausible_api_key    String?
 
   @@map("setting")
 }
@@ -351,6 +353,28 @@ model AdminNotification {
   created_at DateTime              @default(now())
 
   @@map("admin_notification")
+}
+
+model SeoPage {
+  id            Int      @id @default(autoincrement())
+  home_title    String?
+  home_desc     String?
+  service_title String?
+  service_desc  String?
+  term_title    String?
+  term_desc     String?
+  about_title   String?
+  about_desc    String?
+  forget_title  String?
+  forget_desc   String?
+  login_title   String?
+  login_desc    String?
+  privacy_title String?
+  privacy_desc  String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("seo_page")
 }
 
 enum Role {

@@ -49,6 +49,35 @@ async function getProviders() {
   });
 }
 
+async function getPlausibleStats() {
+  // Use queryRaw to bypass potential stale Prisma Client cache issues during dev
+  const settingsResults = await prisma.$queryRaw<any[]>`SELECT plausible_domain, plausible_api_key FROM "setting" LIMIT 1`;
+  const settings = settingsResults[0];
+
+  if (!settings?.plausible_domain || !settings?.plausible_api_key) {
+    return null;
+  }
+
+  try {
+    const res = await fetch(
+      `https://plausible.io/api/v1/stats/aggregate?site_id=${settings.plausible_domain}&period=30d&metrics=visitors,pageviews,bounce_rate,visit_duration`,
+      {
+        headers: {
+          'Authorization': `Bearer ${settings.plausible_api_key}`
+        },
+        next: { revalidate: 3600 }
+      }
+    );
+
+    if (!res.ok) return null;
+
+    return await res.json();
+  } catch (error) {
+    console.error('Failed to fetch Plausible stats:', error);
+    return null;
+  }
+}
+
 const AdminDashboard = async () => {
   const session = await getCurrentUser();
 
@@ -59,6 +88,7 @@ const AdminDashboard = async () => {
   const statsData = await getStats();
   const recentOrders = await getRecentOrders();
   const providers = await getProviders();
+  const plausibleData = await getPlausibleStats();
 
   const stats = [
     { label: "Total Revenue", value: `$${statsData.revenue}`, change: "+0%", icon: <DollarSign className="w-5 h-5 text-emerald-500" />, bg: "bg-emerald-500/10" },
@@ -66,6 +96,13 @@ const AdminDashboard = async () => {
     { label: "Active Users", value: statsData.users.toLocaleString(), change: "+0%", icon: <Users className="w-5 h-5 text-indigo-500" />, bg: "bg-indigo-500/10" },
     { label: "Pending Tickets", value: statsData.tickets.toLocaleString(), change: "0%", icon: <LifeBuoy className="w-5 h-5 text-amber-500" />, bg: "bg-amber-500/10" },
   ];
+
+  if (plausibleData && plausibleData.results) {
+    stats.push(
+      { label: "Visitors (30d)", value: plausibleData.results.visitors.value.toLocaleString(), change: "30d", icon: <TrendingUp className="w-5 h-5 text-rose-500" />, bg: "bg-rose-500/10" },
+      { label: "Pageviews (30d)", value: plausibleData.results.pageviews.value.toLocaleString(), change: "30d", icon: <TrendingUp className="w-5 h-5 text-orange-500" />, bg: "bg-orange-500/10" }
+    );
+  }
 
   return (
     <>

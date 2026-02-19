@@ -52,6 +52,13 @@ export default async function RootLayout({
           headerCode={settings?.google_search_code}
           footerCode={settings?.google_analytic_code}
         />
+        {settings?.plausible_domain && (
+          <Script
+            defer
+            data-domain={settings.plausible_domain}
+            src="https://plausible.io/js/script.js"
+          />
+        )}
       </body>
     </html>
   );

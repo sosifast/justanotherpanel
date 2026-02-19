@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
+import { getJwtSecret } from '@/lib/auth';
 
 export async function POST(req: Request) {
     try {
@@ -12,10 +13,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const secret = new TextEncoder().encode(
-            process.env.JWT_SECRET || 'default-secret-key-change-it'
-        );
-        const { payload } = await jwtVerify(token, secret);
+        const { payload } = await jwtVerify(token, getJwtSecret());
         const role = payload.role as string;
 
         if (role !== 'ADMIN') {

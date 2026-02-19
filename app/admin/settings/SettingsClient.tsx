@@ -25,6 +25,8 @@ type SettingData = {
   pusher_app_key: string | null;
   pusher_app_secret: string | null;
   pusher_app_cluster: string | null;
+  plausible_domain: string | null;
+  plausible_api_key: string | null;
 } | null;
 
 const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) => {
@@ -51,6 +53,8 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
     pusher_app_key: initialSettings?.pusher_app_key || '',
     pusher_app_secret: initialSettings?.pusher_app_secret || '',
     pusher_app_cluster: initialSettings?.pusher_app_cluster || '',
+    plausible_domain: initialSettings?.plausible_domain || '',
+    plausible_api_key: initialSettings?.plausible_api_key || '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -407,6 +411,40 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
                 className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Ex: ap1"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Plausible Analytics */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Globe2 className="w-4 h-4 text-indigo-600" />
+            <h2 className="font-semibold text-slate-800 text-sm">Plausible Analytics</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">Domain Name</label>
+              <input
+                type="text"
+                name="plausible_domain"
+                value={formData.plausible_domain}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="example.com"
+              />
+              <p className="text-xs text-slate-400">The domain name you added in Plausible.</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">API Key</label>
+              <input
+                type="password"
+                name="plausible_api_key"
+                value={formData.plausible_api_key}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Plausible API Key"
+              />
+              <p className="text-xs text-slate-400">Required to display stats in the dashboard.</p>
             </div>
           </div>
         </div>

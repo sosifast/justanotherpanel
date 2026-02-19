@@ -11,7 +11,6 @@ import { Analytics } from "@vercel/analytics/next";
 
 // Prevent Next.js from statically prerendering user routes at build time.
 // User pages depend on request-time auth and frequently read the database.
-export const dynamic = 'force-dynamic';
 
 type UserLayoutProps = {
   children: React.ReactNode;

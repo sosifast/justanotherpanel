@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-key-change-it';
+import { getJwtSecret } from './auth';
 
 export async function verifyMobileToken(request: NextRequest) {
     const authHeader = request.headers.get('Authorization');
@@ -14,8 +13,7 @@ export async function verifyMobileToken(request: NextRequest) {
     const token = authHeader.split(' ')[1];
 
     try {
-        const secret = new TextEncoder().encode(JWT_SECRET);
-        const { payload } = await jwtVerify(token, secret);
+        const { payload } = await jwtVerify(token, getJwtSecret());
 
         // Check if user still exists and is active
         // Supporting both 'sub' (from existing login) and 'id'

@@ -110,14 +110,18 @@ async function getServicesData(page: number = 1, limit: number = 20) {
 
 export async function generateMetadata(): Promise<Metadata> {
     const { settings } = await getServicesData();
+    const seoValues = await prisma.seoPage.findFirst();
     const siteName = settings?.site_name || 'JustAnotherPanel';
 
+    const title = seoValues?.service_title || `Buy Followers & Subscriber Start From $1 | ${siteName}`;
+    const description = seoValues?.service_desc || `Explore our wide range of social media marketing services. Boost your presence on Instagram, TikTok, YouTube, and more with ${siteName}.`;
+
     return {
-        title: `Buy Followers & Subscriber Start From $1 | ${siteName}`,
-        description: `Explore our wide range of social media marketing services. Boost your presence on Instagram, TikTok, YouTube, and more with ${siteName}.`,
+        title,
+        description,
         openGraph: {
-            title: `Buy Followers & Subscriber Start From $1 | ${siteName}`,
-            description: `Explore our wide range of social media marketing services. Boost your presence on Instagram, TikTok, YouTube, and more with ${siteName}.`,
+            title,
+            description,
             siteName: siteName,
         }
     };

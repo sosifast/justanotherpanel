@@ -1,6 +1,6 @@
-
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
+import { getJwtSecret } from './auth';
 
 export async function getCurrentUser() {
     try {
@@ -11,11 +11,7 @@ export async function getCurrentUser() {
             return null;
         }
 
-        const secret = new TextEncoder().encode(
-            process.env.JWT_SECRET || 'default-secret-key-change-it'
-        );
-
-        const { payload } = await jwtVerify(token, secret);
+        const { payload } = await jwtVerify(token, getJwtSecret());
 
         return {
             id: Number(payload.sub),

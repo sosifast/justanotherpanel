@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { compare } from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
+import { getJwtSecret } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
@@ -49,11 +50,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create JWT
-    const secret = new TextEncoder().encode(
-      process.env.JWT_SECRET || 'default-secret-key-change-it'
-    );
-
     const token = await new SignJWT({
       sub: user.id.toString(),
       username: user.username,
@@ -61,7 +57,7 @@ export async function POST(req: Request) {
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
-      .sign(secret);
+      .sign(getJwtSecret());
 
     // Set cookie
     const cookieStore = await cookies();

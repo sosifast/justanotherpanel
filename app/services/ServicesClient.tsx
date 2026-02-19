@@ -14,6 +14,7 @@ import {
     ArrowRight,
     Loader2
 } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 interface Service {
     id: number;
@@ -480,13 +481,8 @@ export default function ServicesClient({ initialServices, initialSettings, pagin
             </main>
 
             {/* Footer */}
-            <footer className="bg-white border-t border-slate-200 pt-16 pb-8 z-10 relative">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center text-sm text-slate-400">
-                        &copy; {new Date().getFullYear()} {siteName}. All rights reserved.
-                    </div>
-                </div>
-            </footer>
+            {/* Footer */}
+            <Footer settings={settings} />
         </div>
     );
 }

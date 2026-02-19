@@ -3,7 +3,7 @@ import { jwtVerify, type JWTPayload } from 'jose';
 
 const DEFAULT_JWT_SECRET = 'default-secret-key-change-it';
 
-function getJwtSecret() {
+export function getJwtSecret() {
   return new TextEncoder().encode(process.env.JWT_SECRET || DEFAULT_JWT_SECRET);
 }
 
@@ -32,4 +32,3 @@ export async function getUserIdFromAuth(): Promise<number | null> {
   const id = parseInt(String(payload.sub), 10);
   return Number.isFinite(id) ? id : null;
 }
-

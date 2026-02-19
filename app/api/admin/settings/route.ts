@@ -36,6 +36,8 @@ export async function GET() {
             pusher_app_key: (settings as any).pusher_app_key,
             pusher_app_secret: (settings as any).pusher_app_secret,
             pusher_app_cluster: (settings as any).pusher_app_cluster,
+            plausible_domain: (settings as any).plausible_domain,
+            plausible_api_key: (settings as any).plausible_api_key,
             created_at: settings.created_at,
             updated_at: settings.updated_at,
         };
@@ -69,7 +71,10 @@ export async function PUT(req: Request) {
             pusher_app_id,
             pusher_app_key,
             pusher_app_secret,
-            pusher_app_cluster
+
+            pusher_app_cluster,
+            plausible_domain,
+            plausible_api_key
         } = body;
 
         // Get existing settings or create if not exists
@@ -97,6 +102,8 @@ export async function PUT(req: Request) {
                     pusher_app_key: pusher_app_key || null,
                     pusher_app_secret: pusher_app_secret || null,
                     pusher_app_cluster: pusher_app_cluster || null,
+                    plausible_domain: plausible_domain || null,
+                    plausible_api_key: plausible_api_key || null,
                 } as any
             });
         } else {
@@ -122,6 +129,8 @@ export async function PUT(req: Request) {
                     pusher_app_key: pusher_app_key !== undefined ? pusher_app_key : (settings as any).pusher_app_key,
                     pusher_app_secret: pusher_app_secret !== undefined ? pusher_app_secret : (settings as any).pusher_app_secret,
                     pusher_app_cluster: pusher_app_cluster !== undefined ? pusher_app_cluster : (settings as any).pusher_app_cluster,
+                    plausible_domain: plausible_domain !== undefined ? plausible_domain : (settings as any).plausible_domain,
+                    plausible_api_key: plausible_api_key !== undefined ? plausible_api_key : (settings as any).plausible_api_key,
                 } as any
             });
         }
@@ -147,6 +156,8 @@ export async function PUT(req: Request) {
             pusher_app_key: (settings as any).pusher_app_key,
             pusher_app_secret: (settings as any).pusher_app_secret,
             pusher_app_cluster: (settings as any).pusher_app_cluster,
+            plausible_domain: (settings as any).plausible_domain,
+            plausible_api_key: (settings as any).plausible_api_key,
             created_at: settings.created_at,
             updated_at: settings.updated_at,
         };

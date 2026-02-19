@@ -13,9 +13,11 @@ export async function middleware(request: NextRequest) {
         }
 
         try {
-            const secret = new TextEncoder().encode(
-                process.env.JWT_SECRET || 'default-secret-key-change-it'
-            );
+            const secretSource = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'default-secret-key-change-it');
+            if (!secretSource) {
+                throw new Error('JWT_SECRET environment variable is not configured');
+            }
+            const secret = new TextEncoder().encode(secretSource);
             const { payload } = await jwtVerify(token, secret);
             const role = payload.role as string;
 
@@ -54,9 +56,11 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/auth')) {
         if (token) {
             try {
-                const secret = new TextEncoder().encode(
-                    process.env.JWT_SECRET || 'default-secret-key-change-it'
-                );
+                const secretSource = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'default-secret-key-change-it');
+                if (!secretSource) {
+                    throw new Error('JWT_SECRET environment variable is not configured');
+                }
+                const secret = new TextEncoder().encode(secretSource);
                 const { payload } = await jwtVerify(token, secret);
                 const role = payload.role as string;
 

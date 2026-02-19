@@ -4,7 +4,11 @@ import { jwtVerify, type JWTPayload } from 'jose';
 const DEFAULT_JWT_SECRET = 'default-secret-key-change-it';
 
 export function getJwtSecret() {
-  return new TextEncoder().encode(process.env.JWT_SECRET || DEFAULT_JWT_SECRET);
+  const secret = process.env.JWT_SECRET;
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable is not configured');
+  }
+  return new TextEncoder().encode(secret || DEFAULT_JWT_SECRET);
 }
 
 export async function getAuthToken(): Promise<string | null> {

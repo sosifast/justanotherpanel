@@ -2,6 +2,7 @@ import { getArticles } from '../actions';
 import Link from 'next/link';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { ArticleStatus } from '@prisma/client';
+import GenerateSeoButton from './GenerateSeoButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,12 +16,15 @@ export default async function ArticleListPage() {
                     <h1 className="text-2xl font-bold text-slate-800">Articles</h1>
                     <p className="text-slate-500 text-sm">Manage your blog posts.</p>
                 </div>
-                <Link
-                    href="/admin/blog/article/create"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                >
-                    <Plus className="w-4 h-4" /> Add Article
-                </Link>
+                <div className="flex items-center gap-3">
+                    <GenerateSeoButton />
+                    <Link
+                        href="/admin/blog/article/create"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                        <Plus className="w-4 h-4" /> Add Article
+                    </Link>
+                </div>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -52,8 +56,8 @@ export default async function ArticleListPage() {
                                 <td className="px-6 py-4">
                                     <span
                                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${article.status === ArticleStatus.ACTIVE
-                                                ? 'bg-emerald-100 text-emerald-800'
-                                                : 'bg-slate-100 text-slate-800'
+                                            ? 'bg-emerald-100 text-emerald-800'
+                                            : 'bg-slate-100 text-slate-800'
                                             }`}
                                     >
                                         {article.status}

@@ -1,44 +1,37 @@
 import { MetadataRoute } from 'next'
+import { prisma } from '@/lib/prisma'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://justanotherpanel.online'
 
-    return [
-        {
-            url: baseUrl,
-            lastModified: new Date(),
-            changeFrequency: 'daily',
-            priority: 1,
-        },
-        {
-            url: `${baseUrl}/about`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.8,
-        },
-        {
-            url: `${baseUrl}/terms`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.5,
-        },
-        {
-            url: `${baseUrl}/privacy`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.5,
-        },
-        {
-            url: `${baseUrl}/auth/login`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.5,
-        },
-        {
-            url: `${baseUrl}/auth/register`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.5,
-        },
-    ]
+    // Static pages
+    const routes = [
+        '',
+        '/about',
+        '/terms',
+        '/services',
+        '/auth/login',
+        '/auth/register',
+        '/blog',
+    ].map((route) => ({
+        url: `${baseUrl}${route}`,
+        lastModified: new Date(),
+        changeFrequency: 'daily' as const,
+        priority: route === '' ? 1 : 0.8,
+    }))
+
+    // Dynamic blog posts
+    const articles = await prisma.articlePost.findMany({
+        where: { status: 'ACTIVE' },
+        select: { slug: true, updated_at: true },
+    })
+
+    const posts = articles.map((article) => ({
+        url: `${baseUrl}/blog/${article.slug}`,
+        lastModified: article.updated_at,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+    }))
+
+    return [...routes, ...posts]
 }

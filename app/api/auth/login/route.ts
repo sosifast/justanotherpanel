@@ -101,6 +101,15 @@ export async function POST(req: Request) {
     );
   } catch (error: any) {
     console.error('Login error:', error);
+
+    // Check for specific configuration errors
+    if (error.message === 'JWT_SECRET environment variable is not configured') {
+      return NextResponse.json(
+        { error: 'Server configuration error: JWT_SECRET is missing' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

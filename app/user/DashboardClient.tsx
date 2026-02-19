@@ -140,6 +140,65 @@ const DashboardClient = ({ data }: Props) => {
         }
     };
 
+    const [currentSlide, setCurrentSlide] = React.useState(0);
+    const [isPaused, setIsPaused] = React.useState(false);
+    const sliderRef = React.useRef<HTMLDivElement>(null);
+
+    // Auto scroll functionality
+    React.useEffect(() => {
+        if (!sliderRef.current || data.sliders.length <= 1 || isPaused) return;
+
+        const interval = setInterval(() => {
+            const nextIndex = (currentSlide + 1) % data.sliders.length;
+            scrollToSlide(nextIndex);
+        }, 5000); // 5 seconds per slide
+
+        return () => clearInterval(interval);
+    }, [currentSlide, data.sliders.length, isPaused]);
+
+    const scrollToSlide = (index: number) => {
+        if (!sliderRef.current) return;
+
+        const container = sliderRef.current;
+        const slideWidth = container.clientWidth;
+
+        container.scrollTo({
+            left: index * slideWidth,
+            behavior: 'smooth'
+        });
+
+        setCurrentSlide(index);
+    };
+
+    const nextSlide = () => {
+        const nextIndex = (currentSlide + 1) % data.sliders.length;
+        scrollToSlide(nextIndex);
+    };
+
+    const prevSlide = () => {
+        const prevIndex = (currentSlide - 1 + data.sliders.length) % data.sliders.length;
+        scrollToSlide(prevIndex);
+    };
+
+    // Update current slide on manual scroll
+    React.useEffect(() => {
+        const container = sliderRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            const slideWidth = container.clientWidth;
+            const scrollLeft = container.scrollLeft;
+            const newIndex = Math.round(scrollLeft / slideWidth);
+
+            if (newIndex !== currentSlide) {
+                setCurrentSlide(newIndex);
+            }
+        };
+
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, [currentSlide]);
+
     const stats = [
         {
             label: "Total Balance",
@@ -237,11 +296,18 @@ const DashboardClient = ({ data }: Props) => {
 
                 {/* Slider */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col">
-                    <div className="p-0 flex-1 relative group">
+                    <div className="p-0 flex-1 relative group"
+                        onMouseEnter={() => setIsPaused(true)}
+                        onMouseLeave={() => setIsPaused(false)}
+                    >
                         {data.sliders.length > 0 ? (
                             <div className="relative w-full h-full min-h-[300px] bg-slate-100">
-                                {/* Simple CSS Slider implementation since we can't easily add swiper/slick without installing packages */}
-                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+                                {/* Simple CSS Slider implementation */}
+                                <div
+                                    ref={sliderRef}
+                                    className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory scrollbar-none [&::-webkit-scrollbar]:hidden"
+                                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                                >
                                     {data.sliders.map((slider) => (
                                         <div key={slider.id} className="w-full flex-shrink-0 snap-center relative">
                                             <img
@@ -252,15 +318,36 @@ const DashboardClient = ({ data }: Props) => {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="absolute top-1/2 left-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                    <div className="w-8 h-8 bg-black/30 backdrop-blur rounded-full flex items-center justify-center text-white">
-                                        <ChevronRight className="w-5 h-5 rotate-180" />
-                                    </div>
+
+                                {/* Navigation Dots */}
+                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                                    {data.sliders.map((_, index) => (
+                                        <button
+                                            key={index}
+                                            className={`w-2 h-2 rounded-full transition-all ${currentSlide === index
+                                                ? 'bg-white w-6'
+                                                : 'bg-white/50 hover:bg-white/80'
+                                                }`}
+                                            onClick={() => scrollToSlide(index)}
+                                        />
+                                    ))}
                                 </div>
-                                <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                    <div className="w-8 h-8 bg-black/30 backdrop-blur rounded-full flex items-center justify-center text-white">
+
+                                <div className="absolute top-1/2 left-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={() => prevSlide()}
+                                        className="w-8 h-8 bg-black/30 backdrop-blur rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-colors"
+                                    >
+                                        <ChevronRight className="w-5 h-5 rotate-180" />
+                                    </button>
+                                </div>
+                                <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={() => nextSlide()}
+                                        className="w-8 h-8 bg-black/30 backdrop-blur rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-colors"
+                                    >
                                         <ChevronRight className="w-5 h-5" />
-                                    </div>
+                                    </button>
                                 </div>
                             </div>
                         ) : (

@@ -127,7 +127,8 @@ export async function generateMetadata(): Promise<Metadata> {
     };
 }
 
-export default async function ServicesPage({ searchParams }: { searchParams: { page?: string } }) {
+export default async function ServicesPage(props: { searchParams: Promise<{ page?: string }> }) {
+    const searchParams = await props.searchParams;
     const page = Number(searchParams?.page) || 1;
     const data = await getServicesData(page);
 

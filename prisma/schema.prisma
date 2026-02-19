@@ -377,6 +377,39 @@ model SeoPage {
   @@map("seo_page")
 }
 
+model ArticleCategory {
+  id         Int           @id @default(autoincrement())
+  name       String
+  slug       String        @unique
+  seo_title  String?
+  desc_seo   String?
+  keyword    String?
+  status     ArticleStatus @default(ACTIVE)
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+  posts      ArticlePost[]
+
+  @@map("article_category")
+}
+
+model ArticlePost {
+  id                         Int             @id @default(autoincrement())
+  id_article_category        Int
+  name                       String
+  slug                       String          @unique
+  banner_imagekit_upload_url String?
+  content                    Json
+  seo_title                  String?
+  desc_seo                   String?
+  keyword                    String?
+  status                     ArticleStatus   @default(ACTIVE)
+  created_at                 DateTime        @default(now())
+  updated_at                 DateTime        @updatedAt
+  category                   ArticleCategory @relation(fields: [id_article_category], references: [id])
+
+  @@map("article_post")
+}
+
 enum Role {
   MEMBER
   STAFF
@@ -502,6 +535,11 @@ enum RedeemStatus {
 }
 
 enum ImagekitApiStatus {
+  ACTIVE
+  NOT_ACTIVE
+}
+
+enum ArticleStatus {
   ACTIVE
   NOT_ACTIVE
 }

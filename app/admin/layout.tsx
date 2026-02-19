@@ -398,6 +398,22 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           />
 
           <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-2">
+            Blog System
+          </p>
+          <SidebarItem
+            icon={<Layers className="w-5 h-5" />}
+            label="Articles"
+            href="/admin/blog/article"
+            isActive={isActive('/admin/blog/article')}
+          />
+          <SidebarItem
+            icon={<List className="w-5 h-5" />}
+            label="Categories"
+            href="/admin/blog/category"
+            isActive={isActive('/admin/blog/category')}
+          />
+
+          <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-2">
             Content
           </p>
           <SidebarItem

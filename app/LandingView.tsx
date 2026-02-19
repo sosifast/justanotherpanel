@@ -18,6 +18,7 @@ import {
   Instagram
 } from 'lucide-react';
 import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
 
 const TelegramIcon = ({ className }: { className?: string }) => (
   <svg
@@ -36,29 +37,18 @@ const TelegramIcon = ({ className }: { className?: string }) => (
 );
 
 const App = ({ settings }: { settings: any }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
   const siteName = settings?.site_name || "JustAnotherPanel";
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in by calling the auth check API
+    // Check if user is logged in for the CTA buttons
     const checkAuth = async () => {
       try {
         const response = await fetch('/api/auth/check');
         const data = await response.json();
         setIsLoggedIn(data.isAuthenticated);
       } catch (error) {
-        console.error('Auth check failed:', error);
         setIsLoggedIn(false);
       }
     };
@@ -97,79 +87,8 @@ const App = ({ settings }: { settings: any }) => {
         <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-blue-500 opacity-20 blur-[100px]"></div>
       </div>
 
-      {/* Semantic Header for Navigation */}
-      <header className={`fixed w-full z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/80 backdrop-blur-md border-slate-200 py-3' : 'bg-transparent border-transparent py-5'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <Link href="/" className="flex items-center gap-2 group" aria-label="JustAnotherPanel Home">
-              {settings?.logo_imagekit_url ? (
-                <img src={settings.logo_imagekit_url} alt={siteName} className="h-9 w-auto object-contain" />
-              ) : (
-                <>
-                  <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-lg group-hover:bg-blue-600 transition-colors">
-                    {siteName.charAt(0)}
-                  </div>
-                  <span className="font-bold text-xl tracking-tight text-slate-900">{siteName}</span>
-                </>
-              )}
-            </Link>
-
-            <nav className="hidden md:flex items-center space-x-8" aria-label="Main Navigation">
-              <Link href="/services" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Services</Link>
-              <a href="#features" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Features</a>
-              <a href="#about" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Why Us</a>
-            </nav>
-
-            <div className="hidden md:flex items-center gap-3">
-              {isLoggedIn ? (
-                <a href="/user" className="text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all inline-flex items-center justify-center gap-2">
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
-                </a>
-              ) : (
-                <>
-                  <a href="/auth/login" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Login</a>
-                  <a href="/auth/register" className="text-sm font-medium bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-all inline-flex items-center justify-center">
-                    Get Started
-                  </a>
-                </>
-              )}
-            </div>
-
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-slate-900 p-2"
-                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-              >
-                {isMenuOpen ? <X /> : <Menu />}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <nav className="md:hidden absolute top-full left-0 w-full bg-white border-b border-slate-200 py-4 px-4 flex flex-col space-y-4 shadow-lg" aria-label="Mobile Navigation">
-            <Link href="/services" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Services</Link>
-            <a href="#features" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Features</a>
-            <a href="#about" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Why Us</a>
-            <div className="pt-2 border-t border-slate-100 flex flex-col gap-3">
-              {isLoggedIn ? (
-                <a href="/user" className="bg-blue-600 text-white px-5 py-2 rounded-lg font-medium text-center flex items-center justify-center gap-2">
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
-                </a>
-              ) : (
-                <>
-                  <a href="/auth/login" className="text-slate-900 font-semibold text-left">Login</a>
-                  <a href="/auth/register" className="bg-slate-900 text-white px-5 py-2 rounded-lg font-medium text-center">Sign Up</a>
-                </>
-              )}
-            </div>
-          </nav>
-        )}
-      </header>
+      {/* Navbar */}
+      <Navbar settings={settings} />
 
       {/* Main Content Wrapper */}
       <main>

@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import ApiProvidersClient from './ApiProvidersClient';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata: Metadata = {
     title: "Providers",
     description: "Manage API providers."

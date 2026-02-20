@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import PaymentGatewaysClient from './PaymentGatewaysClient';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata: Metadata = {
     title: "Gateways",
     description: "Manage payment gateways."

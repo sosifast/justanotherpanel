@@ -8,6 +8,9 @@ import {
 import { format } from 'date-fns';
 import AdminDepositActions from './AdminDepositActions';
 
+export const dynamic = 'force-dynamic';
+
+
 type Props = { params: Promise<{ id: string }> };
 
 function getStatusStyle(status: string) {

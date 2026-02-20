@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import ReedemGenerateClient from './ReedemGenerateClient';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata: Metadata = {
     title: "Redeem Codes",
     description: "Manage redeem codes."

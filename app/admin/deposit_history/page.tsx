@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import DepositsClient from './DepositsClient';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata: Metadata = {
     title: "Deposits",
     description: "View deposit history."

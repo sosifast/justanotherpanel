@@ -4,6 +4,9 @@ import { Metadata } from 'next';
 import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata: Metadata = {
     title: "Users",
     description: "Manage users."

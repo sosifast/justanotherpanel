@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import ReedemUsedClient from './ReedemUsedClient';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata: Metadata = {
     title: "Redeem History",
     description: "View redeem history."

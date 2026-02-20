@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { DollarSign, ArrowDownRight, ArrowUpRight, CreditCard, Wallet } from 'lucide-react';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata: Metadata = {
   title: "Reports",
   description: "Financial reports."

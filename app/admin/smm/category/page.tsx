@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import CategoriesClient from './CategoriesClient';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata: Metadata = {
     title: "Categories",
     description: "Manage service categories."

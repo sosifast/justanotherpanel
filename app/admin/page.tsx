@@ -5,6 +5,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata = {
   title: "Dashboard",
   description: "Monitor and manage your SMM panel operations."

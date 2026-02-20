@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma';
 import NewsClient from './NewsClient';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
     title: "News",
     description: "Manage news."

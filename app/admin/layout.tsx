@@ -28,7 +28,8 @@ import {
   Check,
   Ticket,
   History,
-  Image
+  Image,
+  Phone
 } from 'lucide-react';
 import Pusher from 'pusher-js';
 import { toast } from 'react-hot-toast';
@@ -334,6 +335,34 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             label="Import Services"
             href="/admin/smm/import"
             isActive={isActive('/admin/smm/import')}
+          />
+
+          <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-2">
+            Virtual Number
+          </p>
+          <SidebarItem
+            icon={<Phone className="w-5 h-5" />}
+            label="Orders"
+            href="/admin/virtual-number/history-order"
+            isActive={isActive('/admin/virtual-number/history-order')}
+          />
+          <SidebarItem
+            icon={<Layers className="w-5 h-5" />}
+            label="Products"
+            href="/admin/virtual-number/product"
+            isActive={isActive('/admin/virtual-number/product')}
+          />
+          <SidebarItem
+            icon={<Globe className="w-5 h-5" />}
+            label="Countries"
+            href="/admin/virtual-number/country"
+            isActive={isActive('/admin/virtual-number/country')}
+          />
+          <SidebarItem
+            icon={<Server className="w-5 h-5" />}
+            label="API Providers"
+            href="/admin/virtual-number/api"
+            isActive={isActive('/admin/virtual-number/api')}
           />
 
           <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-2">

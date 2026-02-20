@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { Metadata } from 'next';
 import ResellerClient from './ResellerClient';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata: Metadata = {
     title: "Resellers",
     description: "Manage registered resellers."

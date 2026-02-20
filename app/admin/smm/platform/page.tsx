@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import PlatformsClient from './PlatformsClient';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata: Metadata = {
     title: "Platforms",
     description: "Manage social media platforms."

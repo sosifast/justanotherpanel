@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import DiscountClient from './DiscountClient';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
+
 export const metadata: Metadata = {
     title: "Discounts",
     description: "Manage discounts."

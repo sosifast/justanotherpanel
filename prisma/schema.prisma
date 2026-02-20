@@ -30,6 +30,7 @@ model User {
   reseller                 Reseller?
   tickets                  Ticket[]
   sessions                 UserSession[]
+  sms_orders               OrderSms[]
 
   @@map("user")
 }
@@ -131,13 +132,13 @@ model Setting {
 }
 
 model ImagekitApi {
-  id          Int               @id @default(autoincrement())
+  id           Int               @id @default(autoincrement())
   url_endpoint String
-  public_key  String
-  private_key String
-  status      ImagekitApiStatus @default(ACTIVE)
-  created_at  DateTime          @default(now())
-  updated_at  DateTime          @updatedAt
+  public_key   String
+  private_key  String
+  status       ImagekitApiStatus @default(ACTIVE)
+  created_at   DateTime          @default(now())
+  updated_at   DateTime          @updatedAt
 
   @@map("imagekit_api")
 }
@@ -542,4 +543,66 @@ enum ImagekitApiStatus {
 enum ArticleStatus {
   ACTIVE
   NOT_ACTIVE
+}
+
+model SmsApi {
+  id                     Int      @id @default(autoincrement())
+  token                  String
+  url                    String
+  balance                Decimal  @default(0) @db.Decimal(10, 4)
+  markup_price_pecentase Decimal  @default(0) @db.Decimal(10, 2)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  @@map("sms_api")
+}
+
+model CountrySms {
+  id         Int          @id @default(autoincrement())
+  pid        String
+  title      String
+  code       String
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+  products   ProductSms[]
+  orders     OrderSms[]
+
+  @@map("country_sms")
+}
+
+model ProductSms {
+  id          Int        @id @default(autoincrement())
+  country_id  Int
+  project_id  String
+  cost        Decimal    @db.Decimal(10, 4)
+  total_count Int
+  title       String
+  code        String
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+  country     CountrySms @relation(fields: [country_id], references: [id])
+  orders      OrderSms[]
+
+  @@map("product_sms")
+}
+
+model OrderSms {
+  id             Int         @id @default(autoincrement())
+  id_user        Int
+  id_country_sms Int
+  id_product_sms Int
+  price_api_sms  Decimal     @db.Decimal(10, 4)
+  price_sale     Decimal     @db.Decimal(10, 4)
+  invoice        String      @unique
+  request_id     String
+  number         String
+  status_order   OrderStatus @default(PENDING)
+  sms_otp_code   String?
+  created_at     DateTime    @default(now())
+  updated_at     DateTime    @updatedAt
+  user           User        @relation(fields: [id_user], references: [id])
+  country        CountrySms  @relation(fields: [id_country_sms], references: [id])
+  product        ProductSms  @relation(fields: [id_product_sms], references: [id])
+
+  @@map("order_sms")
 }

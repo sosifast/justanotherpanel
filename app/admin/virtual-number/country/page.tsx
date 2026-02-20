@@ -1,8 +1,19 @@
-export default function CountryPage() {
-    return (
-        <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Countries</h1>
-            <p>Coming soon...</p>
-        </div>
-    );
+import { prisma } from '@/lib/prisma';
+import CountryClient from './CountryClient';
+import { Metadata } from 'next';
+
+export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+    title: "Virtual Number Countries",
+    description: "Manage virtual number SMS countries."
+};
+
+export default async function VirtualNumberCountryPage() {
+    // Fetch all countries
+    const countries = await prisma.countrySms.findMany({
+        orderBy: { title: 'asc' }
+    });
+
+    return <CountryClient initialCountries={countries} />;
 }

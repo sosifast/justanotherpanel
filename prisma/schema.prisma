@@ -575,6 +575,7 @@ model ProductSms {
   country_id  Int
   project_id  String
   cost        Decimal    @db.Decimal(10, 4)
+  cost_sale   Decimal    @default(0) @db.Decimal(10, 4)
   total_count Int
   title       String
   code        String
@@ -605,4 +606,15 @@ model OrderSms {
   product        ProductSms  @relation(fields: [id_product_sms], references: [id])
 
   @@map("order_sms")
+}
+
+model ProjectSms {
+  id         Int      @id @default(autoincrement())
+  pid        String
+  title      String
+  code       String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("project_sms")
 }

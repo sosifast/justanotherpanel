@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { OrderStatus } from '@prisma/client';
+import { sendOrderWebhook } from './webhook';
 
 type UpdateOrderParams = {
     orderId: number;
@@ -9,7 +10,8 @@ type UpdateOrderParams = {
 };
 
 export async function updateOrderStatus({ orderId, newStatus, newRemains, newStartCount }: UpdateOrderParams) {
-    return await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx) => {
+        // ... (existing logic)
         // 1. Fetch current order with user details for balance update
         const currentOrder = await tx.order.findUnique({
             where: { id: orderId },
@@ -21,15 +23,6 @@ export async function updateOrderStatus({ orderId, newStatus, newRemains, newSta
         }
 
         // 2. Determine if refund is needed
-        // Only refund if transitioning TO a refunded state AND not already in a refunded state
-        // This is a basic idempotency check. A more robust one would check a 'Refund' record, but we don't have one in the schema yet for orders.
-        // We assume if status is ALREADY 'ERROR'/'CANCELED'/'PARTIAL', we probably already processed it.
-        // However, admins might correct a mistake, so we should be careful. 
-        // For 'PARTIAL', the remains might change, triggering more refund? 
-        // For simplicity: Only refund if previous status was NOT a final/refunded status.
-        // OR: Calculate refund based on *difference*? That's complex without audit logs.
-        // Strategy: Only refund if moving from [PENDING, IN_PROGRESS, PROCESSING] -> [ERROR, CANCELED, PARTIAL]
-
         const refundStatuses = ['ERROR', 'CANCELED', 'PARTIAL'];
         const activeStatuses = ['PENDING', 'IN_PROGRESS', 'PROCESSING'];
 
@@ -41,10 +34,6 @@ export async function updateOrderStatus({ orderId, newStatus, newRemains, newSta
             shouldRefund = true;
         }
 
-        // Special case: If already PARTIAL, and updating remains? 
-        // Complex to handle without more data. Safe bet for now: strictly handle strict transitions for auto-refunds.
-        // If an admin manually sets ERROR -> ERROR, no refund.
-
         if (shouldRefund) {
             const pricePerItem = Number(currentOrder.price_sale) / currentOrder.quantity;
 
@@ -53,7 +42,6 @@ export async function updateOrderStatus({ orderId, newStatus, newRemains, newSta
                 refundAmount = Number(currentOrder.price_sale);
             } else if (newStatus === 'PARTIAL') {
                 // Partial Refund
-                // Valid remains is required for partial
                 const remainsToRefund = newRemains !== undefined ? newRemains : currentOrder.remains || 0;
                 refundAmount = remainsToRefund * pricePerItem;
             }
@@ -88,10 +76,19 @@ export async function updateOrderStatus({ orderId, newStatus, newRemains, newSta
                 }
             });
 
-            // Optional: Log this action if we had a logs table
             console.log(`[AutoRefund] Order #${orderId} refunded: $${refundAmount} (Status: ${newStatus})`);
         }
 
         return updatedOrder;
     });
+
+    // 5. Trigger Webhook and Notifications after transaction committed
+    // This is handled by sendOrderWebhook which also creates a user notification
+    try {
+        await sendOrderWebhook(orderId);
+    } catch (err: any) {
+        console.error(`Error sending webhook for order #${orderId}:`, err.message);
+    }
+
+    return order;
 }

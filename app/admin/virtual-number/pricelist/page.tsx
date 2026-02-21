@@ -1,15 +1,15 @@
 import { prisma } from '@/lib/prisma';
-import ProductClient from './ProductClient';
+import PricelistClient from './PricelistClient';
 import { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-    title: "Virtual Number Products",
-    description: "Manage virtual number SMS products."
+    title: "Virtual Number Pricelist",
+    description: "Manage virtual number SMS pricelist."
 };
 
-export default async function VirtualNumberProductPage() {
+export default async function VirtualNumberPricelistPage() {
     // Fetch all products with their country relation
     const products = await prisma.productSms.findMany({
         include: {
@@ -21,8 +21,9 @@ export default async function VirtualNumberProductPage() {
     // Serialize Decimals for Client Component
     const serializedProducts = products.map(product => ({
         ...product,
-        cost: Number(product.cost)
+        cost: Number(product.cost),
+        cost_sale: Number(product.cost_sale)
     }));
 
-    return <ProductClient initialProducts={serializedProducts as any} />;
+    return <PricelistClient initialProducts={serializedProducts as any} />;
 }

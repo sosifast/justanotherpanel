@@ -348,9 +348,16 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           />
           <SidebarItem
             icon={<Layers className="w-5 h-5" />}
-            label="Products"
-            href="/admin/virtual-number/product"
-            isActive={isActive('/admin/virtual-number/product')}
+            label="Projects"
+            href="/admin/virtual-number/project"
+            isActive={isActive('/admin/virtual-number/project')}
+          />
+
+          <SidebarItem
+            icon={<List className="w-5 h-5" />}
+            label="Pricelist"
+            href="/admin/virtual-number/pricelist"
+            isActive={isActive('/admin/virtual-number/pricelist')}
           />
           <SidebarItem
             icon={<Globe className="w-5 h-5" />}

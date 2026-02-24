@@ -3,6 +3,90 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyMobileToken } from '@/lib/mobile-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
+import crypto from 'crypto';
+import axios from 'axios';
+import paypal from '@paypal/checkout-server-sdk';
+
+// Helper function to create PayPal payment
+async function createPayPalPayment(gateway: any, amount: number, userId: number, baseUrl: string) {
+    const config = gateway.api_config as any;
+    
+    const Environment = config.mode === 'live'
+        ? paypal.core.LiveEnvironment
+        : paypal.core.SandboxEnvironment;
+
+    const client = new paypal.core.PayPalHttpClient(
+        new Environment(config.clientId, config.clientSecret)
+    );
+
+    const request = new paypal.orders.OrdersCreateRequest();
+    request.prefer("return=representation");
+    request.requestBody({
+        intent: 'CAPTURE',
+        purchase_units: [{
+            amount: {
+                currency_code: 'USD',
+                value: amount.toString()
+            }
+        }],
+        application_context: {
+            return_url: `${baseUrl}/api-mobile/deposit/success`,
+            cancel_url: `${baseUrl}/api-mobile/deposit/cancel`
+        }
+    });
+
+    const order = await client.execute(request);
+    const approveLink = order.result.links.find((link: any) => link.rel === 'approve')?.href;
+
+    if (!approveLink) {
+        throw new Error('No approve link found');
+    }
+
+    return {
+        payment_id: order.result.id,
+        payment_url: approveLink
+    };
+}
+
+// Helper function to create Cryptomus payment
+async function createCryptomusPayment(gateway: any, amount: number, userId: number, baseUrl: string) {
+    const config = gateway.api_config as any;
+    
+    const orderId = `DEP-${userId}-${Date.now()}`;
+    
+    const payload = {
+        amount: amount.toString(),
+        currency: 'USD',
+        order_id: orderId,
+        url_return: `${baseUrl}/api-mobile/deposit/success`,
+        url_callback: `${baseUrl}/api/webhooks/cryptomus`,
+        is_payment_multiple: true,
+        lifetime: '3600'
+    };
+
+    const jsonPayload = JSON.stringify(payload);
+    const base64Payload = Buffer.from(jsonPayload).toString('base64');
+    const sign = crypto.createHash('md5').update(base64Payload + config.paymentKey).digest('hex');
+
+    const response = await axios.post('https://api.cryptomus.com/v1/payment', payload, {
+        headers: {
+            merchant: config.merchantId,
+            sign: sign,
+            'Content-Type': 'application/json'
+        }
+    });
+
+    const result = response.data;
+
+    if (result.state === 0 && result.result?.url) {
+        return {
+            payment_id: result.result.uuid,
+            payment_url: result.result.url
+        };
+    } else {
+        throw new Error('Failed to create payment link');
+    }
+}
 
 export async function GET(req: NextRequest) {
     const user = await verifyMobileToken(req);
@@ -93,19 +177,50 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        // If Manual, return success with instructions (client already has them from GET)
-        // If PayPal/Cryptomus, we would need to call their APIs to get a URL.
-        // For this MVP, we return the deposit object and let the client handle "Pending" state
-        // or simulate a payment link if needed.
-        // Since we don't have the full payment integration code here (it's in specific routes),
-        // we will just return the deposit. 
-        // The mobile app can show "Pending" and instructions for Manual.
-        // For automated, it might need a WebView.
+        // Handle different payment providers
+        let paymentResult = null;
+        
+        try {
+            // Determine base URL dynamically
+            const protocol = req.headers.get('x-forwarded-proto') || 'https';
+            const host = req.headers.get('host');
+            const baseUrl = `${protocol}://${host}`;
 
+            if (gateway.provider === 'PAYPAL') {
+                paymentResult = await createPayPalPayment(gateway, Number(amount), user.id, baseUrl);
+            } else if (gateway.provider === 'CRYPTOMUS') {
+                paymentResult = await createCryptomusPayment(gateway, Number(amount), user.id, baseUrl);
+            }
+        } catch (paymentError) {
+            console.error('Payment creation error:', paymentError);
+            // Continue with manual process if automated payment fails
+        }
+
+        // Update deposit with payment details if automated payment was created
+        if (paymentResult) {
+            const currentDetails = deposit.detail_transaction as any || {};
+            const updatedDeposit = await prisma.deposits.update({
+                where: { id: deposit.id },
+                data: {
+                    detail_transaction: {
+                        ...currentDetails,
+                        payment_id: paymentResult.payment_id,
+                        type: 'AUTOMATIC'
+                    }
+                }
+            });
+
+            return successResponse({
+                deposit: updatedDeposit,
+                payment_url: paymentResult.payment_url,
+                message: 'Deposit created successfully. Redirect to payment URL to complete payment.'
+            });
+        }
+
+        // For manual payments or if automated payment failed
         return successResponse({
             deposit,
-            message: 'Deposit created successfully',
-            // payment_url: ... // functionality for automated gateways
+            message: 'Deposit created successfully. Please follow the payment instructions.'
         });
 
     } catch (error) {

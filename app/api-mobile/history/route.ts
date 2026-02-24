@@ -4,6 +4,16 @@ import { prisma } from '@/lib/prisma';
 import { verifyMobileToken } from '@/lib/mobile-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
 
+interface TransactionDetail {
+    fee?: number;
+    method?: string;
+    provider?: string;
+    transactionId?: string;
+    paypal_order_id?: string;
+    cryptomus_uuid?: string;
+    order_id?: string;
+}
+
 export async function GET(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);
@@ -26,7 +36,26 @@ export async function GET(req: NextRequest) {
             const total = await prisma.deposits.count({ where: { id_user: user.id } });
 
             return successResponse({
-                list: deposits,
+                list: deposits.map(deposit => {
+                    const details = deposit.detail_transaction as unknown as TransactionDetail;
+                    const provider = details?.provider || details?.method || 'Manual';
+                    const transactionId = details?.transactionId || 
+                                        details?.paypal_order_id || 
+                                        details?.cryptomus_uuid || 
+                                        details?.order_id || '-';
+                    const fee = details?.fee || 0;
+
+                    return {
+                        id: deposit.id,
+                        amount: deposit.amount.toString(),
+                        status: deposit.status,
+                        provider: provider,
+                        transaction_id: transactionId,
+                        fee: fee.toString(),
+                        created_at: deposit.created_at,
+                        updated_at: deposit.updated_at
+                    };
+                }),
                 pagination: {
                     page,
                     limit,
@@ -41,7 +70,16 @@ export async function GET(req: NextRequest) {
                 orderBy: { created_at: 'desc' },
                 include: {
                     service: {
-                        select: { name: true }
+                        select: { 
+                            name: true,
+                            category: {
+                                select: {
+                                    platform: {
+                                        select: { name: true }
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 skip: offset,
@@ -51,9 +89,23 @@ export async function GET(req: NextRequest) {
             const total = await prisma.order.count({ where: { id_user: user.id } });
 
             return successResponse({
-                list: orders.map(o => ({
-                    ...o,
-                    service_name: o.service.name
+                list: orders.map(order => ({
+                    id: order.id,
+                    invoice_number: order.invoice_number,
+                    service_name: order.service.name,
+                    platform_name: order.service.category?.platform?.name || 'Unknown',
+                    link: order.link,
+                    quantity: order.quantity,
+                    price: order.price_sale.toString(),
+                    start_count: order.start_count || 0,
+                    remains: order.remains || 0,
+                    status: order.status,
+                    refill: order.refill,
+                    runs: order.runs || 0,
+                    interval: order.interval || 0,
+                    pid: order.pid || '-',
+                    created_at: order.created_at,
+                    updated_at: order.updated_at
                 })),
                 pagination: {
                     page,

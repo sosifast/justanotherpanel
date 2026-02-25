@@ -1,14 +1,23 @@
 import { Metadata } from 'next';
 import { Phone, Mail, MessageCircle, MapPin, Clock } from 'lucide-react';
 import Link from 'next/link';
+import { getSettings } from '@/lib/settings';
 
-export const metadata: Metadata = {
-    title: 'Contact Us - JustAnotherPanel',
-    description: 'Get in touch with JustAnotherPanel. Contact us via WhatsApp, email, or visit our office. We\'re here to help with your SMM needs.',
-    keywords: 'contact, support, WhatsApp, email, SMM panel help',
-};
+export const dynamic = 'force-dynamic';
 
-export default function ContactPage() {
+export async function generateMetadata(): Promise<Metadata> {
+    const settings = await getSettings();
+    const siteName = settings?.site_name || 'JustAnotherPanel';
+    return {
+        title: `Contact Us | ${siteName}`,
+        description: `Get in touch with ${siteName}. Contact us via WhatsApp, email, or visit our office. We're here to help with your SMM needs.`,
+        keywords: 'contact, support, WhatsApp, email, SMM panel help',
+    };
+}
+
+export default async function ContactPage() {
+    const settings = await getSettings();
+    const siteName = settings?.site_name || 'JustAnotherPanel';
     return (
         <div className="min-h-screen bg-white">
             {/* Header */}
@@ -43,9 +52,9 @@ export default function ContactPage() {
                                 <div className="flex-1">
                                     <h3 className="font-semibold text-slate-900 mb-2">WhatsApp Support</h3>
                                     <p className="text-slate-600 mb-3">Fastest response time for urgent inquiries</p>
-                                    <Link 
-                                        href="https://wa.me/6288293334443" 
-                                        target="_blank" 
+                                    <Link
+                                        href="https://wa.me/6288293334443"
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-2 text-green-600 font-medium hover:text-green-700 transition-colors"
                                     >
@@ -63,7 +72,7 @@ export default function ContactPage() {
                                 <div className="flex-1">
                                     <h3 className="font-semibold text-slate-900 mb-2">Email Support</h3>
                                     <p className="text-slate-600 mb-3">For detailed inquiries and documentation</p>
-                                    <Link 
+                                    <Link
                                         href="mailto:info@apkey.net"
                                         className="inline-flex items-center gap-2 text-blue-600 font-medium hover:text-blue-700 transition-colors"
                                     >
@@ -145,10 +154,10 @@ export default function ContactPage() {
                         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 border border-blue-100 text-center">
                             <h3 className="font-bold text-slate-900 mb-3">Ready to Get Started?</h3>
                             <p className="text-slate-600 text-sm mb-4">
-                                Join thousands of satisfied customers who trust JustAnotherPanel for their social media growth.
+                                Join thousands of satisfied customers who trust {siteName} for their social media growth.
                             </p>
-                            <Link 
-                                href="/auth/register" 
+                            <Link
+                                href="/auth/register"
                                 className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
                             >
                                 Create Free Account

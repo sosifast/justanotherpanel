@@ -53,7 +53,7 @@ const AboutPage = ({ settings }: { settings: any }) => {
         {
             year: '2020',
             title: 'The Beginning',
-            description: 'JustAnotherPanel was founded with a vision to revolutionize social media marketing.',
+            description: `${siteName} was founded with a vision to revolutionize social media marketing.`,
         },
         {
             year: '2021',

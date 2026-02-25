@@ -46,7 +46,7 @@ export async function POST(req: Request) {
             amount: amount.toString(),
             currency: 'USD',
             order_id: orderId,
-            url_return: `${baseUrl}/user/add-funds/success`,
+            url_return: `${baseUrl}/user/history/deposits`,
             url_callback: `${baseUrl}/api/webhooks/cryptomus`,
             is_payment_multiple: true,
             lifetime: '3600'

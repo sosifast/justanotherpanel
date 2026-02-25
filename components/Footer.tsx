@@ -71,7 +71,7 @@ export default function Footer({ settings }: FooterProps) {
                         <p className="text-slate-500 max-w-xs text-sm leading-relaxed mb-6">
                             The #1 SMM Panel in the World. Engineered for speed, designed for leaders who want to maximize their social media presence.
                         </p>
-                        
+
                         {/* Contact Information */}
                         <div className="space-y-3 mb-6">
                             <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wider mb-3">Contact Us</h4>
@@ -95,7 +95,7 @@ export default function Footer({ settings }: FooterProps) {
                         <h4 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-wider">Main Pages</h4>
                         <ul className="space-y-3 text-sm text-slate-600">
                             {mainPages.map((page) => (
-                                <li key={page.href}>
+                                <li key={page.name}>
                                     <Link href={page.href} className="hover:text-blue-600 transition-colors">
                                         {page.name}
                                     </Link>
@@ -109,7 +109,7 @@ export default function Footer({ settings }: FooterProps) {
                         <h4 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-wider">Legal</h4>
                         <ul className="space-y-3 text-sm text-slate-600">
                             {legalPages.map((page) => (
-                                <li key={page.href}>
+                                <li key={page.name}>
                                     <Link href={page.href} className="hover:text-blue-600 transition-colors">
                                         {page.name}
                                     </Link>
@@ -123,7 +123,7 @@ export default function Footer({ settings }: FooterProps) {
                         <h4 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-wider">Account</h4>
                         <ul className="space-y-3 text-sm text-slate-600">
                             {accountPages.map((page) => (
-                                <li key={page.href}>
+                                <li key={page.name}>
                                     <Link href={page.href} className="hover:text-blue-600 transition-colors">
                                         {page.name}
                                     </Link>

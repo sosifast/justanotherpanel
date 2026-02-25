@@ -25,7 +25,7 @@ const PrivacyPage = ({ settings }: { settings: any }) => {
             icon: <Shield className="w-5 h-5" />,
             title: 'Introduction',
             content: [
-                'At JustAnotherPanel, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services.',
+                `At ${siteName}, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services.`,
                 'Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the site.',
                 'We reserve the right to make changes to this Privacy Policy at any time and for any reason. We will alert you about any changes by updating the "Last Updated" date of this Privacy Policy.',
             ]
@@ -188,8 +188,8 @@ const PrivacyPage = ({ settings }: { settings: any }) => {
                 'If you have questions or comments about this Privacy Policy, please contact us at:',
             ],
             contactInfo: {
-                email: 'support@justanotherpanel.com',
-                website: 'https://justanotherpanel.com/support',
+                email: `support@${(settings?.site_name || 'justanotherpanel').toLowerCase().replace(/\s+/g, '')}.com`,
+                website: typeof window !== 'undefined' ? `${window.location.origin}/support` : '/support',
             }
         },
     ];

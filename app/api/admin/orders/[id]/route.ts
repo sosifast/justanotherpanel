@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
 import { OrderStatus } from '@prisma/client';
 
@@ -7,6 +9,23 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get('token')?.value;
+
+        if (!token) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const secret = new TextEncoder().encode(
+            process.env.JWT_SECRET || 'default-secret-key-change-it'
+        );
+        const { payload } = await jwtVerify(token, secret);
+        const role = payload.role as string;
+
+        if (role !== 'ADMIN' && role !== 'STAFF') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         const { id } = await params;
         const body = await request.json();
         const { status, link, quantity, remains, start_count } = body;
@@ -101,6 +120,23 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get('token')?.value;
+
+        if (!token) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const secret = new TextEncoder().encode(
+            process.env.JWT_SECRET || 'default-secret-key-change-it'
+        );
+        const { payload } = await jwtVerify(token, secret);
+        const role = payload.role as string;
+
+        if (role !== 'ADMIN') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         const { id } = await params;
 
         // Check if order exists

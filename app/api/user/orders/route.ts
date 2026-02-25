@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createAdminNotification } from '@/lib/admin-notifications';
+import { createNotification } from '@/lib/notifications';
 
 // Generate invoice number
 function generateInvoiceNumber(): string {
@@ -260,6 +261,15 @@ export async function POST(req: Request) {
             'New Order Created',
             `Order #${order.id} placed by user #${userId}.`,
             'NEW_ORDER',
+            order.id
+        );
+
+        // Notify User (realtime via Pusher)
+        await createNotification(
+            parseInt(userId),
+            'Order Placed Successfully',
+            `Your order #${order.invoice_number} for "${order.service.name}" has been placed. Status: ${orderStatus}.`,
+            'ORDER',
             order.id
         );
 

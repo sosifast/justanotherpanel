@@ -510,7 +510,7 @@ const App = ({ settings }: { settings: any }) => {
                   Ready to dominate the market?
                 </h2>
                 <p className="text-slate-300 text-lg mb-10 max-w-2xl mx-auto">
-                  Join thousands of influencers and businesses who trust JustAnotherPanel for their social media growth.
+                  Join thousands of influencers and businesses who trust {siteName} for their social media growth.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/register" className="px-8 py-4 bg-white text-slate-900 rounded-xl font-bold text-lg hover:bg-slate-100 transition-all shadow-lg transform hover:-translate-y-1 inline-block">

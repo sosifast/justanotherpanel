@@ -447,6 +447,182 @@ Updates user name or password.
 
 ---
 
+## 7. Order SMM
+
+> **Auth Required**: `Authorization: Bearer <token>`
+> **Catatan Harga**: `price_sale` dan `price_reseller` dalam satuan **per 1000 unit**. Harga aktual = `(price / 1000) × quantity`.
+
+### List Services
+**Endpoint**: `GET /order`
+
+Mengembalikan daftar layanan SMM yang aktif, dikelompokkan berdasarkan Platform → Category → Service.
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Instagram",
+      "categories": [
+        {
+          "id": 10,
+          "name": "Followers",
+          "services": [
+            {
+              "id": 101,
+              "name": "Instagram Followers [REAL]",
+              "min": 100,
+              "max": 10000,
+              "price_sale": "15000",
+              "price_reseller": "12000",
+              "type": "DEFAULT",
+              "refill": true,
+              "note": "High retention followers"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Service Types**:
+| Type | Keterangan |
+|------|-----------|
+| `DEFAULT` | Order standar dengan `quantity` |
+| `CUSTOM_COMMENTS` | Gunakan field `comments` (bukan `quantity`) |
+
+---
+
+### Place Order
+**Endpoint**: `POST /order`
+
+Membuat order baru. Saldo user akan langsung dipotong, dan order dikirim otomatis ke provider SMM eksternal (jika terkonfigurasi).
+
+**Request Body (DEFAULT)**:
+```json
+{
+  "service_id": 101,
+  "link": "https://instagram.com/username",
+  "quantity": 1000,
+  "discount_code": "PROMO10"
+}
+```
+
+**Request Body (CUSTOM_COMMENTS)**:
+```json
+{
+  "service_id": 102,
+  "link": "https://instagram.com/p/postid",
+  "comments": "Great post!\nLove it!\nAmazing content!"
+}
+```
+
+**Request Body (Drip-Feed / opsional)**:
+```json
+{
+  "service_id": 101,
+  "link": "https://...",
+  "quantity": 5000,
+  "runs": 5,
+  "interval": 30
+}
+```
+
+**Field Keterangan**:
+| Field | Type | Wajib | Keterangan |
+|-------|------|-------|-----------|
+| `service_id` | number | ✅ | ID service dari GET /order |
+| `link` | string | ✅ | URL target (profil/post/video) |
+| `quantity` | number | ✅* | Jumlah order. *Tidak perlu untuk `CUSTOM_COMMENTS` |
+| `comments` | string | ✅* | Komentar per baris. *Wajib untuk `CUSTOM_COMMENTS` |
+| `discount_code` | string | ❌ | Kode diskon (opsional) |
+| `runs` | number | ❌ | Jumlah run untuk drip-feed |
+| `interval` | number | ❌ | Interval (menit) antar run untuk drip-feed |
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "order": {
+      "id": 123,
+      "invoice_number": "INV-2026-456789",
+      "status": "PROCESSING",
+      "service_name": "Instagram Followers [REAL]",
+      "platform": "Instagram",
+      "category": "Followers",
+      "link": "https://instagram.com/username",
+      "quantity": 1000,
+      "subtotal": "15.0000",
+      "discount_code": "PROMO10",
+      "discount_amount": "1.5000",
+      "total_price": "13.5000",
+      "refill": true,
+      "pid": "98765"
+    }
+  },
+  "message": "Order placed successfully"
+}
+```
+
+**Order Status**:
+| Status | Keterangan |
+|--------|-----------|
+| `PENDING` | Menunggu diproses oleh provider |
+| `PROCESSING` | Sudah dikirim ke provider dan sedang berjalan |
+| `COMPLETED` | Selesai |
+| `PARTIAL` | Sebagian selesai |
+| `CANCELED` | Dibatalkan |
+| `ERROR` | Terjadi error dari provider |
+
+**Error Responses**:
+- `400` – `"service_id is required"` / `"Insufficient balance"` / `"Quantity must be between X and Y"`
+- `400` – `"comments is required for CUSTOM_COMMENTS service"`
+- `400` – `"Provider error: <pesan dari provider>"`
+- `401` – Unauthorized
+
+---
+
+### Validate Discount
+**Endpoint**: `POST /order/validate-discount`
+
+Preview potongan harga dari kode diskon **tanpa membuat order**. Gunakan ini untuk tampilan real-time di UI saat user mengetik kode promo.
+
+**Request Body**:
+```json
+{
+  "service_id": 101,
+  "quantity": 1000,
+  "discount_code": "PROMO10"
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "valid": true,
+    "discount_code": "PROMO10",
+    "discount_type": "PERCENTAGE",
+    "discount_amount": "1.5000",
+    "subtotal": "15.0000",
+    "final_price": "13.5000"
+  }
+}
+```
+
+**Error Responses**:
+- `400` – `"Discount code not found or expired"`
+- `400` – `"Discount code has reached its usage limit"`
+- `400` – `"Minimum order subtotal for this discount is $X.XX"`
+
+---
+
 ## Error Handling
 The API returns standard HTTP status codes and a consistent JSON error format.
 

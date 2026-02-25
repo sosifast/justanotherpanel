@@ -3,6 +3,9 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
 import { getJwtSecret } from '@/lib/auth';
+import { createNotification } from '@/lib/notifications';
+import { createAdminNotification } from '@/lib/admin-notifications';
+import { triggerPusher } from '@/lib/pusher';
 
 type TicketMessage = {
     sender: string;
@@ -114,6 +117,23 @@ export async function POST(req: Request) {
                 messages: [initialMessage]
             }
         });
+
+        // Notify Admin realtime
+        await createAdminNotification(
+            'New Support Ticket',
+            `Ticket #${ticket.id}: "${subject}" opened by user #${userId}.`,
+            'NEW_TICKET',
+            ticket.id
+        );
+
+        // Notify user (confirmation)
+        await createNotification(
+            userId,
+            'Ticket Created',
+            `Your ticket "${subject}" has been submitted. Our team will respond soon.`,
+            'TICKET',
+            ticket.id
+        );
 
         return NextResponse.json({ ticket }, { status: 201 });
     } catch (error: any) {

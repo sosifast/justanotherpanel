@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyMobileToken } from '@/lib/mobile-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
+import { createNotification } from '@/lib/notifications';
+import { createAdminNotification } from '@/lib/admin-notifications';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -309,6 +311,23 @@ export async function POST(req: NextRequest) {
 
             return order;
         });
+
+        // Notify user + admin (realtime via Pusher)
+        await Promise.all([
+            createNotification(
+                user.id,
+                'Order Placed Successfully',
+                `Your order #${result.invoice_number} for "${service.name}" has been placed. Status: ${result.status}.`,
+                'ORDER',
+                result.id
+            ),
+            createAdminNotification(
+                'New Mobile Order',
+                `Order #${result.id} placed by user #${user.id} via mobile app.`,
+                'NEW_ORDER',
+                result.id
+            ),
+        ]);
 
         return successResponse(
             {

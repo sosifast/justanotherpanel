@@ -104,7 +104,7 @@ const Register = () => {
             )}
           </Link>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Create your account</h1>
-          <p className="text-slate-500 text-sm">Join JustAnotherPanel and start growing your social presence.</p>
+          <p className="text-slate-500 text-sm">Join {settings?.site_name || 'us'} and start growing your social presence.</p>
         </div>
 
         {error && (

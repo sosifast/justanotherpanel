@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Calendar, Tag, ArrowLeft, Share2, Clock, User } from 'lucide-react';
 import { Metadata } from 'next';
+import { getSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +57,11 @@ function BlogPostContent({ content }: { content: any }) {
 
 export default async function BlogPostPage(props: Props) {
     const params = await props.params;
-    const article = await getArticle(params.slug);
+    const [article, settings] = await Promise.all([
+        getArticle(params.slug),
+        getSettings(),
+    ]);
+    const siteName = settings?.site_name || 'JustAnotherPanel';
 
     if (!article) {
         notFound();
@@ -115,10 +120,10 @@ export default async function BlogPostPage(props: Props) {
 
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg ring-2 ring-white/20">
-                                JA
+                                {siteName.charAt(0).toUpperCase()}
                             </div>
                             <div className="text-white/90">
-                                <p className="text-sm font-semibold">JustAnotherPanel Team</p>
+                                <p className="text-sm font-semibold">{siteName} Team</p>
                                 <p className="text-xs opacity-70">Editor</p>
                             </div>
                         </div>

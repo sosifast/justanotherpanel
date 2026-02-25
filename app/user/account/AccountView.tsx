@@ -110,6 +110,9 @@ const AccountPage = () => {
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
 
+    // Account stats
+    const [orderCount, setOrderCount] = useState<number | null>(null);
+
     // Webhook state
     const [webhookUrl, setWebhookUrl] = useState('');
     const [savingWebhook, setSavingWebhook] = useState(false);
@@ -120,6 +123,7 @@ const AccountPage = () => {
         fetchNotifications();
         fetchApiKey();
         fetchResellerStatus();
+        fetchStats();
     }, []);
 
     const fetchProfile = async () => {
@@ -142,6 +146,20 @@ const AccountPage = () => {
             console.error('Failed to load profile');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchStats = async () => {
+        try {
+            const res = await fetch('/api/user/stats');
+            if (res.ok) {
+                const data = await res.json();
+                setOrderCount(data.order_count);
+                // Update balance in userProfile if already loaded
+                setUserProfile(prev => prev ? { ...prev, balance: data.balance } : prev);
+            }
+        } catch (e) {
+            console.error('Failed to load stats');
         }
     };
 
@@ -516,11 +534,17 @@ const AccountPage = () => {
                         <div className="p-4 border-t border-slate-100 bg-slate-50">
                             <div className="grid grid-cols-2 gap-4 text-center">
                                 <div>
-                                    <p className="text-lg font-bold text-slate-900">$1,240.50</p>
+                                    <p className="text-lg font-bold text-slate-900">
+                                        ${userProfile?.balance
+                                            ? parseFloat(userProfile.balance.toString()).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                            : '0.00'}
+                                    </p>
                                     <p className="text-xs text-slate-500">Balance</p>
                                 </div>
                                 <div>
-                                    <p className="text-lg font-bold text-slate-900">8,542</p>
+                                    <p className="text-lg font-bold text-slate-900">
+                                        {orderCount !== null ? orderCount.toLocaleString() : '—'}
+                                    </p>
                                     <p className="text-xs text-slate-500">Orders</p>
                                 </div>
                             </div>

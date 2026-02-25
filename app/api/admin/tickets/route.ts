@@ -25,7 +25,7 @@ export async function GET(req: Request) {
         const { payload } = await jwtVerify(token, secret);
         const role = payload.role as string;
 
-        if (role !== 'ADMIN') {
+        if (role !== 'ADMIN' && role !== 'STAFF') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

@@ -25,7 +25,7 @@ const ApiDocumentationPage = () => {
     const [activeLanguage, setActiveLanguage] = useState('curl');
     const [userData, setUserData] = useState<{ api_key: string; isReseller: boolean } | null>(null);
     const [loading, setLoading] = useState(true);
-    const [apiEndpoint, setApiEndpoint] = useState('https://justanotherpanel.com/api/v2');
+    const [apiEndpoint, setApiEndpoint] = useState('/api/v2');
     const [samples, setSamples] = useState<{ service: any; order: any; balance: any } | null>(null);
 
     const apiKey = userData?.api_key || 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
@@ -139,7 +139,7 @@ print_r($result);
 ?>`,
                 node: `const axios = require('axios');
 
-const apiUrl = 'https://justanotherpanel.com/api/v2';
+const apiUrl = '${apiEndpoint}';
 
 const params = new URLSearchParams();
 params.append('key', 'YOUR_API_KEY');
@@ -154,7 +154,7 @@ axios.post(apiUrl, params)
   });`,
                 python: `import requests
 
-api_url = 'https://justanotherpanel.com/api/v2'
+api_url = '${apiEndpoint}'
 
 data = {
     'key': 'YOUR_API_KEY',
@@ -218,7 +218,7 @@ print_r($result);
 ?>`,
                 node: `const axios = require('axios');
 
-const apiUrl = 'https://justanotherpanel.com/api/v2';
+const apiUrl = '${apiEndpoint}';
 
 const params = new URLSearchParams();
 params.append('key', 'YOUR_API_KEY');
@@ -236,7 +236,7 @@ axios.post(apiUrl, params)
   });`,
                 python: `import requests
 
-api_url = 'https://justanotherpanel.com/api/v2'
+api_url = '${apiEndpoint}'
 
 data = {
     'key': 'YOUR_API_KEY',
@@ -301,7 +301,7 @@ print_r($result);
 ?>`,
                 node: `const axios = require('axios');
 
-const apiUrl = 'https://justanotherpanel.com/api/v2';
+const apiUrl = '${apiEndpoint}';
 
 const params = new URLSearchParams();
 params.append('key', 'YOUR_API_KEY');
@@ -317,7 +317,7 @@ axios.post(apiUrl, params)
   });`,
                 python: `import requests
 
-api_url = 'https://justanotherpanel.com/api/v2'
+api_url = '${apiEndpoint}'
 
 data = {
     'key': 'YOUR_API_KEY',
@@ -374,7 +374,7 @@ print_r($result);
 ?>`,
                 node: `const axios = require('axios');
 
-const apiUrl = 'https://justanotherpanel.com/api/v2';
+const apiUrl = '${apiEndpoint}';
 
 const params = new URLSearchParams();
 params.append('key', 'YOUR_API_KEY');
@@ -389,7 +389,7 @@ axios.post(apiUrl, params)
   });`,
                 python: `import requests
 
-api_url = 'https://justanotherpanel.com/api/v2'
+api_url = '${apiEndpoint}'
 
 data = {
     'key': 'YOUR_API_KEY',
@@ -444,7 +444,7 @@ print_r($result);
 ?>`,
                 node: `const axios = require('axios');
 
-const apiUrl = 'https://justanotherpanel.com/api/v2';
+const apiUrl = '${apiEndpoint}';
 
 const params = new URLSearchParams();
 params.append('key', 'YOUR_API_KEY');
@@ -460,7 +460,7 @@ axios.post(apiUrl, params)
   });`,
                 python: `import requests
 
-api_url = 'https://justanotherpanel.com/api/v2'
+api_url = '${apiEndpoint}'
 
 data = {
     'key': 'YOUR_API_KEY',

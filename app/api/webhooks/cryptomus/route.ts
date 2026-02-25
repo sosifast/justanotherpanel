@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
+import { createNotification } from '@/lib/notifications';
+import { createAdminNotification } from '@/lib/admin-notifications';
+import { triggerPusher } from '@/lib/pusher';
 
 // Helper function to verify Cryptomus webhook signature
 function verifyCryptomusSignature(payload: any, signature: string, paymentKey: string): boolean {
@@ -91,12 +94,32 @@ export async function POST(req: NextRequest) {
                 }
             });
 
-            // Create notifications
+            // Notify user
             if (newStatus === 'PAYMENT') {
                 await createNotification(
                     deposit.id_user,
-                    `Deposit Successful`,
-                    `Your deposit of $${deposit.amount} has been confirmed.`,
+                    'Deposit Confirmed',
+                    `Your deposit of $${deposit.amount} has been confirmed and added to your balance.`,
+                    'DEPOSIT',
+                    deposit.id
+                );
+                await createAdminNotification(
+                    'Deposit Confirmed',
+                    `Deposit #${deposit.id} ($${deposit.amount}) by user #${deposit.id_user} has been confirmed.`,
+                    'DEPOSIT_UPDATE',
+                    deposit.id
+                );
+                // Realtime: push deposit status update to user
+                await triggerPusher(`private-user-${deposit.id_user}`, 'deposit-update', {
+                    depositId: deposit.id,
+                    status: 'PAYMENT',
+                    amount: deposit.amount
+                });
+            } else if (newStatus === 'CANCELED') {
+                await createNotification(
+                    deposit.id_user,
+                    'Deposit Cancelled',
+                    `Your deposit of $${deposit.amount} has been cancelled.`,
                     'DEPOSIT',
                     deposit.id
                 );
@@ -108,23 +131,5 @@ export async function POST(req: NextRequest) {
     } catch (error) {
         console.error('Cryptomus webhook error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-    }
-}
-
-// Helper function to create notifications (simplified version)
-async function createNotification(userId: number, title: string, message: string, type: string, referenceId?: number) {
-    try {
-        await prisma.notification.create({
-            data: {
-                id_user: userId,
-                title,
-                message,
-                type: type as any,
-                related_id: referenceId,
-                is_read: false
-            }
-        });
-    } catch (error) {
-        console.error('Failed to create notification:', error);
     }
 }

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
+import { createAdminNotification } from '@/lib/admin-notifications';
+import { triggerPusher } from '@/lib/pusher';
 
 type TicketMessage = {
     sender: string;
@@ -84,6 +86,22 @@ export async function POST(
                 status: 'PENDING'
             }
         });
+
+        // Realtime: push new message to ticket channel (admin sees it immediately)
+        await triggerPusher(`private-ticket-${ticketId}`, 'new-message', {
+            ticketId,
+            sender: 'user',
+            userId,
+            message: newMessage
+        });
+
+        // Notify Admin
+        await createAdminNotification(
+            'Ticket Reply',
+            `User #${userId} replied to ticket #${ticketId}.`,
+            'TICKET_UPDATE',
+            ticketId
+        );
 
         return NextResponse.json({ message: newMessage }, { status: 201 });
     } catch (error: any) {

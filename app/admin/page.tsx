@@ -1,9 +1,9 @@
 import React from 'react';
-import { Users, ShoppingBag, LifeBuoy, DollarSign, TrendingUp, AlertCircle, MoreVertical } from 'lucide-react';
+import { Users, ShoppingBag, LifeBuoy, DollarSign, AlertCircle, MoreVertical } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
-import { formatDistanceToNow } from 'date-fns';
 import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
+import PlausibleAnalytics, { PlausibleData } from './PlausibleAnalytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,8 +23,7 @@ async function getStats() {
   const totalOrders = await prisma.order.count();
   const activeUsers = await prisma.user.count({ where: { status: 'ACTIVE' } });
 
-  // Pending tickets static for now
-  const pendingTickets = 0;
+  const pendingTickets = await prisma.ticket.count({ where: { status: 'OPEN' } });
 
   return {
     revenue: totalRevenue._sum.amount ? Number(totalRevenue._sum.amount).toFixed(2) : '0.00',
@@ -52,8 +51,7 @@ async function getProviders() {
   });
 }
 
-async function getPlausibleStats() {
-  // Use queryRaw to bypass potential stale Prisma Client cache issues during dev
+async function getPlausibleData(): Promise<PlausibleData | null> {
   const settingsResults = await prisma.$queryRaw<any[]>`SELECT plausible_domain, plausible_api_key FROM "setting" LIMIT 1`;
   const settings = settingsResults[0];
 
@@ -61,22 +59,42 @@ async function getPlausibleStats() {
     return null;
   }
 
+  const domain = settings.plausible_domain as string;
+  const apiKey = settings.plausible_api_key as string;
+  const base = 'https://plausible.io/api/v1';
+  const headers = { Authorization: `Bearer ${apiKey}` };
+  const opts = { headers, next: { revalidate: 3600 } } as RequestInit;
+
   try {
-    const res = await fetch(
-      `https://plausible.io/api/v1/stats/aggregate?site_id=${settings.plausible_domain}&period=30d&metrics=visitors,pageviews,bounce_rate,visit_duration`,
-      {
-        headers: {
-          'Authorization': `Bearer ${settings.plausible_api_key}`
-        },
-        next: { revalidate: 3600 }
-      }
-    );
+    const [aggRes, tsRes, pagesRes, refRes, countriesRes, browsersRes] = await Promise.allSettled([
+      fetch(`${base}/stats/aggregate?site_id=${domain}&period=30d&metrics=visitors,pageviews,bounce_rate,visit_duration`, opts),
+      fetch(`${base}/stats/timeseries?site_id=${domain}&period=30d&metrics=visitors`, opts),
+      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=event:page&limit=5`, opts),
+      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=visit:referrer&limit=10`, opts),
+      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=visit:country&limit=10`, opts),
+      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=visit:browser&limit=8`, opts),
+    ]);
 
-    if (!res.ok) return null;
+    const toJson = async (r: PromiseSettledResult<Response>) => {
+      if (r.status === 'rejected' || !r.value.ok) return null;
+      return r.value.json().catch(() => null);
+    };
 
-    return await res.json();
-  } catch (error) {
-    console.error('Failed to fetch Plausible stats:', error);
+    const [aggData, tsData, pagesData, refData, countriesData, browsersData] = await Promise.all([
+      toJson(aggRes), toJson(tsRes), toJson(pagesRes), toJson(refRes), toJson(countriesRes), toJson(browsersRes),
+    ]);
+
+    return {
+      domain,
+      aggregate: aggData?.results ?? null,
+      timeseries: tsData?.results ?? [],
+      topPages: pagesData?.results ?? [],
+      topReferrers: refData?.results ?? [],
+      countries: countriesData?.results ?? [],
+      browsers: browsersData?.results ?? [],
+    };
+  } catch (err) {
+    console.error('Plausible fetch error:', err);
     return null;
   }
 }
@@ -88,24 +106,19 @@ const AdminDashboard = async () => {
     redirect('/auth/login');
   }
 
-  const statsData = await getStats();
-  const recentOrders = await getRecentOrders();
-  const providers = await getProviders();
-  const plausibleData = await getPlausibleStats();
+  const [statsData, recentOrders, providers, plausibleData] = await Promise.all([
+    getStats(),
+    getRecentOrders(),
+    getProviders(),
+    getPlausibleData(),
+  ]);
 
   const stats = [
-    { label: "Total Revenue", value: `$${statsData.revenue}`, change: "+0%", icon: <DollarSign className="w-5 h-5 text-emerald-500" />, bg: "bg-emerald-500/10" },
-    { label: "Total Orders", value: statsData.orders.toLocaleString(), change: "+0%", icon: <ShoppingBag className="w-5 h-5 text-blue-500" />, bg: "bg-blue-500/10" },
-    { label: "Active Users", value: statsData.users.toLocaleString(), change: "+0%", icon: <Users className="w-5 h-5 text-indigo-500" />, bg: "bg-indigo-500/10" },
-    { label: "Pending Tickets", value: statsData.tickets.toLocaleString(), change: "0%", icon: <LifeBuoy className="w-5 h-5 text-amber-500" />, bg: "bg-amber-500/10" },
+    { label: "Total Revenue", value: `$${statsData.revenue}`, change: "30d", icon: <DollarSign className="w-5 h-5 text-emerald-500" />, bg: "bg-emerald-500/10" },
+    { label: "Total Orders", value: statsData.orders.toLocaleString(), change: "all", icon: <ShoppingBag className="w-5 h-5 text-blue-500" />, bg: "bg-blue-500/10" },
+    { label: "Active Users", value: statsData.users.toLocaleString(), change: "all", icon: <Users className="w-5 h-5 text-indigo-500" />, bg: "bg-indigo-500/10" },
+    { label: "Open Tickets", value: statsData.tickets.toLocaleString(), change: "live", icon: <LifeBuoy className="w-5 h-5 text-amber-500" />, bg: "bg-amber-500/10" },
   ];
-
-  if (plausibleData && plausibleData.results) {
-    stats.push(
-      { label: "Visitors (30d)", value: plausibleData.results.visitors.value.toLocaleString(), change: "30d", icon: <TrendingUp className="w-5 h-5 text-rose-500" />, bg: "bg-rose-500/10" },
-      { label: "Pageviews (30d)", value: plausibleData.results.pageviews.value.toLocaleString(), change: "30d", icon: <TrendingUp className="w-5 h-5 text-orange-500" />, bg: "bg-orange-500/10" }
-    );
-  }
 
   return (
     <>
@@ -243,6 +256,9 @@ const AdminDashboard = async () => {
           </div>
         </div>
       </div>
+
+      {/* Plausible Analytics Section */}
+      <PlausibleAnalytics data={plausibleData} />
     </>
   );
 };

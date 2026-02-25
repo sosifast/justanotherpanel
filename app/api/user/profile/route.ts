@@ -26,12 +26,13 @@ export async function GET(req: Request) {
                 full_name: true,
                 username: true,
                 email: true,
+                balance: true,
+                profile_imagekit_url: true,
                 apikey: true,
                 reseller: true,
                 webhook_url: true,
                 created_at: true
-
-            } as any
+            }
         });
 
         if (!user) {

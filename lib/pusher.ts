@@ -1,5 +1,4 @@
 import Pusher from 'pusher';
-
 import { prisma } from '@/lib/prisma';
 
 export async function getPusherClient() {
@@ -12,4 +11,16 @@ export async function getPusherClient() {
         cluster: settings?.pusher_app_cluster || process.env.PUSHER_APP_CLUSTER || 'us2',
         useTLS: true,
     });
+}
+
+/**
+ * Fire-and-forget Pusher trigger — never throws, so caller doesn't break if Pusher isn't configured.
+ */
+export async function triggerPusher(channel: string, event: string, data: object) {
+    try {
+        const pusher = await getPusherClient();
+        await pusher.trigger(channel, event, data);
+    } catch (err) {
+        console.warn(`[Pusher] Failed to trigger ${event} on ${channel}:`, err);
+    }
 }

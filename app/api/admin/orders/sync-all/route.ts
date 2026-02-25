@@ -3,8 +3,28 @@ import { prisma } from '@/lib/prisma';
 import axios from 'axios';
 import FormData from 'form-data';
 
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
+
 export async function POST() {
     try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get('token')?.value;
+
+        if (!token) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const secret = new TextEncoder().encode(
+            process.env.JWT_SECRET || 'default-secret-key-change-it'
+        );
+        const { payload } = await jwtVerify(token, secret);
+        const role = payload.role as string;
+
+        if (role !== 'ADMIN' && role !== 'STAFF') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         // Fetch all active orders that have a provider and a PID
         const activeOrders = await prisma.order.findMany({
             where: {

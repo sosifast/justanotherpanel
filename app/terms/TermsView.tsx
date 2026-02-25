@@ -27,7 +27,7 @@ const TermsPage = ({ settings }: { settings: any }) => {
             content: [
                 'During ordering our services, you agree to follow our services. Later we will not consider your knowledge about that.',
                 'The authority holds the right to update or modifies the terms and condition without prior announcement. Read these with patience to avoid unwanted incidents.',
-                'You should use the JustAnotherPanel services in an effective way that complies with the terms agreed to when you joined the site. These include those posted by the social networks themselves when you signed up.',
+                `You should use the ${siteName} services in an effective way that complies with the terms agreed to when you joined the site. These include those posted by the social networks themselves when you signed up.`,
                 'As the rate of services changes from time to time, it may reflect in the features of terms and conditions.',
                 'The delivery duration may differ depending on the number of orders. However, our system can provide you with an estimated time duration of the delivery. If you get the delivery after that duration, will get a refund.',
                 'We are constantly updating the standard of its reseller. To meet the market demand, the authority holds the right to update the service type.',
@@ -46,8 +46,8 @@ const TermsPage = ({ settings }: { settings: any }) => {
                 'Return your remaining balance in the website wallet to the payment gateway that you used to pay us. You can contact our authorized support executives for more queries.',
             ],
             additional: [
-                'As you control every aspect of your business, JustAnotherPanel will not be accountable for your professional losses.',
-                'JustAnotherPanel will not take the liability for suspending or removing your content that is done by social media authorized managers.',
+                `As you control every aspect of your business, ${siteName} will not be accountable for your professional losses.`,
+                `${siteName} will not take the liability for suspending or removing your content that is done by social media authorized managers.`,
             ]
         },
         {
@@ -55,10 +55,10 @@ const TermsPage = ({ settings }: { settings: any }) => {
             icon: <FileText className="w-5 h-5" />,
             title: 'Service Policy',
             content: [
-                'JustAnotherPanel strives to promote including YouTube, Soundcloud, Vine, Pinterest, etc. strengthening clients\' social media account appearances only.',
+                `${siteName} strives to promote including YouTube, Soundcloud, Vine, Pinterest, etc. strengthening clients' social media account appearances only.`,
                 'The follower interaction with customer social media accounts is not guaranteed. You are guaranteed about getting followers according to your payments.',
                 'It is not guaranteed that every account will have an image, bio, content, etc. However, our goal is to make the account real as much as possible.',
-                'You are requested not to upload prohibited and adult material in the JustAnotherPanel. Try to upload content that matches the standard of social media including YouTube or Soundcloud or Vine or Pinterest.',
+                `You are requested not to upload prohibited and adult material in the ${siteName}. Try to upload content that matches the standard of social media including YouTube or Soundcloud or Vine or Pinterest.`,
                 'The system cannot determine data about your lost engagement need, or any other social media points. As we do not know where your social media points are lost, you cannot use the services as your refill strategy.',
             ]
         },
@@ -68,15 +68,15 @@ const TermsPage = ({ settings }: { settings: any }) => {
             title: 'Payment and Refund Policy',
             content: [
                 'Before placing or submitting an order, you have to deposit credit or funds. You can add funds or make payments via popular payment gateways such as VISA/Master Card, Webmoney, Perfectmoney, Payoneer, Payeer, Bitcoin, and Paytm.',
-                'First, sign up on the JustAnotherPanel website. Then go to add fund page and choose your payment gateway. After that deposit your credit. After completing the successful payment, the credit will be deposited into your wallet within a few minutes.',
+                `First, sign up on the ${siteName} website. Then go to add fund page and choose your payment gateway. After that deposit your credit. After completing the successful payment, the credit will be deposited into your wallet within a few minutes.`,
                 'For getting a refund, you need to contact the support executive. After reviewing your deposit details and opinion, our team will refund you as soon as possible through the payment gateway that you use during depositing the balance.',
-                'You will get the balance after deducting the deposit or redeeming bonus that some users get during adding funds or credit to the JustAnotherPanel website. Getting a refund depends on your local bank or card company facilities.',
+                `You will get the balance after deducting the deposit or redeeming bonus that some users get during adding funds or credit to the ${siteName} website. Getting a refund depends on your local bank or card company facilities.`,
                 'You will not get back your money through Webmoney or PerfectMoney or Crypto deposits. We only refund through bank or card deposited balance.',
-                'File a dispute without at least one valid cause after the deposit may result in closing your current and future orders. JustAnotherPanel holds the right to ban your account in that case or take away its delivered followers from the client\'s Instagram, FB, Twitter, or other social media account.',
-                'After getting a request from a customer, the authority will cancel the request or refund. If the team is unable to deliver orders, as a customer, you get credit in your JustAnotherPanel account.',
-                'After completing the order, JustAnotherPanel will not be responsible for the order\'s social media broken URL, username, account termination, etc. In that case, as a customer, you will not get a refund from the authority of the site.',
+                `File a dispute without at least one valid cause after the deposit may result in closing your current and future orders. ${siteName} holds the right to ban your account in that case or take away its delivered followers from the client's Instagram, FB, Twitter, or other social media account.`,
+                `After getting a request from a customer, the authority will cancel the request or refund. If the team is unable to deliver orders, as a customer, you get credit in your ${siteName} account.`,
+                `After completing the order, ${siteName} will not be responsible for the order's social media broken URL, username, account termination, etc. In that case, as a customer, you will not get a refund from the authority of the site.`,
                 'The authority does not refund an order associated with a misplaced or private social media account. Be alert during placing an order.',
-                'Payments with insidious payment gateways or stolen cards will result in the termination of the JustAnotherPanel user account.',
+                `Payments with insidious payment gateways or stolen cards will result in the termination of the ${siteName} user account.`,
                 'For ensuring better results and safety, it is recommended to use one server for the same webpage at a time. Otherwise, you will fail to acquire the correct number of followers and likes. The refund balance will not add to your card or bank account.',
             ]
         },
@@ -86,8 +86,8 @@ const TermsPage = ({ settings }: { settings: any }) => {
             title: 'Privacy & Data',
             content: [
                 'Violation of privacy policies may become an enemy between you and our reputation. To avoid unwanted and unexpected breaks up with you, we maintain uncompromised privacy policies.',
-                'Sometimes, our system may utilize your shared data by validating your concern in your browser. By ordering from JustAnotherPanel, you agree with the terms and privacy policies.',
-                'JustAnotherPanel developed a data composition system for its users to make better choices about their data. During visiting, using, or continuing to use the site or any of the services listed on our site, you will accept all of the conditions and restrictions on our Privacy Policy.',
+                `By ordering from ${siteName}, you agree with the terms and privacy policies.`,
+                `${siteName} developed a data composition system for its users to make better choices about their data. During visiting, using, or continuing to use the site or any of the services listed on our site, you will accept all of the conditions and restrictions on our Privacy Policy.`,
             ],
             subTitle: 'User Data We Collect',
             listItems: [
@@ -106,7 +106,7 @@ const TermsPage = ({ settings }: { settings: any }) => {
             title: 'Cookie Policy',
             content: [
                 'A cookie refers to short pieces of data stored on the hard drive in a computer. Sometimes, our system compiles data from your digital devices that allow us to store data about your surfing habits and other info you may have shared on the site.',
-                'Our cookies are employed to ensure trouble-free use of JustAnotherPanel. We utilize cookies to track the behavior of users and display content that is relevant to them.',
+                `Our cookies are employed to ensure trouble-free use of ${siteName}. We utilize cookies to track the behavior of users and display content that is relevant to them.`,
                 'The collected data is used for marketing, analysis, and statistical purposes. We use cookies that are strictly essential for the technical management of the system as well as the site. You can configure this setting through your web browser.',
                 'A cookie is a method of passing data between a server and a web browser. To control sharing, you can simply modify the browser to block or delete cookies. To "Manage Cookies" or "Set Cookies Policy" in the browser section of the tool.',
                 'A browser can be configured to allow access to cookies from diverse websites but not others, to ensure the use of cookies that may be set by websites without your concern, or to notify you when a cookie has been installed on. By default, most browsers are developed to allow cookies.',
@@ -117,7 +117,7 @@ const TermsPage = ({ settings }: { settings: any }) => {
             icon: <Shield className="w-5 h-5" />,
             title: 'Data Security',
             content: [
-                'JustAnotherPanel values your privacy and does not utilize your data (for example email address or phone number) for any purpose other than to provide you with data about the services. We also do not use any contact information for our marketing purposes.',
+                `${siteName} values your privacy and does not utilize your data (for example email address or phone number) for any purpose other than to provide you with data about the services. We also do not use any contact information for our marketing purposes.`,
                 'The encryption process for the payment information is secure because it uses SSL technology.',
             ]
         },
@@ -126,7 +126,7 @@ const TermsPage = ({ settings }: { settings: any }) => {
             icon: <RefreshCw className="w-5 h-5" />,
             title: 'System Updates',
             content: [
-                'JustAnotherPanel can update, modify or change every aspect of its system. The brand may make changes in the policies without a prior announcement. The updated rules will work after posting on the official website.',
+                `${siteName} can update, modify or change every aspect of its system. The brand may make changes in the policies without a prior announcement. The updated rules will work after posting on the official website.`,
             ]
         },
     ];

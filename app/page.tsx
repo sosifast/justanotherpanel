@@ -34,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
         openGraph: {
             type: 'website',
             locale: 'en_US',
-            url: process.env.NEXT_PUBLIC_APP_URL || 'https://justanotherpanel.online',
+            url: process.env.NEXT_PUBLIC_APP_URL || 'https://www.apkey.net',
             siteName: siteName,
             title,
             description,
@@ -55,7 +55,7 @@ export async function generateMetadata(): Promise<Metadata> {
             creator: '@justanotherpanel',
         },
         alternates: {
-            canonical: process.env.NEXT_PUBLIC_APP_URL || 'https://justanotherpanel.online',
+            canonical: process.env.NEXT_PUBLIC_APP_URL || 'https://www.apkey.net',
         },
         category: 'technology',
         icons: {

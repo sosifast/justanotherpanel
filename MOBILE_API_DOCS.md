@@ -101,10 +101,13 @@ Returns user profile summary, account statistics, and recent announcements.
 
 ## 2. Deposits
 
+> **Supported Payment Methods: PayPal and Cryptomus only.**  
+> There is no manual/bank transfer payment system.
+
 ### List Payment Gateways
 **Endpoint**: `GET /deposit`
 
-Returns available payment methods and their configurations.
+Returns available payment gateways. Only `PAYPAL` and `CRYPTOMUS` providers are supported. The `api_config` for automated gateways exposes only the `fee` field (secrets are hidden).
 
 **Response (200 OK)**:
 ```json
@@ -119,14 +122,9 @@ Returns available payment methods and their configurations.
     },
     {
       "id": 2,
-      "provider": "MANUAL",
+      "provider": "CRYPTOMUS",
       "min_deposit": "5.00",
-      "api_config": {
-        "bankName": "Bank ABC",
-        "accountNumber": "123456789",
-        "accountHolder": "Admin Name",
-        "instructions": "Please transfer and upload proof..."
-      }
+      "api_config": { "fee": "1%" }
     }
   ]
 }
@@ -135,7 +133,7 @@ Returns available payment methods and their configurations.
 ### Create Deposit Request
 **Endpoint**: `POST /deposit`
 
-Initiates a new deposit. Supports PayPal, Cryptomus, and Manual payments.
+Initiates a new deposit for either PayPal or Cryptomus. Always returns a `payment_url` that the app must redirect/open for the user to complete payment.
 
 **Request Body**:
 ```json
@@ -145,6 +143,11 @@ Initiates a new deposit. Supports PayPal, Cryptomus, and Manual payments.
 }
 ```
 
+**Notes**:
+- `amount` is the base amount the user wants to deposit (before fees).
+- Fee is calculated server-side based on the gateway's `api_config.fee` setting.
+- The deposit is created with `status: PENDING` and updated once payment is confirmed via webhook or `check-status`.
+
 **Response (200 OK)**:
 ```json
 {
@@ -152,21 +155,38 @@ Initiates a new deposit. Supports PayPal, Cryptomus, and Manual payments.
   "data": {
     "deposit": {
       "id": 45,
+      "id_user": 7,
       "amount": "52.50",
       "status": "PENDING",
-      "created_at": "..."
+      "detail_transaction": {
+        "fee": 2.5,
+        "method": "PAYPAL",
+        "provider": "PAYPAL",
+        "payment_id": "PAYPAL_ORDER_ID_HERE",
+        "type": "AUTOMATIC"
+      },
+      "created_at": "2026-02-24T14:00:00.000Z"
     },
-    "payment_url": "https://paypal.com/checkout/...", // For automated payments
+    "payment_url": "https://www.paypal.com/checkoutnow?token=...",
     "message": "Deposit created successfully. Redirect to payment URL to complete payment."
   }
 }
-// Note: amount in response includes calculated fees
 ```
 
 ### Check Deposit Status
 **Endpoint**: `POST /deposit/check-status`
 
-Checks the current status of a deposit and updates it if payment has been completed.
+Polls the payment provider (PayPal/Cryptomus) for the latest payment status and updates the deposit record. Use this after the user returns from the `payment_url` redirect.
+
+- **PayPal raw statuses**: `COMPLETED`, `APPROVED`, `CANCELLED`, `VOIDED`
+- **Cryptomus raw statuses**: `paid`, `paid_over`, `process`, `confirm_check`, `check`, `cancel`, `system_fail`, `fail`, `refund`
+
+**Internal status mapping**:
+| Provider Status | Internal Status |
+|---|---|
+| PayPal `COMPLETED` / Cryptomus `paid`, `paid_over` | `PAYMENT` |
+| PayPal `CANCELLED`/`VOIDED` / Cryptomus `cancel`, `fail`, etc. | `CANCELED` |
+| All others | `PENDING` |
 
 **Request Body**:
 ```json
@@ -180,30 +200,26 @@ Checks the current status of a deposit and updates it if payment has been comple
 {
   "success": true,
   "data": {
-    "deposit": {
-      "id": 45,
-      "amount": "52.50",
-      "status": "PAYMENT", // PENDING, PAYMENT, CANCELED, ERROR
-      "created_at": "...",
-      "updated_at": "..."
-    },
+    "deposit": { "id": 45, "amount": "52.50", "status": "PAYMENT", ... },
     "status": "PAYMENT",
-    "raw_status": "COMPLETED", // Provider-specific status
+    "raw_status": "COMPLETED",
     "message": "Deposit status updated successfully"
   }
 }
 ```
 
+**Note**: If the deposit is already in a final state (`PAYMENT`, `CANCELED`, `ERROR`), no external call is made and the current deposit object is returned with `message: "Deposit status is final"`.
+
 ### Payment Success Callback
 **Endpoint**: `GET /deposit/success`
 
-Handles successful payment redirects from PayPal and Cryptomus.
+The redirect landing page when a user completes payment on the provider's site. Mobile apps should listen for navigation to this URL and then call `POST /deposit/check-status` to confirm the final status.
 
-**Query Parameters**:
-- `token`: PayPal order ID
-- `PayerID`: PayPal payer ID
-- `order_id`: Cryptomus order ID
-- `uuid`: Cryptomus payment UUID
+**Query Parameters** (sent automatically by payment provider):
+- `token` – PayPal order ID (PayPal only)
+- `PayerID` – PayPal payer ID (PayPal only)
+- `order_id` – Cryptomus order ID (Cryptomus only)
+- `uuid` – Cryptomus payment UUID (Cryptomus only)
 
 **Response (200 OK)**:
 ```json
@@ -219,12 +235,12 @@ Handles successful payment redirects from PayPal and Cryptomus.
 ### Payment Cancel Callback
 **Endpoint**: `GET /deposit/cancel`
 
-Handles canceled payment redirects from PayPal and Cryptomus.
+The redirect landing page when a user cancels payment on the provider's site. The deposit status is updated to `CANCELED`.
 
-**Query Parameters**:
-- `token`: PayPal order ID
-- `order_id`: Cryptomus order ID
-- `uuid`: Cryptomus payment UUID
+**Query Parameters** (sent automatically by payment provider):
+- `token` – PayPal order ID (PayPal only)
+- `order_id` – Cryptomus order ID (Cryptomus only)
+- `uuid` – Cryptomus payment UUID (Cryptomus only)
 
 **Response (200 OK)**:
 ```json
@@ -238,15 +254,15 @@ Handles canceled payment redirects from PayPal and Cryptomus.
 
 ### Payment Webhooks (Server-to-Server)
 
-**Cryptomus Webhook**: `POST /api/webhooks/cryptomus`
-- Automatically updates deposit status when payment is confirmed
-- Requires proper webhook URL configuration in payment gateway
+These are called **automatically by the payment providers** and should **not** be called directly from the mobile app.
 
-**PayPal Webhook**: `POST /api/webhooks/paypal`
-- Handles PayPal payment events (completed, denied, voided)
-- Automatically updates user balance upon successful payment
+**Cryptomus Webhook**: `POST /api/webhooks/cryptomus`  
+- Verifies the webhook signature using `md5(base64(payload) + paymentKey)`
+- Updates deposit status and credits user balance upon successful payment
 
-**Note**: These webhooks are called automatically by payment providers and should not be called directly by mobile apps.
+**PayPal Webhook**: `POST /api/webhooks/paypal`  
+- Handles PayPal IPN events (payment completed, denied, voided)
+- Automatically credits user balance upon `PAYMENT_SALE_COMPLETED`
 
 ---
 
@@ -345,11 +361,11 @@ Fetches detailed history of orders or deposits.
 
 **Deposit Fields**:
 - `id`: Deposit ID
-- `amount`: Deposit amount including fees (as string for precision)
-- `status`: Deposit status (PENDING, PAYMENT, ERROR, CANCELED)
-- `provider`: Payment provider (PAYPAL, CRYPTOMUS, MANUAL)
-- `transaction_id`: External transaction/payment ID
-- `fee`: Processing fee (as string for precision)
+- `amount`: Total deposit amount including fees
+- `status`: `PENDING` | `PAYMENT` | `CANCELED` | `ERROR`
+- `provider`: Payment provider — `PAYPAL` or `CRYPTOMUS`
+- `transaction_id`: External payment ID from the provider
+- `fee`: Processing fee charged
 - `created_at`: Deposit creation timestamp
 - `updated_at`: Last update timestamp
 

@@ -29,6 +29,9 @@ export async function generateMetadata(): Promise<Metadata> {
       shortcut: settings?.favicon_imagekit_url || '/favicon.ico',
       apple: settings?.favicon_imagekit_url || '/apple-icon.png',
     },
+    verification: {
+      google: "blhcJmHuehxy-vqbcHBA4Dclxc3iFlqhyGMFLATzG_c",
+    },
   };
 }
 

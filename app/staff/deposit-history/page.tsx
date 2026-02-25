@@ -37,5 +37,18 @@ export default async function StaffDepositHistoryPage() {
         updated_at: d.updated_at.toISOString()
     }));
 
-    return <StaffDepositsClient initialDeposits={serializedDeposits} />;
+    const stats = {
+        totalRevenue: deposits
+            .filter(d => d.status === 'PAYMENT')
+            .reduce((sum, d) => sum + Number(d.amount), 0)
+            .toFixed(2),
+        pendingCount: deposits.filter(d => d.status === 'PENDING').length,
+        todayCount: deposits.filter(d => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return new Date(d.created_at) >= today;
+        }).length
+    };
+
+    return <StaffDepositsClient initialDeposits={serializedDeposits as any} initialStats={stats} />;
 }

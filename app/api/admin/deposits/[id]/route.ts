@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { triggerPusher } from '@/lib/pusher';
 
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
@@ -41,7 +42,10 @@ export async function PATCH(
             return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
         }
 
-        const deposit = await prisma.deposits.findUnique({ where: { id: depositId } });
+        const deposit = await prisma.deposits.findUnique({
+            where: { id: depositId },
+            include: { user: { select: { username: true } } }
+        });
         if (!deposit) {
             return NextResponse.json({ error: 'Deposit not found' }, { status: 404 });
         }
@@ -71,6 +75,14 @@ export async function PATCH(
             }
 
             return dep;
+        });
+
+        // Trigger real-time update for staff channel
+        await triggerPusher('private-staff', 'deposit-update', {
+            depositId: updated.id,
+            status: updated.status,
+            amount: Number(updated.amount),
+            username: deposit.user?.username || 'System'
         });
 
         return NextResponse.json({ success: true, deposit: updated });

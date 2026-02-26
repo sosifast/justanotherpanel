@@ -623,6 +623,273 @@ Preview potongan harga dari kode diskon **tanpa membuat order**. Gunakan ini unt
 
 ---
 
+## 8. Platform
+
+**Endpoint**: `GET /platform`
+
+Fetches platforms, categories, or services depending on the query parameters.
+
+- **Query Params**:
+  - *(none)*: Lists all active platforms.
+  - `platform_id`: Lists all categories (with services) for the given platform.
+  - `category_id`: Lists all services for the given category.
+
+### List Platforms
+**Endpoint**: `GET /platform`
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Instagram",
+      "slug": "instagram",
+      "icon_imagekit_url": "https://ik.imagekit.io/.../icon.png"
+    }
+  ]
+}
+```
+
+### List Categories by Platform
+**Endpoint**: `GET /platform?platform_id=1`
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 10,
+      "id_platform": 1,
+      "name": "Followers",
+      "status": "ACTIVE",
+      "created_at": "...",
+      "updated_at": "...",
+      "services": [
+        {
+          "id": 101,
+          "name": "Instagram Followers [REAL]",
+          "min": 100,
+          "max": 10000,
+          "price_sale": "15000",
+          "note": "High retention followers",
+          "type": "DEFAULT"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### List Services by Category
+**Endpoint**: `GET /platform?category_id=10`
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 101,
+      "name": "Instagram Followers [REAL]",
+      "min": 100,
+      "max": 10000,
+      "price_sale": "15000",
+      "note": "High retention followers",
+      "type": "DEFAULT"
+    }
+  ]
+}
+```
+
+---
+
+## 9. Tickets
+
+### List Tickets
+**Endpoint**: `GET /tickets`
+
+Lists all support tickets for the authenticated user.
+
+- **Query Params**:
+  - `status`: Filter by status (`all`, `OPEN`, `PENDING`, `ANSWERED`, `CLOSED`). Default is `all`.
+  - `page`: Page number (default: 1).
+  - `limit`: Items per page (default: 20).
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "subject": "Payment not added",
+        "category": "Payment",
+        "status": "OPEN",
+        "priority": "MEDIUM",
+        "created_at": "2026-02-26T10:00:00.000Z",
+        "updated_at": "2026-02-26T10:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 5,
+      "pages": 1
+    }
+  }
+}
+```
+
+### Create Ticket
+**Endpoint**: `POST /tickets`
+
+Creates a new support ticket.
+
+**Request Options**:
+1. **JSON (`application/json`)**: Use this if you already have the `image_url` or do not need to attach an image.
+2. **FormData (`multipart/form-data`)**: Use this if you want to upload the image file directly while creating the ticket.
+
+**Request Body (JSON Example)**:
+```json
+{
+  "subject": "Payment not added",
+  "category": "Payment",
+  "message": "I deposited $50 via PayPal but my balance is still $0.",
+  "image_url": "https://ik.imagekit.io/.../screenshot.png" // Optional
+}
+```
+
+**Request Body (FormData Example)**:
+- `subject` (text)
+- `category` (text)
+- `message` (text)
+- `file` (file binary, Optional)
+
+**Response (201 Created)**:
+```json
+{
+  "success": true,
+  "data": {
+    "ticket": {
+      "id": 2,
+      "subject": "Payment not added",
+      "category": "Payment",
+      "status": "OPEN",
+      "created_at": "2026-02-26T10:05:00.000Z"
+    },
+    "message": "Ticket created successfully"
+  }
+}
+```
+
+### Get Ticket Details
+**Endpoint**: `GET /tickets/:id`
+
+Retrieves the details of a specific ticket, including all its messages.
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "ticket": {
+      "id": 1,
+      "id_user": 7,
+      "subject": "Payment not added",
+      "category": "Payment",
+      "status": "OPEN",
+      "priority": "MEDIUM",
+      "created_at": "...",
+      "updated_at": "...",
+      "messages": [
+        {
+          "sender": "user",
+          "content": "I deposited $50...",
+          "image_url": null,
+          "created_at": "2026-02-26T10:00:00.000Z"
+        },
+        {
+          "sender": "admin",
+          "content": "Let me check this for you.",
+          "image_url": null,
+          "created_at": "2026-02-26T10:05:00.000Z"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Reply to Ticket
+**Endpoint**: `POST /tickets/:id/reply`
+
+Adds a new message to an existing ticket.
+
+**Request Options**:
+1. **JSON (`application/json`)**:
+2. **FormData (`multipart/form-data`)**: Upload image file directly.
+
+**Request Body (JSON Example)**:
+```json
+{
+  "message": "Please let me know once it is fixed.",
+  "image_url": null // Optional
+}
+```
+
+**Request Body (FormData Example)**:
+- `message` or `content` (text)
+- `file` (file binary, Optional)
+
+**Response (201 Created)**:
+```json
+{
+  "success": true,
+  "data": {
+    "message": {
+      "sender": "user",
+      "content": "Please let me know once it is fixed.",
+      "image_url": null,
+      "created_at": "2026-02-26T10:10:00.000Z"
+    },
+    "info": "Reply sent successfully"
+  }
+}
+```
+
+---
+
+## 10. Media Upload
+
+### Upload Image
+**Endpoint**: `POST /upload`
+
+Uploads an image file to the server (via ImageKit) and returns the public URL. Use this URL for the `image_url` field when creating or replying to tickets.
+- **Content-Type**: `multipart/form-data`
+- **Max File Size**: 5MB
+- **Allowed Types**: `image/*`
+
+**Request Body (FormData)**:
+- `file`: The image file binary.
+
+**Response (201 Created)**:
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://ik.imagekit.io/.../mobile_uploads/mobile_upload_1711234567.jpg",
+    "fileId": "65f..."
+  },
+  "message": "Image uploaded successfully"
+}
+```
+
+---
+
 ## Error Handling
 The API returns standard HTTP status codes and a consistent JSON error format.
 

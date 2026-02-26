@@ -65,12 +65,18 @@ export default function EditArticleClient({ article, categories }: { article: Ar
         }
 
         const contentJson = { html: content };
-        const result = await updateArticle(article.id, contentJson, null, formData);
+        try {
+            const result: any = await updateArticle(article.id, contentJson, null, formData);
 
-        if (result && result.error) {
-            toast.error(result.error);
-        } else {
-            toast.success('Article updated successfully');
+            if (result && result.error) {
+                toast.error(result.error);
+            } else if (result && result.success) {
+                toast.success('Article updated successfully');
+                router.push('/admin/blog/article');
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to update article');
         }
     }
 

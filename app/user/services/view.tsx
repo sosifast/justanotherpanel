@@ -45,7 +45,7 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50, 100, 200, 500];
 const ServicesView = ({ initialServices, avgTimeMap, userRole }: ServicesViewProps) => {
     const [search, setSearch] = useState('');
     const [platform, setPlatform] = useState('all');
-    const [pageSize, setPageSize] = useState(20);
+    const [pageSize, setPageSize] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
 
     // Get unique platforms from services
@@ -85,13 +85,8 @@ const ServicesView = ({ initialServices, avgTimeMap, userRole }: ServicesViewPro
 
     return (
         <div>
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-slate-900">Services</h1>
-                <p className="text-slate-500">Browse all available services and their rates</p>
-            </div>
-
             {/* Filters */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6 mt-4">
                 <div className="p-4 flex flex-col md:flex-row gap-4">
                     {/* Search */}
                     <div className="flex-1 relative">

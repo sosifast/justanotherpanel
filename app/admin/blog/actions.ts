@@ -159,7 +159,7 @@ export async function updateArticle(id: number, contentJson: any, prevState: any
     }
 
     revalidatePath('/admin/blog/article')
-    redirect('/admin/blog/article')
+    return { success: true }
 }
 
 export async function deleteArticle(id: number) {

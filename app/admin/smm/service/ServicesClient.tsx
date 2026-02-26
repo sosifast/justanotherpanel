@@ -43,7 +43,7 @@ type ServiceData = {
   };
 };
 
-type ModalType = 'add' | 'edit' | 'delete' | null;
+type ModalType = 'add' | 'edit' | 'delete' | 'sync' | null;
 
 type Props = {
   initialServices: ServiceData[];
@@ -60,6 +60,12 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
   const [selectedService, setSelectedService] = useState<ServiceData | null>(null);
   const [loading, setLoading] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
+
+  // Sync state
+  const [syncData, setSyncData] = useState({
+    markup_sale: '20',
+    markup_reseller: '10'
+  });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -79,7 +85,7 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Filter services
   const filteredServices = services.filter(service => {
@@ -165,6 +171,18 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
   const closeModal = () => {
     setModalType(null);
     setSelectedService(null);
+  };
+
+  // Open Sync Modal
+  const openSyncModal = () => {
+    setSyncData({ markup_sale: '20', markup_reseller: '10' });
+    setModalType('sync');
+  };
+
+  // Handle sync input change
+  const handleSyncInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSyncData(prev => ({ ...prev, [name]: value }));
   };
 
   // Handle form input change
@@ -309,6 +327,42 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
     }
   };
 
+  // Sync Services
+  const handleSync = async () => {
+    if (!syncData.markup_sale || !syncData.markup_reseller) {
+      toast.error('Markup percentages are required');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/services/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          markup_sale: syncData.markup_sale,
+          markup_reseller: syncData.markup_reseller
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to sync services');
+        return;
+      }
+
+      toast.success('Services synced successfully');
+      closeModal();
+      window.location.reload(); // Reload to get updated data
+    } catch (error) {
+      console.error('Error syncing services:', error);
+      toast.error('Failed to sync services');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -316,13 +370,22 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
           <h1 className="text-2xl font-bold text-slate-800">SMM Services</h1>
           <p className="text-slate-500 text-sm">Manage services, rates, and constraints.</p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-900/20"
-        >
-          <Plus className="w-4 h-4" />
-          Add Service
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={openSyncModal}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-emerald-900/20"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Sync Price
+          </button>
+          <button
+            onClick={openAddModal}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-900/20"
+          >
+            <Plus className="w-4 h-4" />
+            Add Service
+          </button>
+        </div>
       </div>
 
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
@@ -486,6 +549,7 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
               }}
               className="border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="10">10 per page</option>
               <option value="20">20 per page</option>
               <option value="50">50 per page</option>
               <option value="100">100 per page</option>
@@ -726,6 +790,73 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
             </div>
           )}
 
+          {/* Sync Modal */}
+          {modalType === 'sync' && (
+            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+              <div className="flex items-center justify-between p-6 border-b border-slate-200">
+                <h2 className="text-lg font-semibold text-slate-800">
+                  Sync Service Prices
+                </h2>
+                <button onClick={closeModal} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-slate-600 mb-4">
+                  This will pull the latest services from all active API providers and update the prices, min, max, and notes for matching services.
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Markup Sale Price (%)</label>
+                  <input
+                    type="number"
+                    name="markup_sale"
+                    value={syncData.markup_sale}
+                    onChange={handleSyncInputChange}
+                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 20"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Percentage to add to the API price for normal users.</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Markup Reseller Price (%)</label>
+                  <input
+                    type="number"
+                    name="markup_reseller"
+                    value={syncData.markup_reseller}
+                    onChange={handleSyncInputChange}
+                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 10"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Percentage to add to the API price for resellers.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200">
+                <button
+                  onClick={closeModal}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSync}
+                  disabled={loading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Syncing...
+                    </>
+                  ) : (
+                    'Start Sync'
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Confirmation Modal */}
           <ConfirmationModal

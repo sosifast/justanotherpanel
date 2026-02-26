@@ -27,7 +27,7 @@ export default function QuillEditor({ value, onChange }: QuillEditorProps) {
     const formats = [
         'header',
         'bold', 'italic', 'underline', 'strike', 'blockquote',
-        'list', 'bullet',
+        'list',
         'link', 'image'
     ];
 

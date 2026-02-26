@@ -585,50 +585,56 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
               </button>
 
               {isNotificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 max-h-[80vh] overflow-hidden flex flex-col">
-                  <div className="px-4 py-3 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-                    <p className="font-semibold text-sm text-slate-900">Notifications</p>
-                    {unreadCount > 0 && (
-                      <button
-                        onClick={() => handleMarkAsRead('all')}
-                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Mark all as read
-                      </button>
-                    )}
-                  </div>
-                  <div className="overflow-y-auto flex-1">
-                    {notifications.length === 0 ? (
-                      <div className="p-8 text-center text-slate-500 text-sm">
-                        <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                        No notifications
-                      </div>
-                    ) : (
-                      notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!notification.is_read ? 'bg-blue-50/30' : ''}`}
-                          onClick={() => !notification.is_read && handleMarkAsRead(notification.id)}
+                <>
+                  <div
+                    className="fixed inset-0 z-40 cursor-default"
+                    onClick={() => setIsNotificationsOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 max-h-[80vh] overflow-hidden flex flex-col">
+                    <div className="px-4 py-3 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                      <p className="font-semibold text-sm text-slate-900">Notifications</p>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={() => handleMarkAsRead('all')}
+                          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
                         >
-                          <div className="flex items-start gap-3">
-                            <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${!notification.is_read ? 'bg-blue-500' : 'bg-transparent'}`} />
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-sm ${!notification.is_read ? 'font-semibold text-slate-900' : 'text-slate-600'}`}>
-                                {notification.title}
-                              </p>
-                              <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">
-                                {notification.message}
-                              </p>
-                              <p className="text-[10px] text-slate-400 mt-1.5">
-                                {new Date(notification.created_at).toLocaleString()}
-                              </p>
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+                    <div className="overflow-y-auto flex-1">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 text-sm">
+                          <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                          No notifications
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!notification.is_read ? 'bg-blue-50/30' : ''}`}
+                            onClick={() => !notification.is_read && handleMarkAsRead(notification.id)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${!notification.is_read ? 'bg-blue-500' : 'bg-transparent'}`} />
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm ${!notification.is_read ? 'font-semibold text-slate-900' : 'text-slate-600'}`}>
+                                  {notification.title}
+                                </p>
+                                <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">
+                                  {notification.message}
+                                </p>
+                                <p className="text-[10px] text-slate-400 mt-1.5">
+                                  {new Date(notification.created_at).toLocaleString()}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
-                    )}
+                        ))
+                      )}
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>

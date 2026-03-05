@@ -319,7 +319,8 @@ export async function POST(req: NextRequest) {
                 'Order Placed Successfully',
                 `Your order #${result.invoice_number} for "${service.name}" has been placed. Status: ${result.status}.`,
                 'ORDER',
-                result.id
+                result.id,
+                { related_id: String(result.id), screen: 'order_detail' }
             ),
             createAdminNotification(
                 'New Mobile Order',

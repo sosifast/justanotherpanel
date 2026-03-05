@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Save, Globe2, Image, Instagram, Facebook, Mail, Phone, MessageCircle, Code, Key, CheckCircle, Loader2, DollarSign } from 'lucide-react';
+import { Save, Globe2, Image, Instagram, Facebook, Mail, Phone, MessageCircle, Code, Key, CheckCircle, Loader2, DollarSign, Bell } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ImageUpload from '@/components/ui/ImageUpload';
 
@@ -27,6 +27,9 @@ type SettingData = {
   pusher_app_cluster: string | null;
   plausible_domain: string | null;
   plausible_api_key: string | null;
+  onesignal_app_id: string | null;
+  onesignal_rest_api_key: string | null;
+  firebase_service_account_json: string | null;
 } | null;
 
 const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) => {
@@ -55,6 +58,9 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
     pusher_app_cluster: initialSettings?.pusher_app_cluster || '',
     plausible_domain: initialSettings?.plausible_domain || '',
     plausible_api_key: initialSettings?.plausible_api_key || '',
+    onesignal_app_id: initialSettings?.onesignal_app_id || '',
+    onesignal_rest_api_key: initialSettings?.onesignal_rest_api_key || '',
+    firebase_service_account_json: initialSettings?.firebase_service_account_json || '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -482,6 +488,94 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
             </div>
           </div>
         </div>
+        {/* OneSignal Push Notification */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Bell className="w-4 h-4 text-red-500" />
+            <h2 className="font-semibold text-slate-800 text-sm">OneSignal Push Notification</h2>
+            {(formData.onesignal_app_id && formData.onesignal_rest_api_key) && (
+              <span className="ml-auto px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">Configured</span>
+            )}
+          </div>
+          <p className="text-xs text-slate-500 -mt-2">
+            Used for sending push notifications to mobile app users (iOS &amp; Android) via OneSignal.
+            Get your keys from{' '}
+            <a href="https://onesignal.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">onesignal.com</a>
+            {' '}→ App Settings → Keys &amp; IDs.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">App ID</label>
+              <input
+                type="text"
+                name="onesignal_app_id"
+                value={formData.onesignal_app_id}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              />
+              <p className="text-xs text-slate-400">OneSignal App ID (UUID format).</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">REST API Key</label>
+              <input
+                type="password"
+                name="onesignal_rest_api_key"
+                value={formData.onesignal_rest_api_key}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                placeholder="REST API Key from OneSignal"
+              />
+              <p className="text-xs text-slate-400">Keep this secret — used server-side only to send notifications.</p>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-slate-100 bg-slate-50 rounded-lg p-3">
+            <p className="text-xs font-semibold text-slate-600 mb-1">📱 Mobile SDK Setup</p>
+            <p className="text-xs text-slate-500 mb-2">In your mobile app (React Native / Expo), initialize OneSignal using the App ID above:</p>
+            <pre className="text-xs bg-white border border-slate-200 rounded-lg p-3 overflow-x-auto text-slate-700 font-mono leading-relaxed">{`OneSignal.initialize("${formData.onesignal_app_id || 'YOUR_APP_ID'}");
+OneSignal.Notifications.requestPermission(true);`}</pre>
+          </div>
+        </div>
+
+        {/* Firebase Push Notification */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">🔥</span>
+            <h2 className="font-semibold text-slate-800 text-sm">Firebase Push Notification (FCM)</h2>
+            {formData.firebase_service_account_json && (
+              <span className="ml-auto px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">Configured</span>
+            )}
+          </div>
+          <p className="text-xs text-slate-500 -mt-2">
+            Used to send push notifications (order updates, deposits, tickets, articles) to mobile users via Firebase Cloud Messaging (FCM).
+            Dapatkan file JSON dari{' '}
+            <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Firebase Console</a>
+            {' '}→ Project Settings → Service Accounts → <strong>Generate new private key</strong>.
+          </p>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">Service Account JSON</label>
+            <textarea
+              name="firebase_service_account_json"
+              value={formData.firebase_service_account_json}
+              onChange={handleInputChange}
+              rows={8}
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={'{ "type": "service_account", "project_id": "your-project", "private_key_id": "...", ... }'}
+            />
+            <p className="text-xs text-slate-400">Paste the entire JSON content of the service account file here. Disimpan di database, tidak di .env.</p>
+          </div>
+          <div className="pt-3 border-t border-slate-100 bg-slate-50 rounded-lg p-3">
+            <p className="text-xs font-semibold text-slate-600 mb-2">📱 Push Notifications yang Dikirim Otomatis:</p>
+            <ul className="text-xs text-slate-500 space-y-1 list-disc list-inside">
+              <li><strong>Order</strong> — order ditempatkan, status berubah (COMPLETED, CANCELLED, dll.)</li>
+              <li><strong>Deposit</strong> — deposit masuk, status berubah (APPROVED/REJECTED)</li>
+              <li><strong>Ticket</strong> — tiket baru dibuat, ada balasan dari admin</li>
+              <li><strong>Blog/Article</strong> — artikel baru dipublikasikan (broadcast ke semua)</li>
+              <li><strong>Announcement</strong> — pengumuman baru (broadcast ke semua)</li>
+            </ul>
+          </div>
+        </div>
+
       </div>
     </div>
   );

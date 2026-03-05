@@ -27,6 +27,17 @@ export async function POST(req: Request) {
             },
         });
 
+        // Broadcast to all mobile app users
+        if (news.status === 'ACTIVE') {
+            import('@/lib/firebase').then(({ broadcastFcmNotification }) => {
+                broadcastFcmNotification({
+                    title: '📢 New Announcement',
+                    body: subject,
+                    data: { type: 'SYSTEM', screen: 'home' }
+                });
+            }).catch(console.error);
+        }
+
         return NextResponse.json(news, { status: 201 });
     } catch (error) {
         console.error('Error creating news:', error);

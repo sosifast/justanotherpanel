@@ -107,7 +107,7 @@ export async function createArticle(contentJson: any, prevState: any, formData: 
     }
 
     try {
-        await prisma.articlePost.create({
+        const article = await prisma.articlePost.create({
             data: {
                 name,
                 slug,
@@ -120,6 +120,18 @@ export async function createArticle(contentJson: any, prevState: any, formData: 
                 status
             }
         })
+
+        if (article.status === 'ACTIVE') {
+            import('@/lib/firebase').then(({ broadcastFcmNotification }) => {
+                broadcastFcmNotification({
+                    title: 'New Article Published!',
+                    body: name,
+                    imageUrl: banner_imagekit_upload_url || undefined,
+                    data: { type: 'SYSTEM', screen: 'blog_detail', slug: slug }
+                });
+            }).catch(console.error);
+        }
+
     } catch (error) {
         console.error('Error creating article:', error);
         return { error: 'Failed to create article.' }

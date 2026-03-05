@@ -10,17 +10,33 @@ export async function sendOrderWebhook(orderId: number) {
             include: {
                 user: {
                     select: {
+                        id: true,
                         webhook_url: true
                     }
                 }
             }
         }) as any;
 
-        if (!order || !order.user.webhook_url) {
-            return { sent: false, reason: 'No webhook URL or order not found' };
+        if (!order) {
+            return { sent: false, reason: 'Order not found' };
         }
 
-        // 2. Prepare payload (Standard SMM Format)
+        // 2. Send Internal Notification (Realtime + Push FCM)
+        // This should always happen regardless of webhook_url
+        await createNotification(
+            order.user.id,
+            `Order #${order.id} Updated`,
+            `Your order status for order #${order.id} is now ${order.status}.`,
+            'ORDER',
+            order.id,
+            { related_id: String(order.id), screen: 'order_detail' }
+        );
+
+        if (!order.user.webhook_url) {
+            return { sent: false, reason: 'No webhook URL configured' };
+        }
+
+        // 3. Prepare payload (Standard SMM Format)
         const payload = {
             order: order.id,
             status: order.status,
@@ -29,15 +45,6 @@ export async function sendOrderWebhook(orderId: number) {
             remains: order.remains || 0,
             currency: 'USD'
         };
-
-        // 3. Send Notification (Frontend)
-        await createNotification(
-            order.user.id,
-            `Order #${order.id} Updated`,
-            `Your order status is now ${order.status}.`,
-            'ORDER',
-            order.id
-        );
 
         // 4. Send webhook (External)
         await axios.post(order.user.webhook_url, payload, {

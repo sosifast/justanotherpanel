@@ -29,7 +29,8 @@ import {
   Ticket,
   History,
   Image,
-  Phone
+  Phone,
+  Mail
 } from 'lucide-react';
 import Pusher from 'pusher-js';
 import { toast } from 'react-hot-toast';
@@ -398,6 +399,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             label="Payment Gateways"
             href="/admin/payment_gateway"
             isActive={isActive('/admin/payment_gateway')}
+          />
+          <SidebarItem
+            icon={<Mail className="w-5 h-5" />}
+            label="Email Marketing"
+            href="/admin/mail-send"
+            isActive={isActive('/admin/mail-send')}
           />
 
           <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-2">

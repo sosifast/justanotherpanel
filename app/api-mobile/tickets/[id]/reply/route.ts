@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyMobileToken } from '@/lib/mobile-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { createAdminNotification } from '@/lib/admin-notifications';
+import { createNotification } from '@/lib/notifications';
 import { triggerPusher } from '@/lib/pusher';
 
 type TicketMessage = {
@@ -115,6 +116,16 @@ export async function POST(
             'TICKET_UPDATE',
             ticketId
         ).catch(err => console.error('Failed to notify admin:', err));
+
+        // Push confirmation to user
+        createNotification(
+            user.id,
+            'Reply Sent',
+            `Your reply on ticket #${ticketId} has been sent. Our team will respond soon.`,
+            'TICKET',
+            ticketId,
+            { ticket_id: String(ticketId), screen: 'ticket_detail' }
+        ).catch(() => { });
 
         return successResponse({
             message: newMessage,

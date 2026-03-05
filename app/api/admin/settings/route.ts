@@ -38,6 +38,9 @@ export async function GET() {
             pusher_app_cluster: (settings as any).pusher_app_cluster,
             plausible_domain: (settings as any).plausible_domain,
             plausible_api_key: (settings as any).plausible_api_key,
+            onesignal_app_id: (settings as any).onesignal_app_id,
+            onesignal_rest_api_key: (settings as any).onesignal_rest_api_key,
+            firebase_service_account_json: (settings as any).firebase_service_account_json,
             created_at: settings.created_at,
             updated_at: settings.updated_at,
         };
@@ -74,7 +77,10 @@ export async function PUT(req: Request) {
 
             pusher_app_cluster,
             plausible_domain,
-            plausible_api_key
+            plausible_api_key,
+            onesignal_app_id,
+            onesignal_rest_api_key,
+            firebase_service_account_json,
         } = body;
 
         // Get existing settings or create if not exists
@@ -104,6 +110,9 @@ export async function PUT(req: Request) {
                     pusher_app_cluster: pusher_app_cluster || null,
                     plausible_domain: plausible_domain || null,
                     plausible_api_key: plausible_api_key || null,
+                    onesignal_app_id: onesignal_app_id || null,
+                    onesignal_rest_api_key: onesignal_rest_api_key || null,
+                    firebase_service_account_json: firebase_service_account_json || null,
                 } as any
             });
         } else {
@@ -131,6 +140,9 @@ export async function PUT(req: Request) {
                     pusher_app_cluster: pusher_app_cluster !== undefined ? pusher_app_cluster : (settings as any).pusher_app_cluster,
                     plausible_domain: plausible_domain !== undefined ? plausible_domain : (settings as any).plausible_domain,
                     plausible_api_key: plausible_api_key !== undefined ? plausible_api_key : (settings as any).plausible_api_key,
+                    onesignal_app_id: onesignal_app_id !== undefined ? onesignal_app_id : (settings as any).onesignal_app_id,
+                    onesignal_rest_api_key: onesignal_rest_api_key !== undefined ? onesignal_rest_api_key : (settings as any).onesignal_rest_api_key,
+                    firebase_service_account_json: firebase_service_account_json !== undefined ? firebase_service_account_json : (settings as any).firebase_service_account_json,
                 } as any
             });
         }
@@ -158,6 +170,9 @@ export async function PUT(req: Request) {
             pusher_app_cluster: (settings as any).pusher_app_cluster,
             plausible_domain: (settings as any).plausible_domain,
             plausible_api_key: (settings as any).plausible_api_key,
+            onesignal_app_id: (settings as any).onesignal_app_id,
+            onesignal_rest_api_key: (settings as any).onesignal_rest_api_key,
+            firebase_service_account_json: (settings as any).firebase_service_account_json,
             created_at: settings.created_at,
             updated_at: settings.updated_at,
         };

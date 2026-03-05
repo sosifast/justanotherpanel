@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyMobileToken } from '@/lib/mobile-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
+import { createNotification } from '@/lib/notifications';
 import crypto from 'crypto';
 import axios from 'axios';
 import paypal from '@paypal/checkout-server-sdk';
@@ -165,6 +166,27 @@ export async function POST(req: NextRequest) {
 
                 return updated;
             });
+
+            // Send push notification on status change
+            if (statusResult.status === 'PAYMENT') {
+                createNotification(
+                    user.id,
+                    '💰 Deposit Approved',
+                    `Your deposit of $${Number(deposit.amount).toFixed(2)} has been approved and credited to your balance.`,
+                    'DEPOSIT',
+                    deposit.id,
+                    { deposit_id: String(deposit.id), screen: 'deposit', status: 'PAYMENT' }
+                ).catch(() => { });
+            } else if (statusResult.status === 'CANCELED') {
+                createNotification(
+                    user.id,
+                    'Deposit Cancelled',
+                    `Your deposit #${deposit.id} was cancelled or failed. Please try again.`,
+                    'DEPOSIT',
+                    deposit.id,
+                    { deposit_id: String(deposit.id), screen: 'deposit', status: 'CANCELED' }
+                ).catch(() => { });
+            }
         }
 
         return successResponse({

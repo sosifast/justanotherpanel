@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Plus, User, Mail, CheckCircle, XCircle, Edit, Trash2, X, Eye, EyeOff } from 'lucide-react';
+import { Search, Filter, MoreVertical, Plus, User, Mail, CheckCircle, XCircle, Edit, Trash2, X, Eye, EyeOff, RefreshCw } from 'lucide-react';
 
 type UserData = {
   id: number;
@@ -13,7 +13,7 @@ type UserData = {
   status: string;
 };
 
-type ModalType = 'add' | 'edit' | 'delete' | null;
+type ModalType = 'add' | 'edit' | 'delete' | 'resend' | null;
 
 const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
   const [users, setUsers] = useState(initialUsers);
@@ -106,6 +106,13 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
   const openDeleteModal = (user: UserData) => {
     setSelectedUser(user);
     setModalType('delete');
+    setDropdownOpen(null);
+  };
+
+  // Open Resend Modal
+  const openResendModal = (user: UserData) => {
+    setSelectedUser(user);
+    setModalType('resend');
     setDropdownOpen(null);
   };
 
@@ -219,6 +226,32 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
     }
   };
 
+  // Resend Activation link
+  const handleResendActivation = async () => {
+    if (!selectedUser) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/resend-activation`, {
+        method: 'POST'
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to resend activation link');
+      } else {
+        alert('Activation link sent successfully!');
+      }
+      closeModal();
+    } catch (error) {
+      console.error('Error resending activation:', error);
+      alert('Failed to resend activation link');
+    } finally {
+      setLoading(false);
+      setDropdownOpen(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -327,6 +360,15 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
                           <Edit className="w-4 h-4" />
                           Edit
                         </button>
+                        {user.status !== 'ACTIVE' && (
+                          <button
+                            onClick={() => openResendModal(user)}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-y border-slate-50"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                            Resend Link
+                          </button>
+                        )}
                         <button
                           onClick={() => openDeleteModal(user)}
                           className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
@@ -485,7 +527,7 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
                       className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="ACTIVE">Active</option>
-                      <option value="NOT_ACTIVE">Not Active</option>
+                      <option value="INACTIVE">Inactive</option>
                     </select>
                   </div>
                 </div>
@@ -525,7 +567,7 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
 
           {/* Delete Confirmation Modal */}
           {modalType === 'delete' && selectedUser && (
-            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
+            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
               <div className="p-6">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Trash2 className="w-6 h-6 text-red-600" />
@@ -546,9 +588,42 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
                 <button
                   onClick={handleDelete}
                   disabled={loading}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
+                  {loading && <RefreshCw className="w-4 h-4 animate-spin" />}
                   {loading ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Resend Activation Modal */}
+          {modalType === 'resend' && selectedUser && (
+            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-6">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <RefreshCw className="w-6 h-6 text-blue-600" />
+                </div>
+                <h2 className="text-lg font-semibold text-slate-800 text-center mb-2">Resend Activation</h2>
+                <p className="text-sm text-slate-500 text-center">
+                  Send a new activation link to <span className="font-medium text-slate-700">{selectedUser.email}</span>?
+                </p>
+              </div>
+
+              <div className="flex items-center justify-center gap-3 p-6 border-t border-slate-200">
+                <button
+                  onClick={closeModal}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleResendActivation}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading && <RefreshCw className="w-4 h-4 animate-spin" />}
+                  {loading ? 'Sending...' : 'Send Link'}
                 </button>
               </div>
             </div>

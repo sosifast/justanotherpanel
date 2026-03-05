@@ -44,6 +44,9 @@ export default async function AdminSettingsPage() {
         pusher_app_cluster: settings.pusher_app_cluster,
         plausible_domain: settings.plausible_domain,
         plausible_api_key: settings.plausible_api_key,
+        onesignal_app_id: settings.onesignal_app_id,
+        onesignal_rest_api_key: settings.onesignal_rest_api_key,
+        firebase_service_account_json: settings.firebase_service_account_json,
     } : null;
 
     return <SettingsClient initialSettings={mappedSettings} />;

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { triggerPusher } from '@/lib/pusher';
+import { createNotification } from '@/lib/notifications';
 
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
@@ -84,6 +85,21 @@ export async function PATCH(
             amount: Number(updated.amount),
             username: deposit.user?.username || 'System'
         });
+
+        // Notify User (Realtime + Push FCM)
+        const userTitle = status === 'PAYMENT' ? '💰 Deposit Approved' : 'Deposit Status Updated';
+        const userBody = status === 'PAYMENT'
+            ? `Your deposit of $${Number(updated.amount).toFixed(2)} has been approved and credited to your balance.`
+            : `Your deposit #${updated.id} status has been updated to ${status}.`;
+
+        createNotification(
+            deposit.id_user,
+            userTitle,
+            userBody,
+            'DEPOSIT',
+            updated.id,
+            { deposit_id: String(updated.id), screen: 'deposit', status: status }
+        ).catch(() => { });
 
         return NextResponse.json({ success: true, deposit: updated });
     } catch (error: any) {

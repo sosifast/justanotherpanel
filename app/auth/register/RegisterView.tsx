@@ -104,7 +104,8 @@ const Register = () => {
             )}
           </Link>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Create your account</h1>
-          <p className="text-slate-500 text-sm">Join {settings?.site_name || 'us'} and start growing your social presence.</p>
+          <p className="text-slate-500 text-sm italic">Note: Only Gmail, Yahoo, and Outlook emails are supported.</p>
+          <p className="text-slate-500 text-sm mt-2">Join {settings?.site_name || 'us'} and start growing your social presence.</p>
         </div>
 
         {error && (

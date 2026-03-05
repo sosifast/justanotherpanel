@@ -18,7 +18,7 @@ const LoginForm = () => {
 
     useEffect(() => {
         if (searchParams.get('registered') === 'true') {
-            setSuccess('Registration successful. Please sign in.');
+            setSuccess('Registration successful. Please check your email to activate your account before signing in.');
         }
     }, [searchParams]);
 

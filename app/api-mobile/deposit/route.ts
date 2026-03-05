@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyMobileToken } from '@/lib/mobile-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
+import { createNotification } from '@/lib/notifications';
 import crypto from 'crypto';
 import axios from 'axios';
 import paypal from '@paypal/checkout-server-sdk';
@@ -10,7 +11,7 @@ import paypal from '@paypal/checkout-server-sdk';
 // Helper function to create PayPal payment
 async function createPayPalPayment(gateway: any, amount: number, userId: number, baseUrl: string) {
     const config = gateway.api_config as any;
-    
+
     const Environment = config.mode === 'live'
         ? paypal.core.LiveEnvironment
         : paypal.core.SandboxEnvironment;
@@ -51,9 +52,9 @@ async function createPayPalPayment(gateway: any, amount: number, userId: number,
 // Helper function to create Cryptomus payment
 async function createCryptomusPayment(gateway: any, amount: number, userId: number, baseUrl: string) {
     const config = gateway.api_config as any;
-    
+
     const orderId = `DEP-${userId}-${Date.now()}`;
-    
+
     const payload = {
         amount: amount.toString(),
         currency: 'USD',
@@ -179,7 +180,7 @@ export async function POST(req: NextRequest) {
 
         // Handle different payment providers
         let paymentResult = null;
-        
+
         try {
             // Determine base URL dynamically
             const protocol = req.headers.get('x-forwarded-proto') || 'https';
@@ -218,6 +219,16 @@ export async function POST(req: NextRequest) {
         }
 
         // For manual payments or if automated payment failed
+        // Send push confirmation
+        createNotification(
+            user.id,
+            'Deposit Submitted',
+            `Your deposit of $${Number(amount).toFixed(2)} has been submitted. Please complete the payment.`,
+            'DEPOSIT',
+            deposit.id,
+            { deposit_id: String(deposit.id), screen: 'deposit' }
+        ).catch(() => { });
+
         return successResponse({
             deposit,
             message: 'Deposit created successfully. Please follow the payment instructions.'

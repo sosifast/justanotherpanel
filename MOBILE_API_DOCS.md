@@ -371,18 +371,36 @@ Fetches detailed history of orders or deposits.
 
 ---
 
-## 4. Coupons
+## 4. Redeem Balance Code
 
-**Endpoint**: `POST /coupon`
+**Endpoint**: `POST /reedem`
 
-Redeems a balance code/coupon.
+Redeem **kode balance top-up** yang dibuat oleh admin melalui panel **Admin → Redeem → Generate Code**. Setelah berhasil, nilai balance dari kode langsung dikreditkan ke saldo akun user.
+
+> **DB Model**: `RedeemCode` + `RedeemUsed`  
+> **Berbeda dengan `/coupon`** — endpoint ini BUKAN untuk kode diskon order.
 
 **Request Body**:
 ```json
 {
-  "code": "PROMO2026"
+  "code": "TOPUP2026"
 }
 ```
+
+> Input `code` bersifat case-insensitive, otomatis dikonversi ke huruf kapital di server.
+
+**Validasi** (dicek berurutan):
+1. Field `code` wajib diisi
+2. Kode harus ada di tabel `RedeemCode`
+3. Status kode harus `ACTIVE`
+4. Kode belum expired (`expired_date` > sekarang)
+5. Quota kode masih > 0
+6. User belum pernah meredeem kode ini (`RedeemUsed`)
+
+**Atomic Transaction**:
+1. Buat record `RedeemUsed` (log penggunaan)
+2. Kurangi `quota` kode sebesar 1
+3. Tambahkan `get_balance` ke saldo user
 
 **Response (200 OK)**:
 ```json
@@ -390,12 +408,98 @@ Redeems a balance code/coupon.
   "success": true,
   "data": {
     "amount": "10.00",
-    "message": "Successfully redeemed 10.00 balance"
-  }
+    "message": "Successfully redeemed $10.00 to your balance"
+  },
+  "message": "Redeem code applied successfully"
 }
 ```
 
+**Error Responses**:
+| HTTP | Message |
+|------|---------|
+| `400` | `"Code is required"` |
+| `400` | `"Invalid redeem code"` |
+| `400` | `"This redeem code is no longer active"` |
+| `400` | `"This redeem code has expired"` |
+| `400` | `"This redeem code quota has been fully used"` |
+| `400` | `"You have already redeemed this code"` |
+| `401` | `"Unauthorized"` |
+| `500` | `"Internal Server Error"` |
+
 ---
+
+## 4b. Coupon (Validasi Kode Diskon Transaksi)
+
+**Endpoint**: `POST /coupon`
+
+Validasi **kode diskon transaksi** yang dibuat admin melalui panel **Admin → Discount**. Kode ini digunakan untuk mengurangi harga order SMM — bukan untuk menambah balance.
+
+> **DB Model**: `Discount` + `DiscountUsage`  
+> **Berbeda dengan `/reedem`** — endpoint ini BUKAN untuk balance top-up.  
+> Untuk **menerapkan** diskon ke order, gunakan field `discount_code` di `POST /order`.
+
+**Request Body**:
+```json
+{
+  "discount_code": "PROMO10",
+  "service_id": 101,
+  "quantity": 1000
+}
+```
+
+| Field | Wajib | Keterangan |
+|-------|-------|------------|
+| `discount_code` | ✅ | Kode diskon dari admin |
+| `service_id` | ❌ | Jika diisi bersama `quantity`, menghitung harga final |
+| `quantity` | ❌ | Diperlukan untuk kalkulasi subtotal |
+
+**Response dengan `service_id` + `quantity` (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "valid": true,
+    "discount_code": "PROMO10",
+    "discount_type": "PERCENTAGE",
+    "discount_amount": "1.5000",
+    "discount_max_get": "5.00",
+    "subtotal": "15.0000",
+    "final_price": "13.5000"
+  },
+  "message": "Discount code is valid"
+}
+```
+
+**Response tanpa `service_id` + `quantity` (metadata only)**:
+```json
+{
+  "success": true,
+  "data": {
+    "valid": true,
+    "discount_code": "PROMO10",
+    "discount_type": "PERCENTAGE",
+    "discount_amount": "10.0000",
+    "discount_max_get": "5.00",
+    "min_transaction": "5.00",
+    "max_transaction": null,
+    "expired_date": "2026-12-31T23:59:59.000Z"
+  },
+  "message": "Discount code is valid"
+}
+```
+
+**Error Responses**:
+| HTTP | Message |
+|------|---------|
+| `400` | `"discount_code is required"` |
+| `400` | `"Discount code not found or expired"` |
+| `400` | `"Discount code has reached its usage limit"` |
+| `400` | `"Minimum order subtotal for this discount is $X.XX"` |
+| `400` | `"Maximum order subtotal for this discount is $X.XX"` |
+| `401` | `"Unauthorized"` |
+| `500` | `"Internal Server Error"` |
+
+
 
 ## 5. Announcements
 
@@ -885,6 +989,357 @@ Uploads an image file to the server (via ImageKit) and returns the public URL. U
     "fileId": "65f..."
   },
   "message": "Image uploaded successfully"
+}
+```
+
+---
+
+## 11. Pusher Configuration
+
+### Get Pusher Config
+**Endpoint**: `GET /pusher-config`
+
+Returns the Pusher client-side configuration (app key and cluster) so the mobile app can initialize a real-time Pusher connection. The `app_secret` is **never** exposed.
+
+> **Auth Required**: `Authorization: Bearer <token>`
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "key": "your_pusher_app_key",
+    "cluster": "ap1",
+    "auth_endpoint": "/api/pusher/auth",
+    "channels": {
+      "user": "private-user-7"
+    }
+  },
+  "message": "Pusher config retrieved"
+}
+```
+
+**Fields**:
+| Field | Type | Description |
+|-------|------|-------------|
+| `key` | string | Pusher app key (public) |
+| `cluster` | string | Pusher cluster region (e.g. `ap1`) |
+| `auth_endpoint` | string | Endpoint to authenticate private channels |
+| `channels.user` | string | Private channel name for this user (`private-user-{id}`) |
+
+**Private Channel Authentication**:
+
+After obtaining the config, the mobile app must authenticate its private channel by calling:
+```
+POST /api/pusher/auth
+Authorization: Bearer <token>
+Content-Type: application/x-www-form-urlencoded
+
+socket_id=<socket_id>&channel_name=private-user-<id>
+```
+
+**Error Responses**:
+- `401` – Unauthorized
+- `503` – `"Pusher not configured"` (key or cluster not set on the server)
+
+---
+
+## 12. Blog / Artikel
+
+> **Auth**: Semua endpoint blog **tidak memerlukan autentikasi** — dapat diakses publik.
+
+### 12.1 List Artikel
+**Endpoint**: `GET /blog`
+
+Mengembalikan daftar artikel aktif dengan pagination.
+
+**Query Parameters**:
+| Parameter | Wajib | Default | Keterangan |
+|-----------|-------|---------|------------|
+| `page` | ❌ | `1` | Nomor halaman |
+| `limit` | ❌ | `10` | Jumlah per halaman (maks 50) |
+| `category_id` | ❌ | — | Filter berdasarkan ID kategori |
+| `category_slug` | ❌ | — | Filter berdasarkan slug kategori |
+| `search` | ❌ | — | Pencarian berdasarkan judul artikel |
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "name": "How to Grow Instagram Followers in 2026",
+        "slug": "how-to-grow-instagram-followers-2026",
+        "banner_imagekit_upload_url": "https://ik.imagekit.io/.../banner.jpg",
+        "desc_seo": "Learn the best strategies to grow your Instagram following organically.",
+        "keyword": "instagram, followers, growth",
+        "view_count": 1240,
+        "created_at": "2026-02-01T10:00:00.000Z",
+        "updated_at": "2026-02-10T08:30:00.000Z",
+        "category": {
+          "id": 3,
+          "name": "Tips & Tricks",
+          "slug": "tips-tricks"
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 42,
+      "pages": 5
+    }
+  }
+}
+```
+
+---
+
+### 12.2 Detail Artikel
+**Endpoint**: `GET /blog/:slug`
+
+Mengembalikan detail lengkap sebuah artikel berdasarkan slug. Setiap request akan **menginkrementasi `view_count`** secara otomatis (non-blocking).
+
+**URL Params**:
+- `:slug` — Slug unik artikel (contoh: `how-to-grow-instagram-followers-2026`)
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "article": {
+      "id": 1,
+      "name": "How to Grow Instagram Followers in 2026",
+      "slug": "how-to-grow-instagram-followers-2026",
+      "banner_url": "https://ik.imagekit.io/.../banner.jpg",
+      "content_html": "<h2>Introduction</h2><p>Growing your Instagram...</p>",
+      "desc_seo": "Learn the best strategies to grow your Instagram following organically.",
+      "seo_title": "Instagram Growth Guide 2026",
+      "keywords": ["instagram", "followers", "growth"],
+      "view_count": 1241,
+      "created_at": "2026-02-01T10:00:00.000Z",
+      "updated_at": "2026-02-10T08:30:00.000Z",
+      "category": {
+        "id": 3,
+        "name": "Tips & Tricks",
+        "slug": "tips-tricks"
+      }
+    },
+    "recommended": [
+      {
+        "id": 5,
+        "name": "TikTok Followers Growth Strategy",
+        "slug": "tiktok-followers-growth-strategy",
+        "banner_imagekit_upload_url": "https://ik.imagekit.io/.../tiktok-banner.jpg",
+        "desc_seo": "How to grow TikTok followers fast.",
+        "view_count": 870,
+        "created_at": "2026-01-15T09:00:00.000Z",
+        "category": { "id": 3, "name": "Tips & Tricks", "slug": "tips-tricks" }
+      }
+    ]
+  }
+}
+```
+
+**Notes**:
+- `content_html` — Konten artikel dalam format HTML, siap di-render langsung di WebView atau dengan HTML parser.
+- `recommended` — Maksimum 3 artikel dari kategori yang sama, diurutkan berdasarkan jumlah view terbanyak.
+- `view_count` — Nilai yang dikembalikan sudah mencerminkan view setelah increment.
+
+**Error Responses**:
+| HTTP | Message |
+|------|---------|
+| `400` | `"Slug is required"` |
+| `404` | `"Article not found"` |
+| `500` | `"Internal Server Error"` |
+
+---
+
+### 12.3 List Kategori Blog
+**Endpoint**: `GET /blog/categories`
+
+Mengembalikan semua kategori blog aktif beserta jumlah artikel aktif di setiap kategori.
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "News",
+      "slug": "news",
+      "description": "Latest news and updates.",
+      "article_count": 12
+    },
+    {
+      "id": 3,
+      "name": "Tips & Tricks",
+      "slug": "tips-tricks",
+      "description": null,
+      "article_count": 8
+    }
+  ]
+}
+```
+
+---
+
+## 13. Firebase Push Notification (FCM)
+
+Push notification dikirim secara otomatis ke semua device aktif pengguna menggunakan **Firebase Cloud Messaging (FCM)**.
+
+> Konfigurasi Firebase (Service Account JSON) dilakukan di **Admin Panel → Settings → Firebase Push Notification**.
+
+---
+
+### 13.1 Register FCM Token
+
+**Endpoint**: `POST /fcm/register`
+
+Simpan atau update FCM device token untuk sesi aktif. Panggil ini setiap kali:
+- User berhasil login
+- Firebase SDK memperbarui token (`onTokenRefresh`)
+
+**Request Body**:
+```json
+{
+  "fcm_token": "exxxxxxx:APA91bHxx..."
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": { "registered": true },
+  "message": "FCM token registered successfully"
+}
+```
+
+---
+
+### 13.2 Hapus FCM Token (Logout)
+
+**Endpoint**: `DELETE /fcm/register`
+
+Hapus FCM token dari sesi saat ini. Panggil ini ketika user logout agar tidak menerima push notification lagi di device tersebut.
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": { "unregistered": true },
+  "message": "FCM token removed"
+}
+```
+
+---
+
+### 13.3 Push Notification Otomatis
+
+Berikut semua event yang memicu push notification ke user secara otomatis:
+
+| Event | Trigger | Title | Payload `data` |
+|-------|---------|-------|----------------|
+| **Order dibuat** | `POST /order` | "Order Placed Successfully" | `{ type: "ORDER", related_id, screen: "order_detail" }` |
+| **Order status berubah** | Admin update order | Sesuai status baru | `{ type: "ORDER", screen: "order_detail" }` |
+| **Deposit dibuat** | `POST /deposit` | "Deposit Submitted" | `{ type: "DEPOSIT", screen: "deposit" }` |
+| **Deposit disetujui** | `POST /deposit/check-status` | "💰 Deposit Approved" | `{ type: "DEPOSIT", status: "PAYMENT", screen: "deposit" }` |
+| **Deposit dibatalkan** | `POST /deposit/check-status` | "Deposit Cancelled" | `{ type: "DEPOSIT", status: "CANCELED", screen: "deposit" }` |
+| **Tiket dibuat** | `POST /tickets` | "Ticket Created" | `{ type: "TICKET", screen: "ticket_detail" }` |
+| **User reply tiket** | `POST /tickets/:id/reply` | "Reply Sent" | `{ type: "TICKET", ticket_id, screen: "ticket_detail" }` |
+| **Admin reply tiket** | Admin reply dari panel | "New Reply on Your Ticket" | `{ type: "TICKET", screen: "ticket_detail" }` |
+
+---
+
+### 13.4 Struktur Data Push Notification
+
+Setiap push notification yang diterima mobile memiliki format:
+
+```json
+{
+  "notification": {
+    "title": "💰 Deposit Approved",
+    "body": "Your deposit of $10.00 has been approved and credited to your balance."
+  },
+  "data": {
+    "type": "DEPOSIT",
+    "related_id": "42",
+    "status": "PAYMENT",
+    "screen": "deposit"
+  }
+}
+```
+
+Field `data.screen` dapat digunakan untuk navigasi deep-link di mobile app:
+
+| `screen` value | Navigasi ke |
+|----------------|-------------|
+| `deposit` | Halaman riwayat deposit |
+| `order_detail` | Detail order (gunakan `related_id`) |
+| `ticket_detail` | Detail tiket (gunakan `ticket_id` atau `related_id`) |
+| `blog_detail` | Detail artikel blog (gunakan `slug`) |
+| `home` | Halaman utama |
+
+---
+
+### 13.5 Integrasi Mobile SDK (React Native / Expo)
+
+**Install**:
+```bash
+npx expo install @react-native-firebase/app @react-native-firebase/messaging
+```
+
+**Setup di app entry point**:
+```typescript
+import messaging from '@react-native-firebase/messaging';
+import axios from 'axios';
+
+async function setupPushNotifications(authToken: string) {
+  // 1. Request permission
+  const authStatus = await messaging().requestPermission();
+  const enabled =
+    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+    authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+  if (!enabled) return;
+
+  // 2. Get FCM token
+  const fcmToken = await messaging().getToken();
+
+  // 3. Register token to backend
+  await axios.post(
+    'https://yourpanel.com/api-mobile/fcm/register',
+    { fcm_token: fcmToken },
+    { headers: { Authorization: `Bearer ${authToken}` } }
+  );
+
+  // 4. Handle token refresh
+  messaging().onTokenRefresh(async (newToken) => {
+    await axios.post(
+      'https://yourpanel.com/api-mobile/fcm/register',
+      { fcm_token: newToken },
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+  });
+
+  // 5. Handle foreground notifications
+  messaging().onMessage(async (remoteMessage) => {
+    console.log('FCM received:', remoteMessage);
+    // Show local notification or update UI
+  });
+}
+
+// Call on logout
+async function onLogout(authToken: string) {
+  await axios.delete(
+    'https://yourpanel.com/api-mobile/fcm/register',
+    { headers: { Authorization: `Bearer ${authToken}` } }
+  );
 }
 ```
 

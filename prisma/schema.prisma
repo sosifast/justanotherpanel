@@ -18,6 +18,9 @@ model User {
   status                   UserStatus               @default(ACTIVE)
   profile_imagekit_url     String?
   apikey                   String?                  @unique
+  activation_token         String?                  @unique
+  reset_token              String?                  @unique
+  reset_token_expires      DateTime?
   created_at               DateTime                 @default(now())
   updated_at               DateTime                 @updatedAt
   webhook_url              String?
@@ -60,6 +63,7 @@ model UserSession {
   location    String?
   last_active DateTime @default(now())
   created_at  DateTime @default(now())
+  fcm_token   String?  // Firebase Cloud Messaging device token for push notifications
   user        User     @relation(fields: [id_user], references: [id], onDelete: Cascade)
 
   @@map("user_session")
@@ -127,6 +131,9 @@ model Setting {
   pusher_app_secret    String?
   plausible_domain     String?
   plausible_api_key    String?
+  onesignal_app_id     String?
+  onesignal_rest_api_key String?
+  firebase_service_account_json String? // JSON string of Firebase Admin SDK service account
 
   @@map("setting")
 }
@@ -404,6 +411,7 @@ model ArticlePost {
   desc_seo                   String?
   keyword                    String?
   status                     ArticleStatus   @default(ACTIVE)
+  view_count                 Int             @default(0)
   created_at                 DateTime        @default(now())
   updated_at                 DateTime        @updatedAt
   category                   ArticleCategory @relation(fields: [id_article_category], references: [id])

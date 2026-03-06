@@ -273,7 +273,7 @@ export async function POST(req: NextRequest) {
             orderQuantity = commentLines.length;
         } else {
             if (!quantity) return errorResponse('quantity is required');
-            orderQuantity = parseInt(quantity);
+            orderQuantity = Number(quantity);
             if (isNaN(orderQuantity) || orderQuantity < service.min || orderQuantity > service.max) {
                 return errorResponse(`Quantity must be between ${service.min} and ${service.max}`);
             }

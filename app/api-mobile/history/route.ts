@@ -14,6 +14,33 @@ interface TransactionDetail {
     order_id?: string;
 }
 
+/**
+ * GET /api-mobile/history
+ * 
+ * Retrieves a paginated history of either 'orders' or 'deposits' for the authenticated user.
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Query Params:
+ * - type (optional): 'orders' (default) or 'deposits'.
+ * - page (optional): Page number for pagination (default: 1).
+ * - limit (optional): Items per page (default: 20).
+ * 
+ * Response (200):
+ * {
+ *   "list": Array<Order|Deposit>, // Mapped to a clean mobile-friendly format
+ *   "pagination": {
+ *     "page": number,
+ *     "limit": number,
+ *     "total": number,
+ *     "pages": number
+ *   }
+ * }
+ * 
+ * Errors:
+ * 401 - Unauthorized
+ * 500 - Internal Server Error
+ */
 export async function GET(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);
@@ -39,10 +66,10 @@ export async function GET(req: NextRequest) {
                 list: deposits.map(deposit => {
                     const details = deposit.detail_transaction as unknown as TransactionDetail;
                     const provider = details?.provider || details?.method || 'Manual';
-                    const transactionId = details?.transactionId || 
-                                        details?.paypal_order_id || 
-                                        details?.cryptomus_uuid || 
-                                        details?.order_id || '-';
+                    const transactionId = details?.transactionId ||
+                        details?.paypal_order_id ||
+                        details?.cryptomus_uuid ||
+                        details?.order_id || '-';
                     const fee = details?.fee || 0;
 
                     return {
@@ -70,7 +97,7 @@ export async function GET(req: NextRequest) {
                 orderBy: { created_at: 'desc' },
                 include: {
                     service: {
-                        select: { 
+                        select: {
                             name: true,
                             category: {
                                 select: {

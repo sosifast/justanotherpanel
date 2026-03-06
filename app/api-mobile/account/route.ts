@@ -4,7 +4,33 @@ import { prisma } from '@/lib/prisma';
 import { verifyMobileToken } from '@/lib/mobile-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import bcrypt from 'bcryptjs';
+import { sanitizeInput } from '@/lib/security';
 
+/**
+ * GET /api-mobile/account
+ *
+ * Mengembalikan data profil lengkap user yang sedang login,
+ * termasuk balance, role, profile image, dan notification preferences.
+ *
+ * Auth: Required — Bearer token di Authorization header.
+ *
+ * Response (200):
+ *   {
+ *     "id"                       : number
+ *     "username"                 : string
+ *     "email"                    : string
+ *     "full_name"                : string
+ *     "balance"                  : Decimal
+ *     "role"                     : string
+ *     "profile_image"            : string | null
+ *     "created_at"               : DateTime
+ *     "notification_preferences" : NotificationPreferences | null
+ *   }
+ *
+ * Errors:
+ *   401 — Unauthorized
+ *   500 — Internal Server Error
+ */
 export async function GET(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);
@@ -24,6 +50,35 @@ export async function GET(req: NextRequest) {
     });
 }
 
+/**
+ * PUT /api-mobile/account
+ *
+ * Memperbarui data profil user: full_name dan/atau password.
+ * Untuk mengubah password, `password` (saat ini) wajib disertakan bersama `new_password`.
+ * Setidaknya satu field (full_name atau new_password) harus ada di body.
+ *
+ * Auth: Required — Bearer token di Authorization header.
+ *
+ * Request Body:
+ *   {
+ *     "full_name"    : string  // optional — nama lengkap baru
+ *     "password"     : string  // required jika new_password diisi
+ *     "new_password" : string  // optional — password baru
+ *   }
+ *
+ * Response (200):
+ *   {
+ *     "user"    : { id, username, email, full_name, balance, profile_imagekit_url }
+ *     "message" : "Profile updated successfully"
+ *   }
+ *
+ * Errors:
+ *   400 — Current password is required to set new password
+ *   400 — Incorrect current password
+ *   400 — No data to update
+ *   401 — Unauthorized
+ *   500 — Internal Server Error
+ */
 export async function PUT(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);
@@ -35,7 +90,7 @@ export async function PUT(req: NextRequest) {
         const updateData: any = {};
 
         if (full_name) {
-            updateData.full_name = full_name;
+            updateData.full_name = sanitizeInput(full_name);
         }
 
         if (new_password) {

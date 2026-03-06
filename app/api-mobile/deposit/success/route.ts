@@ -1,69 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+/**
+ * GET /api-mobile/deposit/success
+ * 
+ * Client-side callback URL for when a user completes payment on the provider page.
+ */
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
-        const token = searchParams.get('token');
-        const PayerID = searchParams.get('PayerID');
-        const orderId = searchParams.get('order_id');
-        const uuid = searchParams.get('uuid');
+        const token = searchParams.get('token'); // PayPal
+        const uuid = searchParams.get('uuid'); // Cryptomus
+        const orderId = searchParams.get('order_id'); // Cryptomus internal
 
-        // Handle PayPal success
-        if (token) {
-            // Find deposit by PayPal token/order ID
-            const deposit = await prisma.deposits.findFirst({
-                where: {
-                    status: 'PENDING'
-                }
-            });
+        const identifier = uuid || token || orderId;
 
-            if (deposit) {
-                const details = deposit.detail_transaction as any;
-                if (details?.paypal_order_id === token) {
-                    return NextResponse.json({
-                        success: true,
-                        message: 'Payment authorized successfully',
-                        deposit_id: deposit.id,
-                        status: 'PENDING',
-                        next_action: 'capture_payment'
-                    });
-                }
-            }
+        if (!identifier) {
+            return NextResponse.json({ success: false, message: 'Missing payment identifier' }, { status: 400 });
         }
 
-        // Handle Cryptomus success
-        if (orderId || uuid) {
-            const deposit = await prisma.deposits.findFirst({
-                where: {
-                    status: 'PENDING'
-                }
-            });
+        // Search for the deposit by checking the JSON field. 
+        // We use findMany and filter manually to ensure compatibility with all Prisma/DB versions 
+        // if JSON path queries are not perfectly mapped, though for Postgres it usually works.
+        const pendingDeposits = await prisma.deposits.findMany({
+            where: { status: 'PENDING' },
+            orderBy: { created_at: 'desc' },
+            take: 50 // Limit search to recent pending deposits
+        });
 
-            if (deposit) {
-                const details = deposit.detail_transaction as any;
-                if ((orderId && details?.order_id === orderId) || (uuid && details?.cryptomus_uuid === uuid)) {
-                    return NextResponse.json({
-                        success: true,
-                        message: 'Payment processed successfully',
-                        deposit_id: deposit.id,
-                        status: 'PENDING',
-                        next_action: 'check_status'
-                    });
-                }
-            }
+        const deposit = pendingDeposits.find(d => {
+            const details = d.detail_transaction as any;
+            return (
+                details?.payment_id === identifier ||
+                details?.paypal_order_id === identifier ||
+                details?.cryptomus_uuid === identifier ||
+                details?.order_id === identifier
+            );
+        });
+
+        if (!deposit) {
+            return NextResponse.json({
+                success: false,
+                message: `Deposit not found for identifier: ${identifier}`
+            }, { status: 404 });
         }
 
         return NextResponse.json({
-            success: false,
-            message: 'Payment not found or already processed'
-        }, { status: 404 });
+            success: true,
+            message: 'Payment reference found',
+            deposit_id: deposit.id,
+            status: 'PENDING',
+            next_action: token ? 'capture_payment' : 'check_status'
+        });
 
     } catch (error) {
         console.error('Deposit success error:', error);
-        return NextResponse.json({
-            success: false,
-            message: 'Internal server error'
-        }, { status: 500 });
+        return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
     }
 }

@@ -5,6 +5,7 @@ import { successResponse, errorResponse } from '@/lib/api-response';
 import { createNotification } from '@/lib/notifications';
 import { createAdminNotification } from '@/lib/admin-notifications';
 import { uploadFileToImageKit } from '@/lib/imagekit-server';
+import { sanitizeInput } from '@/lib/security';
 
 type TicketMessage = {
     sender: string;
@@ -14,6 +15,24 @@ type TicketMessage = {
 };
 
 // GET /api-mobile/tickets
+/**
+ * GET /api-mobile/tickets
+ * 
+ * Retrieves a list of support tickets for the authenticated user.
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Query Params:
+ * - status (optional): Filter by status (OPEN, PENDING, ANSWERED, CLOSED).
+ * - page (optional): Page number (default: 1).
+ * - limit (optional): Items per page (default: 20).
+ * 
+ * Response (200):
+ * {
+ *   "list": TicketSummary[],
+ *   "pagination": { page, limit, total, pages }
+ * }
+ */
 export async function GET(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);
@@ -65,6 +84,30 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api-mobile/tickets
+/**
+ * POST /api-mobile/tickets
+ * 
+ * Creates a new support ticket. Supports both JSON and Multipart/Form-Data (for image attachments).
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Request (JSON or Form-Data):
+ * - subject: string (required)
+ * - category: string (required)
+ * - message: string (required if no file)
+ * - file: Image binary (optional, via form-data)
+ * 
+ * Response (201):
+ * {
+ *   "ticket": TicketObject,
+ *   "message": "Ticket created successfully"
+ * }
+ * 
+ * Errors:
+ * 400 - Missing required fields or invalid file
+ * 401 - Unauthorized
+ * 500 - Upload failure or DB error
+ */
 export async function POST(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);
@@ -114,7 +157,7 @@ export async function POST(req: NextRequest) {
 
         const initialMessage: TicketMessage = {
             sender: 'user',
-            content: message || '',
+            content: sanitizeInput(message) || '',
             image_url: image_url || null,
             created_at: new Date().toISOString()
         };
@@ -122,7 +165,7 @@ export async function POST(req: NextRequest) {
         const ticket = await prisma.ticket.create({
             data: {
                 id_user: user.id,
-                subject,
+                subject: sanitizeInput(subject),
                 category,
                 status: 'OPEN',
                 priority: 'MEDIUM',

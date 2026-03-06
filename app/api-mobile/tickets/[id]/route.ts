@@ -3,6 +3,22 @@ import { prisma } from '@/lib/prisma';
 import { verifyMobileToken } from '@/lib/mobile-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
 
+/**
+ * GET /api-mobile/tickets/[id]
+ * 
+ * Retrieves the full detail of a specific ticket, including the entire message history.
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Response (200):
+ * {
+ *   "ticket": DetailedTicketObject // includes "messages" JSON array
+ * }
+ * 
+ * Errors:
+ * 401 - Unauthorized
+ * 404 - Ticket not found or not owned by user
+ */
 export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }

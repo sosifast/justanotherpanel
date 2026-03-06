@@ -82,13 +82,34 @@ async function createCryptomusPayment(gateway: any, amount: number, userId: numb
     if (result.state === 0 && result.result?.url) {
         return {
             payment_id: result.result.uuid,
-            payment_url: result.result.url
+            payment_url: result.result.url,
+            order_id: orderId // Add this
         };
     } else {
         throw new Error('Failed to create payment link');
     }
 }
 
+/**
+ * GET /api-mobile/deposit
+ * 
+ * Returns a list of all active payment gateways. Secrets (like private API keys) 
+ * are stripped from the response for security.
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Response (200):
+ * Array<{
+ *   "id": number,
+ *   "provider": string,      // 'PAYPAL', 'CRYPTOMUS', or 'MANUAL'
+ *   "min_deposit": Decimal,
+ *   "api_config": object     // Contains public info (like fees) but hides secrets
+ * }>
+ * 
+ * Errors:
+ * 401 - Unauthorized
+ * 500 - Internal Server Error
+ */
 export async function GET(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);
@@ -117,6 +138,34 @@ export async function GET(req: NextRequest) {
     }
 }
 
+/**
+ * POST /api-mobile/deposit
+ * 
+ * Initiates a new deposit. If 'AUTOMATIC' provider (PayPal/Cryptomus) is used,
+ * it returns a payment URL for the user to complete the transaction. 
+ * For 'MANUAL' gateway, it creates a pending record for admin approval.
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Request Body:
+ * {
+ *   "amount": number,      // The amount user wants to add to balance
+ *   "gateway_id": number   // ID of the payment gateway to use
+ * }
+ * 
+ * Response (200):
+ * {
+ *   "deposit": DepositRecord,
+ *   "payment_url": string | null, // Present for automated gateways
+ *   "message": string
+ * }
+ * 
+ * Errors:
+ * 400 - Amount/Gateway missing or invalid
+ * 400 - Amount below gateway minimum
+ * 401 - Unauthorized
+ * 500 - Internal Server Error
+ */
 export async function POST(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);
@@ -200,12 +249,17 @@ export async function POST(req: NextRequest) {
         // Update deposit with payment details if automated payment was created
         if (paymentResult) {
             const currentDetails = deposit.detail_transaction as any || {};
+            const isPaypal = gateway.provider === 'PAYPAL';
+
             const updatedDeposit = await prisma.deposits.update({
                 where: { id: deposit.id },
                 data: {
                     detail_transaction: {
                         ...currentDetails,
                         payment_id: paymentResult.payment_id,
+                        // Add explicit fields to avoid confusion during callbacks
+                        [isPaypal ? 'paypal_order_id' : 'cryptomus_uuid']: paymentResult.payment_id,
+                        order_id: (paymentResult as any).order_id, // Store Cryptomus order_id if exists
                         type: 'AUTOMATIC'
                     }
                 }

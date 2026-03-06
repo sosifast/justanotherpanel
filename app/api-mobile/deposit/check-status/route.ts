@@ -80,6 +80,32 @@ async function checkCryptomusStatus(gateway: any, paymentId: string) {
     };
 }
 
+/**
+ * POST /api-mobile/deposit/check-status
+ * 
+ * Forces the server to check the current status of a deposit with the payment provider.
+ * If payment is confirmed as COMPLETED/Paid, the user's balance is automatically incremented.
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Request Body:
+ * {
+ *   "deposit_id": number
+ * }
+ * 
+ * Response (200):
+ * {
+ *   "deposit": UpdatedDeposit,
+ *   "status": string,    // 'PAYMENT', 'PENDING', or 'CANCELED'
+ *   "message": string
+ * }
+ * 
+ * Errors:
+ * 400 - Missing deposit_id
+ * 401 - Unauthorized
+ * 404 - Deposit not found
+ * 500 - Provider communication error or balance update failure
+ */
 export async function POST(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);

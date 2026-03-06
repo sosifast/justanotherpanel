@@ -8,6 +8,16 @@ All endpoints (except login, if applicable) require authentication using a JWT B
 - **Header**: `Authorization: Bearer <your_jwt_token>`
 - **Token Source**: Obtain this from the existing web login API (`/api/auth/login`).
 
+## Security & Rate Limiting
+To protect the API from abuse, several security measures are in place:
+
+- **Rate Limiting**:
+  - `POST /auth/login`: Max 5 attempts per minute per IP.
+  - `POST /order`: Max 10 orders per minute per user.
+- **Input Validation**: All requests are validated using strict Zod schemas.
+- **XSS Protection**: User-provided strings (like names and support messages) are sanitized to prevent cross-site scripting.
+- **Duplicate Prevention**: Orders with identical parameters placed within 30 seconds are automatically rejected.
+
 ## Base URL
 `https://www.apkey.net/api-mobile`
 
@@ -81,21 +91,45 @@ Returns user profile summary, account statistics, and recent announcements.
       "profile_image": "https://..."
     },
     "stats": {
-      "total_spent": "500.25",
-      "total_deposit": "650.75",
-      "active_tickets": 2
+      "total_spent": 500.25,
+      "total_deposit": 650.75,
+      "active_tickets": 2,
+      "active_orders": 3,
+      "success_orders": 125
     },
-    "news": [
+    "analytics": {
+      "order_history_30d": [
+        { "date": "2026-02-01", "value": 15.5 },
+        { "date": "2026-02-02", "value": 0 }
+      ],
+      "deposit_history_30d": [
+        { "date": "2026-02-01", "value": 50.0 },
+        { "date": "2026-02-02", "value": 0 }
+      ]
+    },
+    "recommendations": [
       {
-        "id": 1,
-        "subject": "System Update",
-        "content": "We have updated our services...",
-        "created_at": "2026-02-16T..."
+        "service_id": 101,
+        "name": "Instagram Followers [REAL]",
+        "category_name": "Followers",
+        "platform_name": "Instagram",
+        "price": 0.5,
+        "prefill": {
+          "service_id": 101,
+          "category_id": 10,
+          "platform_id": 1
+        }
       }
-    ]
+    ],
+    "news": [ ... ]
   }
 }
 ```
+
+**Analytics & Recommendations Features**:
+- **30D Charts**: `order_history_30d` and `deposit_history_30d` provide daily values for the last 30 days, useful for rendering trend lines.
+- **Smart Recommendations**: The API analyzes the user's most ordered platforms and suggests similar popular services.
+- **Direct Order Prefill**: The `prefill` object can be used to navigate the user directly to a pre-populated order form.
 
 ---
 
@@ -162,7 +196,10 @@ Initiates a new deposit for either PayPal or Cryptomus. Always returns a `paymen
         "fee": 2.5,
         "method": "PAYPAL",
         "provider": "PAYPAL",
-        "payment_id": "PAYPAL_ORDER_ID_HERE",
+        "payment_id": "REFERENCE_ID",
+        "paypal_order_id": "REFERENCE_ID", // for PayPal
+        "cryptomus_uuid": "REFERENCE_ID", // for Cryptomus
+        "order_id": "DEP-7-1711234567",   // internal reference for Cryptomus
         "type": "AUTOMATIC"
       },
       "created_at": "2026-02-24T14:00:00.000Z"
@@ -231,6 +268,9 @@ The redirect landing page when a user completes payment on the provider's site. 
   "next_action": "check_status"
 }
 ```
+
+**Identification Logic**:
+The success/cancel endpoints now use a robust identification logic that searches for the payment reference across all relevant fields (`payment_id`, `paypal_order_id`, `cryptomus_uuid`, `order_id`) within the last 50 pending deposits. This ensures callbacks work reliably even across different provider naming conventions.
 
 ### Payment Cancel Callback
 **Endpoint**: `GET /deposit/cancel`

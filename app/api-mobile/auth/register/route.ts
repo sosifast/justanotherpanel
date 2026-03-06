@@ -4,6 +4,31 @@ import { prisma } from '@/lib/prisma';
 import { hash } from 'bcryptjs';
 import { successResponse, errorResponse } from '@/lib/api-response';
 
+/**
+ * POST /api-mobile/auth/register
+ *
+ * Mendaftarkan user baru. Status akun otomatis diset ke ACTIVE
+ * dengan role MEMBER dan balance awal 0.
+ *
+ * Auth: NOT required — public endpoint.
+ *
+ * Request Body:
+ *   {
+ *     "full_name" : string  // required
+ *     "username"  : string  // required — harus unik
+ *     "email"     : string  // required — harus unik
+ *     "password"  : string  // required — akan di-hash dengan bcrypt (cost 12)
+ *   }
+ *
+ * Response (201):
+ *   User  // data user yang baru dibuat, tanpa field password
+ *
+ * Errors:
+ *   400 — Missing required fields
+ *   400 — Email already exists
+ *   400 — Username already exists
+ *   500 — Internal Server Error
+ */
 export async function POST(req: NextRequest) {
     try {
         const { full_name, username, email, password } = await req.json();

@@ -4,6 +4,8 @@ import { verifyMobileToken } from '@/lib/mobile-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { createNotification } from '@/lib/notifications';
 import { createAdminNotification } from '@/lib/admin-notifications';
+import { orderSchema } from '@/lib/validations';
+import { rateLimit } from '@/lib/security';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -71,8 +73,26 @@ async function applyDiscount(
     };
 }
 
-// ─── GET /api-mobile/order — List services grouped by platform → category ────
-
+/**
+ * GET /api-mobile/order
+ * 
+ * Returns a complex hierarchical list of all active platforms -> categories -> services.
+ * This is the primary endpoint for the mobile app to populate the "New Order" discovery UI.
+ * Services include pricing for both normal users (price_sale) and resellers (price_reseller).
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Response (200):
+ * Array<Platform & { 
+ *   categories: Array<Category & { 
+ *     services: ServiceSummary[] 
+ *   }> 
+ * }>
+ * 
+ * Errors:
+ * 401 - Unauthorized
+ * 500 - Internal Server Error
+ */
 export async function GET(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);
@@ -137,14 +157,79 @@ export async function GET(req: NextRequest) {
     }
 }
 
-// ─── POST /api-mobile/order — Place a new order ───────────────────────────────
+/**
+ * POST /api-mobile/order
+ * 
+ * Places a new SMM order. Performs the following steps:
+ * 1. Validates inputs and service status.
+ * 2. Calculates price based on user type (Reseller vs Member).
+ * 3. Applies discount code if provided.
+ * 4. Checks user balance.
+ * 5. Dispatches to API Provider (if Sid/Sid exists).
+ * 6. Records transaction and deducts balance atomically.
+ * 7. Triggers real-time notifications for user and admin.
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Request Body:
+ * {
+ *   "service_id": number,    // required
+ *   "link": string,          // required - target URL for the service
+ *   "quantity": number,      // required (unless CUSTOM_COMMENTS)
+ *   "comments": string,      // required for CUSTOM_COMMENTS type
+ *   "runs": number,          // optional - for drip-feed
+ *   "interval": number,      // optional - for drip-feed
+ *   "discount_code": string  // optional
+ * }
+ * 
+ * Response (200):
+ * {
+ *   "order": { id, invoice_number, status, service_name, total_price, ... },
+ *   "message": "Order placed successfully"
+ * }
+ * 
+ * Errors:
+ * 400 - Validation errors (missing fields, invalid quantity, provider error)
+ * 400 - Insufficient balance
+ * 401 - Unauthorized
+ * 500 - Internal Server Error
+ */
 
 export async function POST(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);
 
+    // Rate limiting: 10 orders per minute per user
+    const limiter = await rateLimit(`order-${user.id}`, 10, 60);
+    if (!limiter.success) {
+        return errorResponse('Too many orders. Please wait a minute before placing another order.', 429);
+    }
+
     try {
         const body = await req.json();
+
+        // Prevent exact duplicate orders within 30 seconds
+        const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
+        const existingOrder = await prisma.order.findFirst({
+            where: {
+                id_user: user.id,
+                id_service: Number(body.service_id),
+                link: body.link,
+                quantity: Number(body.quantity),
+                created_at: { gte: thirtySecondsAgo }
+            }
+        });
+
+        if (existingOrder) {
+            return errorResponse('Duplicate order detected. Please wait a moment.', 400);
+        }
+
+        const validation = orderSchema.safeParse(body);
+
+        if (!validation.success) {
+            return errorResponse(validation.error.issues[0].message, 400);
+        }
+
         const {
             service_id,
             link,
@@ -153,11 +238,7 @@ export async function POST(req: NextRequest) {
             runs,
             interval,
             discount_code
-        } = body;
-
-        // ── Basic validation ────────────────────────────────────────────────
-        if (!service_id) return errorResponse('service_id is required');
-        if (!link || !link.trim()) return errorResponse('link is required');
+        } = validation.data;
 
         // ── Fetch service ───────────────────────────────────────────────────
         const service = await prisma.service.findUnique({

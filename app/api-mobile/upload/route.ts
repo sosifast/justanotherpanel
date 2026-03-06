@@ -6,6 +6,28 @@ import { errorResponse, successResponse } from '@/lib/api-response';
 
 export const maxDuration = 60; // Allow 60s for image upload
 
+/**
+ * POST /api-mobile/upload
+ * 
+ * Uploads an image file to ImageKit for storage. 
+ * Used primarily for profile pictures or support ticket attachments.
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Request Body: Multipart/Form-Data
+ * - file: The image binary to upload (max 5MB).
+ * 
+ * Response (201):
+ * {
+ *   "url": string,    // The public URL of the uploaded image
+ *   "fileId": string  // ImageKit file reference ID
+ * }
+ * 
+ * Errors:
+ * 400 - No file uploaded or invalid file type (non-image)
+ * 401 - Unauthorized
+ * 500 - ImageKit configuration missing or upload failure
+ */
 export async function POST(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);

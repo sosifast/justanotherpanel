@@ -14,7 +14,33 @@ type TicketMessage = {
 };
 
 import { uploadFileToImageKit } from '@/lib/imagekit-server';
+import { sanitizeInput } from '@/lib/security';
 
+/**
+ * POST /api-mobile/tickets/[id]/reply
+ * 
+ * Appends a new message to an existing ticket. 
+ * Supports both JSON and Multipart/Form-Data (for image attachments).
+ * Sets ticket status back to 'PENDING' for admin review.
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Request (JSON or Form-Data):
+ * - message/content: string (required if no file)
+ * - file: Image binary (optional, via form-data)
+ * 
+ * Response (201):
+ * {
+ *   "message": NewMessageObject,
+ *   "info": "Reply sent successfully"
+ * }
+ * 
+ * Errors:
+ * 400 - Missing message or file
+ * 401 - Unauthorized
+ * 403 - Cannot reply to a CLOSED ticket
+ * 404 - Ticket not found
+ */
 export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -86,7 +112,7 @@ export async function POST(
 
         const newMessage: TicketMessage = {
             sender: 'user',
-            content: contentVal || '',
+            content: sanitizeInput(contentVal) || '',
             image_url: image_url || null,
             created_at: new Date().toISOString()
         };

@@ -4,6 +4,31 @@ import { prisma } from '@/lib/prisma';
 import { verifyMobileToken } from '@/lib/mobile-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
 
+/**
+ * GET /api-mobile/platform
+ * 
+ * Discovery endpoint for Platforms, Categories, and Services.
+ * Operates in three modes based on query parameters:
+ * 
+ * 1. Default Mode (No Params): Returns a list of all active platforms.
+ * 2. Categories Mode (query: platform_id): Returns all active categories and their services for a specific platform.
+ * 3. Services Mode (query: category_id): Returns all active services for a specific category.
+ * 
+ * Auth: Required (Bearer Token)
+ * 
+ * Query Params:
+ * - platform_id (optional): Filter to get categories for this platform.
+ * - category_id (optional): Filter to get services for this category.
+ * 
+ * Response (200):
+ * - If no params: Platform[]
+ * - If platform_id: Category[] (with nested services)
+ * - If category_id: Service[]
+ * 
+ * Errors:
+ * 401 - Unauthorized
+ * 500 - Internal Server Error
+ */
 export async function GET(req: NextRequest) {
     const user = await verifyMobileToken(req);
     if (!user) return errorResponse('Unauthorized', 401);

@@ -368,8 +368,8 @@ export async function POST(req: NextRequest) {
                     price_seller: totalPriceSeller,
                     status: orderStatus as any,
                     refill: service.refill,
-                    runs: runs ? parseInt(runs) : null,
-                    interval: interval ? parseInt(interval) : null,
+                    runs: runs ?? null,
+                    interval: interval ?? null,
                 }
             });
 

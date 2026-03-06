@@ -79,6 +79,7 @@ export async function POST(req: Request) {
                         provider: 'CRYPTOMUS',
                         cryptomus_uuid: result.result.uuid,
                         order_id: orderId,
+                        payment_url: result.result.url, // Add this
                         type: 'AUTOMATIC'
                     }
                 }

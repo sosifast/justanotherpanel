@@ -80,6 +80,7 @@ export async function POST(req: Request) {
                     gateway_id: gateway.id,
                     provider: 'PAYPAL',
                     paypal_order_id: order.result.id,
+                    payment_url: approveLink, // Add this
                     type: 'AUTOMATIC'
                 }
             }

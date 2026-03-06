@@ -170,18 +170,29 @@ const DepositDetailsModal = ({ isOpen, onClose, deposit }: DepositDetailsModalPr
                 </div>
 
                 <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-                    {deposit.status === 'PENDING' ? (
-                        <button
-                            onClick={handleCheckStatus}
-                            disabled={isChecking}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                        >
-                            <RefreshCw className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`} />
-                            {isChecking ? 'Checking...' : 'Check Status'}
-                        </button>
-                    ) : (
-                        <div></div>
-                    )}
+                    <div className="flex gap-2">
+                        {deposit.status === 'PENDING' && (
+                            <button
+                                onClick={handleCheckStatus}
+                                disabled={isChecking}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`} />
+                                {isChecking ? 'Checking...' : 'Check Status'}
+                            </button>
+                        )}
+                        {deposit.status === 'PENDING' && (details.payment_url || details.paypal_order_id) && (
+                            <a
+                                href={details.payment_url || `https://www.paypal.com/checkoutnow?token=${details.paypal_order_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+                            >
+                                <CreditCard className="w-4 h-4" />
+                                Pay Now
+                            </a>
+                        )}
+                    </div>
                     <button
                         onClick={onClose}
                         className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"

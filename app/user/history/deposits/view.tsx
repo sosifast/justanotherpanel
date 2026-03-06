@@ -25,6 +25,8 @@ interface TransactionDetail {
     method?: string;
     provider?: string;
     transactionId?: string;
+    payment_url?: string;
+    paypal_order_id?: string;
 }
 
 interface SerializedDeposit extends Omit<Deposits, 'amount'> {
@@ -244,12 +246,26 @@ const DepositsView = ({ initialDeposits }: DepositsViewProps) => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <button
-                                                onClick={() => handleViewDetails(deposit)}
-                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex items-center justify-center gap-2">
+                                                {deposit.status === 'PENDING' && (details?.payment_url || details?.paypal_order_id) && (
+                                                    <a
+                                                        href={details?.payment_url || `https://www.paypal.com/checkoutnow?token=${details?.paypal_order_id}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-2 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                        title="Pay Now"
+                                                    >
+                                                        <CreditCard className="w-4 h-4" />
+                                                    </a>
+                                                )}
+                                                <button
+                                                    onClick={() => handleViewDetails(deposit)}
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="View Details"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 )

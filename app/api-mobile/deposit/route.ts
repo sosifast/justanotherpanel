@@ -257,6 +257,7 @@ export async function POST(req: NextRequest) {
                     detail_transaction: {
                         ...currentDetails,
                         payment_id: paymentResult.payment_id,
+                        payment_url: paymentResult.payment_url, // Add this
                         // Add explicit fields to avoid confusion during callbacks
                         [isPaypal ? 'paypal_order_id' : 'cryptomus_uuid']: paymentResult.payment_id,
                         order_id: (paymentResult as any).order_id, // Store Cryptomus order_id if exists

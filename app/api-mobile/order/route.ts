@@ -319,11 +319,11 @@ export async function POST(req: NextRequest) {
                 formData.append('link', link.trim());
 
                 if (service.type === 'CUSTOM_COMMENTS') {
-                    formData.append('comments', comments);
+                    formData.append('comments', comments as string);
                 } else {
                     formData.append('quantity', orderQuantity.toString());
-                    if (runs) formData.append('runs', parseInt(runs).toString());
-                    if (interval) formData.append('interval', parseInt(interval).toString());
+                    if (runs) formData.append('runs', runs.toString());
+                    if (interval) formData.append('interval', interval.toString());
                 }
 
                 const apiResponse = await fetch(service.api_provider.url, {

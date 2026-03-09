@@ -1,7 +1,6 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import axios from 'axios';
 import crypto from 'crypto';
 import { revalidatePath } from 'next/cache';
 import paypal from '@paypal/checkout-server-sdk';
@@ -60,15 +59,17 @@ export async function checkCryptomusStatus(depositId: number) {
         const base64Payload = Buffer.from(jsonPayload).toString('base64');
         const sign = crypto.createHash('md5').update(base64Payload + config.paymentKey).digest('hex');
 
-        const response = await axios.post('https://api.cryptomus.com/v1/payment/info', payload, {
+        const response = await fetch('https://api.cryptomus.com/v1/payment/info', {
+            method: 'POST',
             headers: {
                 merchant: config.merchantId,
                 sign: sign,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: jsonPayload
         });
 
-        const result = response.data;
+        const result = await response.json();
         /*
           Cryptomus statuses:
           paid, paid_over, wrong_amount_waiting, process, confirm_check, wrong_amount, fail, cancel, system_fail, refund_process, refund_fail, refund_paid

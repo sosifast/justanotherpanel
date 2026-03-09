@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import PlausibleAnalytics, { PlausibleData } from './PlausibleAnalytics';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,6 +100,55 @@ async function getPlausibleData(): Promise<PlausibleData | null> {
   }
 }
 
+async function getCryptomusBalance() {
+  try {
+    const gateway = await prisma.paymentGateway.findFirst({
+      where: {
+        provider: 'CRYPTOMUS',
+        status: 'ACTIVE'
+      }
+    });
+
+    if (!gateway) return null;
+
+    const config = gateway.api_config as any;
+    if (!config.merchantId || !config.paymentKey) {
+      return null;
+    }
+
+    const payload = {};
+    const jsonPayload = JSON.stringify(payload);
+    const base64Payload = Buffer.from(jsonPayload).toString('base64');
+    const sign = crypto.createHash('md5').update(base64Payload + config.paymentKey).digest('hex');
+
+    const response = await fetch('https://api.cryptomus.com/v1/balance', {
+      method: 'POST',
+      headers: {
+        merchant: config.merchantId,
+        sign: sign,
+        'Content-Type': 'application/json'
+      },
+      body: jsonPayload
+    });
+
+    const data = await response.json();
+
+    if (data.state === 0) {
+      const result = data.result;
+
+      if (Array.isArray(result) && result.length > 0 && result[0]?.balance?.merchant) {
+        return result[0].balance.merchant; // This is the actual array of balances
+      }
+
+      if (Array.isArray(result)) return result;
+      return [];
+    }
+    return [];
+  } catch (error) {
+    return [];
+  }
+}
+
 const AdminDashboard = async () => {
   const session = await getCurrentUser();
 
@@ -106,12 +156,17 @@ const AdminDashboard = async () => {
     redirect('/auth/login');
   }
 
-  const [statsData, recentOrders, providers, plausibleData] = await Promise.all([
+  const [statsData, recentOrders, providers, plausibleData, cryptomusBalanceRaw] = await Promise.all([
     getStats(),
     getRecentOrders(),
     getProviders(),
     getPlausibleData(),
+    getCryptomusBalance(),
   ]);
+
+  const cryptomusBalance = Array.isArray(cryptomusBalanceRaw)
+    ? cryptomusBalanceRaw.filter((item: any) => parseFloat(item.balance) > 0)
+    : [];
 
   const stats = [
     { label: "Total Revenue", value: `$${statsData.revenue}`, change: "30d", icon: <DollarSign className="w-5 h-5 text-emerald-500" />, bg: "bg-emerald-500/10" },
@@ -230,6 +285,27 @@ const AdminDashboard = async () => {
               ))}
               {providers.length === 0 && <p className="text-slate-500 text-xs">No active providers.</p>}
             </div>
+
+            {Array.isArray(cryptomusBalance) && cryptomusBalance.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <h4 className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-3">Cryptomus Balance</h4>
+                <div className="space-y-3">
+                  {cryptomusBalance.map((item: any, idx: number) => {
+                    const balanceNum = parseFloat(item.balance);
+
+                    // Only show balances > 0
+                    if (isNaN(balanceNum) || balanceNum <= 0) return null;
+                    return (
+                      <div key={idx} className="flex justify-between text-xs items-center">
+                        <span className="text-slate-400">{item.currency_code}</span>
+                        <span className="font-bold">{item.balance}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <button className="w-full mt-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors border border-white/10">
               Manage APIs
             </button>

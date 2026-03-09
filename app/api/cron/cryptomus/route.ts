@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createNotification } from '@/lib/notifications';
 import { createAdminNotification } from '@/lib/admin-notifications';
-import axios from 'axios';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -73,15 +72,17 @@ export async function GET(request: Request) {
                 const base64Payload = Buffer.from(jsonPayload).toString('base64');
                 const sign = crypto.createHash('md5').update(base64Payload + config.paymentKey).digest('hex');
 
-                const response = await axios.post('https://api.cryptomus.com/v1/payment/info', payload, {
+                const response = await fetch('https://api.cryptomus.com/v1/payment/info', {
+                    method: 'POST',
                     headers: {
                         merchant: config.merchantId,
                         sign: sign,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: jsonPayload
                 });
 
-                const result = response.data;
+                const result = await response.json();
                 const cryptoStatus = result.result?.status;
 
                 let newStatus = 'PENDING';

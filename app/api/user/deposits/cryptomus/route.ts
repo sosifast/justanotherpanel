@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createAdminNotification } from '@/lib/admin-notifications';
-import axios from 'axios';
 import crypto from 'crypto'; // Node crypto is sufficient, no need for crypto-js if we just use md5
 
 import { getUserIdFromAuth } from '@/lib/auth';
@@ -57,15 +56,17 @@ export async function POST(req: Request) {
         const base64Payload = Buffer.from(jsonPayload).toString('base64');
         const sign = crypto.createHash('md5').update(base64Payload + config.paymentKey).digest('hex');
 
-        const response = await axios.post('https://api.cryptomus.com/v1/payment', payload, {
+        const response = await fetch('https://api.cryptomus.com/v1/payment', {
+            method: 'POST',
             headers: {
                 merchant: config.merchantId,
                 sign: sign,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: jsonPayload
         });
 
-        const result = response.data;
+        const result = await response.json();
 
         if (result.state === 0 && result.result?.url) {
             // Create deposit record

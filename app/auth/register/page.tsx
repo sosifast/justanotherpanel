@@ -1,6 +1,5 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { Analytics } from "@vercel/analytics/next";
 import RegisterView from './RegisterView';
 import { getSettings } from '@/lib/settings';
 
@@ -19,7 +18,6 @@ export default function Page() {
     return (
         <>
             <RegisterView />
-            <Analytics />
         </>
     );
 }

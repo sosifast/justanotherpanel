@@ -7,7 +7,6 @@ import { Bell, ChevronDown, Settings, Wallet, LogOut, ShoppingCart, CreditCard, 
 import Image from 'next/image';
 import Pusher from 'pusher-js';
 import { toast } from 'react-hot-toast';
-import { Analytics } from "@vercel/analytics/next";
 
 type Settings = { key: string; cluster: string; site_name?: string; logo_imagekit_url?: string };
 
@@ -478,7 +477,6 @@ const UserLayoutClient = ({ children, initialSettings }: UserLayoutClientProps) 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
                 {children}
             </div>
-            <Analytics />
         </div>
     );
 };

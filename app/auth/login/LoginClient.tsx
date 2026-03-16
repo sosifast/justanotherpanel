@@ -3,7 +3,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
-import { Analytics } from "@vercel/analytics/next";
 
 const LoginForm = () => {
     const router = useRouter();
@@ -200,7 +199,6 @@ const LoginForm = () => {
                 </p>
 
             </div>
-            <Analytics />
         </div>
     );
 };

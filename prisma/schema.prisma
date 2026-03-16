@@ -134,6 +134,8 @@ model Setting {
   onesignal_app_id     String?
   onesignal_rest_api_key String?
   firebase_service_account_json String? // JSON string of Firebase Admin SDK service account
+  posthog_api_key      String?
+  posthog_host         String?
 
   @@map("setting")
 }

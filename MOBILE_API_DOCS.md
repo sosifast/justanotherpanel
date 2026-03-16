@@ -1385,6 +1385,36 @@ async function onLogout(authToken: string) {
 
 ---
 
+## 14. PostHog Configuration
+
+**Endpoint**: `GET /api-posthog`
+
+Mengembalikan konfigurasi PostHog untuk mobile app. Digunakan oleh mobile app untuk inisialisasi PostHog secara dinamis tanpa hardcode API key.
+
+> **Auth**: Endpoint ini **tidak memerlukan autentikasi** — dapat diakses publik saat aplikasi pertama kali berjalan.
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "posthog_key": "YOUR_POSTHOG_API_KEY",
+    "posthog_host": "https://us.i.posthog.com",
+    "is_enabled": true
+  },
+  "message": "PostHog configuration retrieved successfully"
+}
+```
+
+**Fields**:
+| Field | Type | Description |
+|-------|------|-------------|
+| `posthog_key` | string / null | PostHog Project API Key (jika disetel di environment variables). |
+| `posthog_host` | string | Host endpoint PostHog (misal: `https://us.i.posthog.com`). |
+| `is_enabled` | boolean | `true` jika `posthog_key` ada dan fitur tracking aktif. |
+
+---
+
 ## Error Handling
 The API returns standard HTTP status codes and a consistent JSON error format.
 

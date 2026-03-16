@@ -30,6 +30,8 @@ type SettingData = {
   onesignal_app_id: string | null;
   onesignal_rest_api_key: string | null;
   firebase_service_account_json: string | null;
+  posthog_api_key: string | null;
+  posthog_host: string | null;
 } | null;
 
 const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) => {
@@ -61,6 +63,8 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
     onesignal_app_id: initialSettings?.onesignal_app_id || '',
     onesignal_rest_api_key: initialSettings?.onesignal_rest_api_key || '',
     firebase_service_account_json: initialSettings?.firebase_service_account_json || '',
+    posthog_api_key: initialSettings?.posthog_api_key || '',
+    posthog_host: initialSettings?.posthog_host || '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -416,6 +420,38 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Ex: ap1"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* PostHog Configuration */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Code className="w-4 h-4 text-blue-500" />
+            <h2 className="font-semibold text-slate-800 text-sm">PostHog Configuration</h2>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">Project API Key</label>
+              <input
+                type="text"
+                name="posthog_api_key"
+                value={formData.posthog_api_key}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="phc_xxxxxxxx"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">PostHog Host</label>
+              <input
+                type="text"
+                name="posthog_host"
+                value={formData.posthog_host}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="https://us.i.posthog.com"
               />
             </div>
           </div>

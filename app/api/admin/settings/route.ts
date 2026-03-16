@@ -41,6 +41,8 @@ export async function GET() {
             onesignal_app_id: (settings as any).onesignal_app_id,
             onesignal_rest_api_key: (settings as any).onesignal_rest_api_key,
             firebase_service_account_json: (settings as any).firebase_service_account_json,
+            posthog_api_key: (settings as any).posthog_api_key,
+            posthog_host: (settings as any).posthog_host,
             created_at: settings.created_at,
             updated_at: settings.updated_at,
         };
@@ -81,6 +83,8 @@ export async function PUT(req: Request) {
             onesignal_app_id,
             onesignal_rest_api_key,
             firebase_service_account_json,
+            posthog_api_key,
+            posthog_host,
         } = body;
 
         // Get existing settings or create if not exists
@@ -113,6 +117,8 @@ export async function PUT(req: Request) {
                     onesignal_app_id: onesignal_app_id || null,
                     onesignal_rest_api_key: onesignal_rest_api_key || null,
                     firebase_service_account_json: firebase_service_account_json || null,
+                    posthog_api_key: posthog_api_key || null,
+                    posthog_host: posthog_host || null,
                 } as any
             });
         } else {
@@ -143,6 +149,8 @@ export async function PUT(req: Request) {
                     onesignal_app_id: onesignal_app_id !== undefined ? onesignal_app_id : (settings as any).onesignal_app_id,
                     onesignal_rest_api_key: onesignal_rest_api_key !== undefined ? onesignal_rest_api_key : (settings as any).onesignal_rest_api_key,
                     firebase_service_account_json: firebase_service_account_json !== undefined ? firebase_service_account_json : (settings as any).firebase_service_account_json,
+                    posthog_api_key: posthog_api_key !== undefined ? posthog_api_key : (settings as any).posthog_api_key,
+                    posthog_host: posthog_host !== undefined ? posthog_host : (settings as any).posthog_host,
                 } as any
             });
         }
@@ -173,6 +181,8 @@ export async function PUT(req: Request) {
             onesignal_app_id: (settings as any).onesignal_app_id,
             onesignal_rest_api_key: (settings as any).onesignal_rest_api_key,
             firebase_service_account_json: (settings as any).firebase_service_account_json,
+            posthog_api_key: (settings as any).posthog_api_key,
+            posthog_host: (settings as any).posthog_host,
             created_at: settings.created_at,
             updated_at: settings.updated_at,
         };

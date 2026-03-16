@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
-import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
 
 import { getSettings } from "@/lib/settings";
 import ScriptsInjector from "@/components/ScriptsInjector";
+import { PHProvider } from "@/components/PostHogProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -48,8 +48,12 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Toaster position="top-right" />
-        {children}
-        <Analytics />
+        <PHProvider 
+          apiKey={(settings as any)?.posthog_api_key || undefined} 
+          apiHost={(settings as any)?.posthog_host || undefined}
+        >
+          {children}
+        </PHProvider>
 
         <ScriptsInjector
           headerCode={settings?.google_search_code}

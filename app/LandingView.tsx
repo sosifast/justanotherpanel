@@ -7,42 +7,30 @@ import {
   LayoutDashboard,
   Headphones,
   TrendingUp,
-  Menu,
   X,
   CheckCircle,
   Globe,
   ArrowRight,
   ShieldCheck,
   MousePointer2,
-  Facebook,
-  Instagram
+  Instagram,
+  Youtube,
+  Twitter,
+  ChevronRight,
+  Target,
+  Rocket,
+  Plus
 } from 'lucide-react';
-import Footer from '@/components/Footer';
-import Navbar from '@/components/Navbar';
-
-const TelegramIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M22 2L11 13" />
-    <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-  </svg>
-);
+import Navbar from '@/app/layouts/menu-navbar/Navbar';
+import Footer from '@/app/layouts/footer/Footer';
 
 const App = ({ settings }: { settings: any }) => {
   const siteName = settings?.site_name || "JustAnotherPanel";
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in for the CTA buttons
+    setMounted(true);
     const checkAuth = async () => {
       try {
         const response = await fetch('/api/auth/check');
@@ -57,478 +45,308 @@ const App = ({ settings }: { settings: any }) => {
 
   const features = [
     {
-      title: "Unbelievable Prices",
-      description: "Lowest prices in the market. We optimize costs to give you the best ROI for your social media campaigns.",
-      icon: <TrendingUp className="w-5 h-5 text-blue-600" />,
+      title: "Lowest Market Prices",
+      description: "We optimize our direct-to-provider routing to ensure you get the most competitive rates globally.",
+      icon: <TrendingUp className="w-6 h-6 text-indigo-500" />,
+      color: "indigo"
     },
     {
-      title: "Friendly Dashboard",
-      description: "Engineered Dashboard to accommodate fast and simple use of the panel for professionals.",
-      icon: <LayoutDashboard className="w-5 h-5 text-indigo-600" />,
+      title: "Advanced Dashboard",
+      description: "A professional-grade interface designed for speed, mass orders, and granular tracking.",
+      icon: <LayoutDashboard className="w-6 h-6 text-violet-500" />,
+      color: "violet"
     },
     {
-      title: "Delivered in Minutes",
-      description: "Super fast delivery. Watch your social media numbers grow in real-time.",
-      icon: <Zap className="w-5 h-5 text-amber-600" />,
+      title: "Real-Time Delivery",
+      description: "Our systems trigger instantly. Watch your social proof skyrocket the second you click order.",
+      icon: <Zap className="w-6 h-6 text-amber-500" />,
+      color: "amber"
     },
     {
-      title: "Support 24/7",
-      description: "Support available around the clock. Expert assistance whenever you need it.",
-      icon: <Headphones className="w-5 h-5 text-emerald-600" />,
+      title: "Elite Support 24/7",
+      description: "Our dedicated agents are experts in social media growth, ready to assist you any time.",
+      icon: <Headphones className="w-6 h-6 text-emerald-500" />,
+      color: "emerald"
     }
   ];
 
-  return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-500 selection:text-white relative overflow-x-hidden">
+  if (!mounted) return null;
 
-      {/* Grid Background Pattern */}
-      <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden="true">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-blue-500 opacity-20 blur-[100px]"></div>
+  return (
+    <div className="min-h-screen bg-[#FDFDFF] font-sans text-slate-900 selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
+      
+      {/* Decorative Orbs */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-200/30 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-violet-200/20 rounded-full blur-[100px]"></div>
+        <div className="absolute bottom-[10%] left-[5%] w-[25%] h-[25%] bg-blue-100/40 rounded-full blur-[90px]"></div>
       </div>
 
-      {/* Navbar */}
       <Navbar settings={settings} />
 
-      {/* Main Content Wrapper */}
-      <main>
+      <main className="relative z-10">
         {/* Hero Section */}
-        <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-4 z-10" aria-label="Introduction">
-          <div className="max-w-7xl mx-auto text-center relative">
+        <section className="relative pt-32 pb-16 lg:pt-48 lg:pb-32 px-4 overflow-hidden">
+          <div className="max-w-7xl mx-auto text-center lg:text-left grid lg:grid-cols-2 gap-16 items-center">
+            
+            <div className="relative">
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white border border-indigo-100 shadow-sm text-indigo-600 text-xs font-bold uppercase tracking-widest mb-8 hover:bg-indigo-50 transition-colors cursor-default">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span>
+                </span>
+                World's #1 Social Growth Engine
+              </div>
 
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-bold uppercase tracking-wide mb-8 hover:bg-blue-100 transition-colors cursor-default">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-              </span>
-              #1 SMM Panel in the World
-            </div>
+              <h1 className="text-5xl md:text-7xl xl:text-8xl font-black tracking-tight text-slate-900 mb-8 leading-[0.95]">
+                We Lead,<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600">
+                  They Follow.
+                </span>
+              </h1>
 
-            {/* H1 Optimized for SEO: Includes "We Lead, They Follow" but structure emphasizes branding */}
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-slate-900 mb-8">
-              We Lead,<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600">They Follow.</span>
-            </h1>
+              <p className="text-lg md:text-xl text-slate-600 max-w-xl mb-12 leading-relaxed">
+                Scale your digital presence with precision. Our enterprise-grade SMM infrastructure delivers <strong>real engagement</strong> at <strong>unbeatable speeds</strong>.
+              </p>
 
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Revolutionize your <strong>social media growth</strong> with the definitive <strong>SMM Panel</strong>. Engineered for industry leaders who demand speed, quality, and results.
-            </p>
-
-            {/* Buttons changed to Anchors for crawlability */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
-              {isLoggedIn ? (
-                <a href="/user" className="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white rounded-xl font-semibold text-base hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
-                  <LayoutDashboard className="w-5 h-5" />
-                  Go to Dashboard
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-              ) : (
-                <>
-                  <a href="/auth/register" className="w-full sm:w-auto px-8 py-4 bg-slate-900 text-white rounded-xl font-semibold text-base hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
-                    Start Growing Now
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center mb-12">
+                {isLoggedIn ? (
+                  <Link href="/user" className="w-full sm:w-auto px-7 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 group shadow-sm">
+                    <LayoutDashboard className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                    Dashboard
                     <ArrowRight className="w-4 h-4" />
-                  </a>
-                  <a href="#services" className="w-full sm:w-auto px-8 py-4 bg-white text-slate-900 border border-slate-200 rounded-xl font-semibold text-base hover:bg-slate-50 transition-all hover:border-slate-300 flex items-center justify-center">
-                    View Services
-                  </a>
-                </>
-              )}
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/auth/register" className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-xl font-bold text-base hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-100 transition-all flex items-center justify-center gap-2.5 group">
+                      Get Started Now
+                      <Rocket className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    </Link>
+                    <Link href="/services" className="w-full sm:w-auto px-8 py-4 bg-white text-slate-900 border border-slate-200 rounded-xl font-bold text-base hover:border-indigo-600 hover:text-indigo-600 transition-all flex items-center justify-center gap-2 shadow-sm">
+                      View Services
+                    </Link>
+                  </>
+                )}
+              </div>
+
+              {/* Trust Indicators */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
+                <div className="flex items-center gap-2 font-bold text-slate-500 uppercase tracking-tighter italic">
+                  <ShieldCheck size={20} className="text-emerald-500" /> Secure
+                </div>
+                <div className="flex items-center gap-2 font-bold text-slate-500 uppercase tracking-tighter italic">
+                  <Rocket size={20} className="text-indigo-500" /> Instant
+                </div>
+                <div className="flex items-center gap-2 font-bold text-slate-500 uppercase tracking-tighter italic">
+                  <Target size={20} className="text-rose-500" /> Targeted
+                </div>
+              </div>
             </div>
 
-            {/* Hero Image / Dashboard Mockup */}
-            <div className="relative mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white/50 p-2 backdrop-blur-sm shadow-2xl" role="img" aria-label="SMM Panel Dashboard Interface Preview">
-              <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-20"></div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden aspect-[16/9] relative">
-                {/* Mock UI */}
-                <div className="absolute inset-0 flex">
-                  {/* Sidebar */}
-                  <div className="w-16 md:w-64 border-r border-slate-200 bg-white p-4 hidden md:block">
-                    <div className="h-8 w-24 bg-slate-100 rounded mb-8"></div>
-                    <div className="space-y-3">
-                      <div className="h-8 w-full bg-blue-50 text-blue-600 rounded flex items-center px-2 text-sm font-medium">Dashboard</div>
-                      <div className="h-8 w-full hover:bg-slate-50 rounded flex items-center px-2 text-sm text-slate-500">Orders</div>
-                      <div className="h-8 w-full hover:bg-slate-50 rounded flex items-center px-2 text-sm text-slate-500">Services</div>
-                      <div className="h-8 w-full hover:bg-slate-50 rounded flex items-center px-2 text-sm text-slate-500">Funds</div>
-                    </div>
-                  </div>
-                  {/* Content */}
-                  <div className="flex-1 p-6 bg-slate-50/50">
-                    <div className="flex justify-between items-center mb-8">
-                      <div className="h-8 w-32 bg-white border border-slate-200 rounded shadow-sm"></div>
-                      <div className="h-8 w-8 bg-white border border-slate-200 rounded-full shadow-sm"></div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 mb-8">
-                      <div className="h-24 bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                        <div className="h-4 w-4 bg-green-100 rounded-full mb-2"></div>
-                        <div className="h-4 w-12 bg-slate-100 rounded mb-1"></div>
-                        <div className="h-6 w-20 bg-slate-200 rounded"></div>
-                      </div>
-                      <div className="h-24 bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                        <div className="h-4 w-4 bg-blue-100 rounded-full mb-2"></div>
-                        <div className="h-4 w-12 bg-slate-100 rounded mb-1"></div>
-                        <div className="h-6 w-20 bg-slate-200 rounded"></div>
-                      </div>
-                      <div className="h-24 bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                        <div className="h-4 w-4 bg-purple-100 rounded-full mb-2"></div>
-                        <div className="h-4 w-12 bg-slate-100 rounded mb-1"></div>
-                        <div className="h-6 w-20 bg-slate-200 rounded"></div>
-                      </div>
-                    </div>
-                    <div className="h-48 bg-white rounded-xl border border-slate-200 shadow-sm"></div>
-                  </div>
+            {/* Dashboard Floating Mockup */}
+            <div className="relative lg:h-[600px] flex items-center justify-center">
+              <div className="absolute -inset-10 bg-indigo-500/10 blur-[100px] rounded-full scale-150"></div>
+              <div className="relative w-full max-w-[540px] aspect-[4/5] sm:aspect-square bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] overflow-hidden animate-float">
+                {/* Mock UI Content */}
+                <div className="p-8 h-full bg-slate-50/50 flex flex-col">
+                   <div className="flex items-center justify-between mb-8">
+                     <div className="flex gap-2">
+                       <div className="w-3 h-3 rounded-full bg-rose-400"></div>
+                       <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                       <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                     </div>
+                     <div className="h-4 w-32 bg-slate-200 rounded-full"></div>
+                   </div>
+                   
+                   <div className="grid grid-cols-2 gap-4 mb-8">
+                     <div className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100">
+                       <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mb-3">
+                         <TrendingUp size={16} />
+                       </div>
+                       <div className="h-3 w-12 bg-slate-100 rounded-full mb-2"></div>
+                       <div className="h-6 w-20 bg-indigo-600 rounded-full"></div>
+                     </div>
+                     <div className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100">
+                       <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mb-3">
+                         <Target size={16} />
+                       </div>
+                       <div className="h-3 w-12 bg-slate-100 rounded-full mb-2"></div>
+                       <div className="h-6 w-20 bg-emerald-500 rounded-full"></div>
+                     </div>
+                   </div>
+
+                   <div className="bg-white flex-1 rounded-[2rem] p-6 shadow-sm border border-slate-100 overflow-hidden">
+                     <div className="flex justify-between items-center mb-6">
+                       <div className="h-4 w-24 bg-slate-200 rounded-full"></div>
+                       <div className="h-8 w-24 bg-slate-900 rounded-xl"></div>
+                     </div>
+                     <div className="space-y-4">
+                       {[0, 1, 2, 3].map(i => (
+                         <div key={i} className="flex items-center gap-4">
+                           <div className="w-10 h-10 bg-slate-100 rounded-xl"></div>
+                           <div className="flex-1 space-y-2">
+                             <div className="h-3 w-full bg-slate-100 rounded-full"></div>
+                             <div className="h-2 w-2/3 bg-slate-50 rounded-full"></div>
+                           </div>
+                           <div className="h-3 w-8 bg-slate-100 rounded-full"></div>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
                 </div>
+              </div>
+              
+              {/* Decorative Floaties */}
+              <div className="absolute top-[20%] -right-12 p-6 bg-white border border-slate-200 rounded-2xl shadow-xl animate-float [animation-delay:1s] hidden lg:block">
+                 <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center text-pink-600">
+                      <Instagram size={20} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-400 uppercase">Growth</div>
+                      <div className="text-lg font-black text-slate-900">+12,450</div>
+                    </div>
+                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Stats Tape */}
-        <div className="w-full bg-slate-900 text-white py-4 overflow-hidden transform -skew-y-1" aria-hidden="true">
-          <div className="flex whitespace-nowrap animate-marquee gap-8 items-center justify-center">
-            <span className="flex items-center gap-2 mx-4 text-sm font-bold uppercase tracking-wider"><Zap className="w-4 h-4 text-yellow-400" /> Instant Delivery</span>
-            <span className="flex items-center gap-2 mx-4 text-sm font-bold uppercase tracking-wider"><ShieldCheck className="w-4 h-4 text-green-400" /> Secure Payments</span>
-            <span className="flex items-center gap-2 mx-4 text-sm font-bold uppercase tracking-wider"><Headphones className="w-4 h-4 text-blue-400" /> 24/7 Support</span>
-            <span className="flex items-center gap-2 mx-4 text-sm font-bold uppercase tracking-wider"><Zap className="w-4 h-4 text-yellow-400" /> Instant Delivery</span>
-            <span className="flex items-center gap-2 mx-4 text-sm font-bold uppercase tracking-wider"><ShieldCheck className="w-4 h-4 text-green-400" /> Secure Payments</span>
-            <span className="flex items-center gap-2 mx-4 text-sm font-bold uppercase tracking-wider"><Headphones className="w-4 h-4 text-blue-400" /> 24/7 Support</span>
-            <span className="flex items-center gap-2 mx-4 text-sm font-bold uppercase tracking-wider"><Zap className="w-4 h-4 text-yellow-400" /> Instant Delivery</span>
-            <span className="flex items-center gap-2 mx-4 text-sm font-bold uppercase tracking-wider"><ShieldCheck className="w-4 h-4 text-green-400" /> Secure Payments</span>
-            <span className="flex items-center gap-2 mx-4 text-sm font-bold uppercase tracking-wider"><Headphones className="w-4 h-4 text-blue-400" /> 24/7 Support</span>
-          </div>
+        {/* Marquee Ticker */}
+        <div className="py-12 bg-slate-900 overflow-hidden -rotate-1 translate-y-4">
+           <div className="flex whitespace-nowrap animate-marquee gap-10">
+              {[
+                "Instagram Growth", "TikTok Mastery", "YouTube Authority", "X - Impressions Boost", 
+                "Twitch Live Viewers", "Spotify Streams", "LinkedIn Network", "Facebook Engagement",
+                "Threads Followers", "Telegram Members", "Snapchat Real Views"
+              ].map((text, i) => (
+                <div key={i} className="flex items-center gap-4 text-white/90 text-xl font-black uppercase tracking-tighter">
+                   <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                   {text}
+                </div>
+              ))}
+           </div>
         </div>
 
         {/* Services Section */}
-        <section id="services" className="py-24 relative z-10" aria-label="Our Services">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wide mb-6">
-                <TrendingUp className="w-3 h-3" />
-                Popular Services
+        <section id="services" className="py-32 relative">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+              <div className="max-w-2xl">
+                <div className="flex items-center gap-2 text-indigo-600 font-black text-sm uppercase tracking-widest mb-4">
+                  <span className="w-8 h-1 bg-indigo-600 rounded-full"></span>
+                  Trending Solutions
+                </div>
+                <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6">
+                  Engineered for <span className="text-indigo-600">Impact.</span>
+                </h2>
+                <p className="text-lg text-slate-600">
+                  Select from over 2,000+ premium services optimized for maximum algorithmic performance.
+                </p>
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                Grow Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600">Social Presence</span>
-              </h2>
-              <p className="text-slate-600 max-w-2xl mx-auto text-lg">
-                Premium SMM services across all major platforms. Instant delivery, real engagement, unbeatable prices.
-              </p>
+              <Link href="/services" className="flex items-center gap-2 font-bold text-indigo-600 hover:gap-4 transition-all pb-2 border-b-2 border-indigo-100">
+                Browse All Services <ArrowRight size={18} />
+              </Link>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              {/* Instagram Card */}
-              <div className="bg-gradient-to-br from-pink-50 to-purple-50 border border-pink-100 rounded-2xl p-8 hover:shadow-xl hover:shadow-pink-100 transition-all duration-300 group">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white">
-                    <Instagram className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900">Instagram</h3>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-pink-600 flex-shrink-0" />
-                    <span>Followers & Likes</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-pink-600 flex-shrink-0" />
-                    <span>Views & Impressions</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-pink-600 flex-shrink-0" />
-                    <span>Story & Reel Boosts</span>
-                  </li>
-                </ul>
-                <p className="text-sm text-slate-600 mb-4">Starting at <strong className="text-pink-600">$0.001/1k</strong></p>
-                <Link href="/services" className="inline-flex items-center gap-2 text-pink-600 font-semibold group-hover:gap-3 transition-all">
-                  View Services
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-
-              {/* TikTok Card */}
-              <div className="bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-200 rounded-2xl p-8 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 group">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-slate-900 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                    TT
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900">TikTok</h3>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span>Followers & Likes</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span>Video Views</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span>Shares & Comments</span>
-                  </li>
-                </ul>
-                <p className="text-sm text-slate-600 mb-4">Starting at <strong className="text-blue-600">$0.0001/1k</strong></p>
-                <Link href="/services" className="inline-flex items-center gap-2 text-blue-600 font-semibold group-hover:gap-3 transition-all">
-                  View Services
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-
-              {/* YouTube Card */}
-              <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-100 rounded-2xl p-8 hover:shadow-xl hover:shadow-red-100 transition-all duration-300 group">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                    YT
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900">YouTube</h3>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                    <span>Subscribers & Views</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                    <span>Likes & Comments</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                    <span>Watch Time Boost</span>
-                  </li>
-                </ul>
-                <p className="text-sm text-slate-600 mb-4">Starting at <strong className="text-red-600">$1.50/1k</strong></p>
-                <Link href="/services" className="inline-flex items-center gap-2 text-red-600 font-semibold group-hover:gap-3 transition-all">
-                  View Services
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-
-              {/* Facebook Card */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-8 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 group">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center text-white">
-                    <Facebook className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900">Facebook</h3>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span>Page Likes & Followers</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span>Post Engagement</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span>Video Views</span>
-                  </li>
-                </ul>
-                <p className="text-sm text-slate-600 mb-4">Starting at <strong className="text-blue-600">$0.005/1k</strong></p>
-                <Link href="/services" className="inline-flex items-center gap-2 text-blue-600 font-semibold group-hover:gap-3 transition-all">
-                  View Services
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-
-              {/* Twitter/X Card */}
-              <div className="bg-gradient-to-br from-slate-50 to-gray-50 border border-slate-200 rounded-2xl p-8 hover:shadow-xl hover:shadow-slate-100 transition-all duration-300 group">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-slate-900 to-slate-700 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                    𝕏
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900">Twitter / X</h3>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0" />
-                    <span>Followers & Retweets</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0" />
-                    <span>Likes & Views</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-slate-700">
-                    <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0" />
-                    <span>Impressions Boost</span>
-                  </li>
-                </ul>
-                <p className="text-sm text-slate-600 mb-4">Starting at <strong className="text-slate-700">$0.50/1k</strong></p>
-                <Link href="/services" className="inline-flex items-center gap-2 text-slate-700 font-semibold group-hover:gap-3 transition-all">
-                  View Services
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-
-              {/* More Platforms Card */}
-              <div className="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 rounded-2xl p-8 hover:shadow-xl hover:shadow-violet-100 transition-all duration-300 group flex flex-col justify-center items-center text-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white mb-4">
-                  <Globe className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">+20 More Platforms</h3>
-                <p className="text-slate-600 mb-6">Telegram, Spotify, LinkedIn, Threads, and many more...</p>
-                <Link href="/services" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-violet-200 transition-all group-hover:gap-3">
-                  Browse All Services
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Service Stats Banner */}
-            <div className="bg-white/60 backdrop-blur-sm border border-slate-200 rounded-2xl p-8 shadow-lg">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                <div>
-                  <div className="text-3xl font-bold text-blue-600 mb-2">500+</div>
-                  <div className="text-sm text-slate-600">Active Services</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-indigo-600 mb-2">25+</div>
-                  <div className="text-sm text-slate-600">Platforms</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-violet-600 mb-2">99.9%</div>
-                  <div className="text-sm text-slate-600">Uptime</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-purple-600 mb-2">24/7</div>
-                  <div className="text-sm text-slate-600">Support</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Features Grid */}
-        <section id="features" className="py-24 relative z-10" aria-label="Key Features">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="mb-16">
-              <h2 className="text-3xl font-bold text-slate-900 mb-4">Why Leaders Choose JAP</h2>
-              <p className="text-slate-600 max-w-xl">
-                Engineered for speed, built for scale. Experience the most advanced SMM panel in the market.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {features.map((feature, index) => (
-                <div key={index} className="bg-white/60 backdrop-blur-sm p-6 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 group">
-                  <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-50 group-hover:border-blue-100 transition-colors">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2">{feature.title}</h3>
-                  <p className="text-sm text-slate-500 leading-relaxed">
-                    {feature.description}
-                  </p>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[
+                { name: 'Instagram', icon: <Instagram />, color: 'from-pink-500 to-rose-500', bg: 'bg-rose-50' },
+                { name: 'TikTok', icon: <Plus />, color: 'from-slate-800 to-slate-950', bg: 'bg-slate-50' },
+                { name: 'YouTube', icon: <Youtube />, color: 'from-red-600 to-orange-600', bg: 'bg-orange-50' },
+                { name: 'X / Twitter', icon: <Twitter />, color: 'from-sky-500 to-blue-600', bg: 'bg-blue-50' },
+                { name: 'Facebook', icon: <Plus />, color: 'from-blue-600 to-indigo-700', bg: 'bg-indigo-50' },
+                { name: 'Other Platforms', icon: <Globe />, color: 'from-violet-600 to-purple-600', bg: 'bg-violet-50' },
+              ].map((platform, idx) => (
+                <div key={idx} className={`group relative p-8 rounded-3xl border border-slate-200 ${platform.bg} hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-500 overflow-hidden`}>
+                   <div className="relative z-10">
+                     <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${platform.color} flex items-center justify-center text-white mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform`}>
+                        {platform.icon}
+                     </div>
+                     <h3 className="text-2xl font-black text-slate-900 mb-3">{platform.name}</h3>
+                     <p className="text-slate-500 mb-8 font-medium">Global authority boost with high-retention real engagement.</p>
+                     
+                     <Link href="/services" className="flex items-center gap-2 font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                        View Rates <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                     </Link>
+                   </div>
+                   <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/50 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Big Feature Section - Optimized Content for SEO Keywords */}
-        <section id="about" className="py-24 bg-slate-50 border-y border-slate-200 relative overflow-hidden">
-          {/* Subtle pattern for this section specifically */}
-          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#444cf7_1px,transparent_1px)] [background-size:16px_16px]" aria-hidden="true"></div>
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <article>
-                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6 leading-tight">
-                  The Online World is Run by <span className="text-blue-600 underline decoration-4 decoration-blue-200 underline-offset-4">Industry Leaders</span>
-                </h2>
-                <p className="text-slate-600 mb-8 text-lg leading-relaxed">
-                  Leaders know exactly what their customers want, and what to offer them in return. Here, we provide the best and most affordable <strong>SMM panel services</strong> to those leaders just like you.
-                </p>
-
-                <ul className="space-y-4">
-                  {[
-                    "Targeted Audience Reach",
-                    "Maximum Engagement & Visibility",
-                    "Optimized for Conversions",
-                    "Real-time Analytics"
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-center gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="text-slate-700 font-medium">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </article>
-
-              <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-tr from-blue-100 to-indigo-100 rounded-[2rem] opacity-50 blur-2xl -z-10" aria-hidden="true"></div>
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-8">
-                  <div className="flex items-start gap-4 mb-6">
-                    <div className="bg-blue-600 rounded-lg p-3 text-white">
-                      <MousePointer2 className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg text-slate-900">One Click Growth</h3>
-                      <p className="text-slate-500 text-sm">Select service, enter link, and launch.</p>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 transition-colors cursor-pointer group">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-semibold text-slate-700 group-hover:text-blue-600">Instagram Followers</span>
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Best Seller</span>
-                      </div>
-                      <p className="text-xs text-slate-500">Starting at $0.001 / 1k</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 transition-colors cursor-pointer group">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-semibold text-slate-700 group-hover:text-blue-600">TikTok Views</span>
-                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">Instant</span>
-                      </div>
-                      <p className="text-xs text-slate-500">Starting at $0.0001 / 1k</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 transition-colors cursor-pointer group">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-semibold text-slate-700 group-hover:text-blue-600">YouTube Subscribers</span>
-                      </div>
-                      <p className="text-xs text-slate-500">Starting at $1.50 / 1k</p>
-                    </div>
-                  </div>
-                  <a href="/services" className="w-full mt-6 py-3 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors flex items-center justify-center">
-                    View All Services
-                  </a>
-                </div>
+        {/* Features Grid */}
+        <section id="features" className="py-32 bg-white relative overflow-hidden border-y border-slate-100">
+           <div className="max-w-7xl mx-auto px-4">
+              <div className="text-center mb-20">
+                 <h2 className="text-3xl font-black mb-4">Why Industry Leaders Choose {siteName}</h2>
+                 <p className="text-slate-500 max-w-2xl mx-auto">Experience the most stable and feature-rich SMM infrastructure in the ecosystem.</p>
               </div>
-            </div>
-          </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                 {features.map((feature, i) => (
+                   <div key={i} className="flex flex-col items-center text-center p-8 rounded-3xl hover:bg-slate-50 transition-colors group">
+                      <div className={`w-16 h-16 rounded-[2rem] bg-${feature.color}-50 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:-rotate-3 transition-all`}>
+                         {feature.icon}
+                      </div>
+                      <h4 className="text-xl font-bold mb-3">{feature.title}</h4>
+                      <p className="text-sm text-slate-500 leading-relaxed font-medium">{feature.description}</p>
+                   </div>
+                 ))}
+              </div>
+           </div>
         </section>
 
         {/* CTA Section */}
-        <section className="py-24 px-4 relative z-10" aria-label="Call to Action">
-          <div className="max-w-5xl mx-auto text-center">
-            <div className="bg-slate-900 rounded-[2.5rem] p-12 md:p-20 relative overflow-hidden shadow-2xl">
-              {/* Grid pattern overlay on dark bg */}
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:32px_32px] opacity-20" aria-hidden="true"></div>
+        <section className="py-32 px-4 relative">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-slate-900 rounded-[3.5rem] p-12 lg:p-24 relative overflow-hidden text-center lg:text-left flex flex-col lg:flex-row items-center justify-between gap-12">
+               {/* Pattern */}
+               <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,#4f46e51a,transparent_40%)]" aria-hidden="true"></div>
+               
+               <div className="relative z-10 max-w-xl">
+                 <h2 className="text-4xl md:text-6xl font-black text-white mb-8 leading-tight">
+                    Ready to scale your <span className="text-indigo-400 italic">influence?</span>
+                 </h2>
+                 <p className="text-slate-400 text-lg md:text-xl mb-0">
+                    Join over 250,000+ creators and brands who dominate social media using {siteName}.
+                 </p>
+               </div>
 
-              <div className="relative z-10">
-                <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">
-                  Ready to dominate the market?
-                </h2>
-                <p className="text-slate-300 text-lg mb-10 max-w-2xl mx-auto">
-                  Join thousands of influencers and businesses who trust {siteName} for their social media growth.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link href="/register" className="px-8 py-4 bg-white text-slate-900 rounded-xl font-bold text-lg hover:bg-slate-100 transition-all shadow-lg transform hover:-translate-y-1 inline-block">
-                    Create Free Account
+                <div className="relative z-10 w-full lg:w-auto flex flex-col sm:flex-row gap-4 items-center justify-center lg:justify-end">
+                  <Link href="/auth/register" className="w-full sm:w-48 h-14 flex items-center justify-center bg-white text-slate-900 rounded-xl font-bold text-lg hover:bg-indigo-50 transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-black/20">
+                    Join Now
                   </Link>
-                  <Link href="/contact" className="px-8 py-4 bg-transparent border border-slate-700 text-white rounded-xl font-bold text-lg hover:bg-white/5 transition-all inline-block">
-                    Contact Sales
+                  <Link href="/contact" className="w-full sm:w-48 h-14 flex items-center justify-center bg-transparent border-2 border-slate-700 text-white rounded-xl font-bold text-lg hover:bg-white/5 hover:border-white transition-all hover:scale-[1.02] active:scale-95">
+                    Contact Now
                   </Link>
                 </div>
-              </div>
             </div>
           </div>
         </section>
       </main>
 
-      {/* Footer */}
-      {/* Footer */}
       <Footer settings={settings} />
+      
+      {/* Dynamic Styles */}
+      <style jsx global>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          animation: marquee 40s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };

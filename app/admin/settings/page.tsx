@@ -47,6 +47,8 @@ export default async function AdminSettingsPage() {
         onesignal_app_id: settings.onesignal_app_id,
         onesignal_rest_api_key: settings.onesignal_rest_api_key,
         firebase_service_account_json: settings.firebase_service_account_json,
+        posthog_api_key: (settings as any).posthog_api_key,
+        posthog_host: (settings as any).posthog_host,
     } : null;
 
     return <SettingsClient initialSettings={mappedSettings} />;

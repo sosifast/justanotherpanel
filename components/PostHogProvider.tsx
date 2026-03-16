@@ -41,18 +41,18 @@ export function PHProvider({
   const pathname = usePathname()
 
   useEffect(() => {
-    if (apiKey && typeof window !== 'undefined') {
-      posthog.init(apiKey, {
-        api_host: apiHost || 'https://us.i.posthog.com',
-        person_profiles: 'always',
-        capture_pageview: false 
-      })
-    } else if (process.env.NEXT_PUBLIC_POSTHOG_KEY && typeof window !== 'undefined') {
-       posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-        api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
-        person_profiles: 'always',
-        capture_pageview: false 
-      })
+    if (typeof window !== 'undefined') {
+      const activeKey = apiKey || process.env.NEXT_PUBLIC_POSTHOG_KEY
+      const activeHost = apiHost || process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
+
+      if (activeKey) {
+        posthog.init(activeKey, {
+          api_host: `${window.location.origin}/ingest`,
+          ui_host: activeHost,
+          person_profiles: 'always',
+          capture_pageview: false 
+        })
+      }
     }
   }, [apiKey, apiHost])
 

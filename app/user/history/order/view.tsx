@@ -18,8 +18,14 @@ import {
 } from 'lucide-react';
 import { Order, OrderStatus, Service } from '@prisma/client';
 
+type ReffilOrder = {
+    id: number;
+    status: string;
+};
+
 type OrderWithService = Order & {
     service: Service;
+    reffil_orders: ReffilOrder[];
 };
 
 interface OrdersViewProps {
@@ -53,6 +59,27 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
             toast.error('An error occurred during sync');
         } finally {
             setIsSyncing(false);
+        }
+    };
+    
+    const [isRefilling, setIsRefilling] = useState<number | null>(null);
+
+    const handleRefill = async (orderId: number) => {
+        setIsRefilling(orderId);
+        try {
+            const res = await fetch(`/api/user/orders/${orderId}/refill`, { method: 'POST' });
+            const data = await res.json();
+
+            if (res.ok) {
+                toast.success(data.message || 'Refill requested successfully!');
+                router.refresh();
+            } else {
+                toast.error(data.error || 'Failed to request refill');
+            }
+        } catch (error) {
+            toast.error('An error occurred while requesting refill');
+        } finally {
+            setIsRefilling(null);
         }
     };
 
@@ -122,64 +149,9 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
         return matchesSearch && matchesStatus && matchesPlatform;
     });
 
-    const totalSpent = initialOrders.reduce((sum, o) => sum + Number(o.price_sale), 0);
 
     return (
         <div>
-            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Order History</h1>
-                    <p className="text-slate-500">View and track all your orders</p>
-                </div>
-                <button
-                    onClick={handleSyncStatus}
-                    disabled={isSyncing}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 transition-all"
-                >
-                    <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                    {isSyncing ? 'Syncing...' : 'Sync Order Status'}
-                </button>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                        <ShoppingCart className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500">Total Orders</p>
-                        <p className="text-xl font-bold text-slate-900">{initialOrders.length}</p>
-                    </div>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
-                    <div className="p-3 bg-emerald-50 rounded-lg">
-                        <CheckCircle className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500">Completed</p>
-                        <p className="text-xl font-bold text-slate-900">{initialOrders.filter(o => o.status === 'COMPLETED' || o.status === 'SUCCESS').length}</p>
-                    </div>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
-                    <div className="p-3 bg-amber-50 rounded-lg">
-                        <Clock className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500">In Progress</p>
-                        <p className="text-xl font-bold text-slate-900">{initialOrders.filter(o => o.status === 'IN_PROGRESS' || o.status === 'PROCESSING' || o.status === 'PENDING').length}</p>
-                    </div>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
-                    <div className="p-3 bg-purple-50 rounded-lg">
-                        <ShoppingCart className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500">Total Spent</p>
-                        <p className="text-xl font-bold text-slate-900">${totalSpent.toFixed(2)}</p>
-                    </div>
-                </div>
-            </div>
 
             {/* Filters */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
@@ -225,6 +197,16 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
                         </select>
                         <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
                     </div>
+
+                    {/* Sync Button */}
+                    <button
+                        onClick={handleSyncStatus}
+                        disabled={isSyncing}
+                        className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-500/10 transition-all min-w-[180px]"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                        {isSyncing ? 'Syncing...' : 'Sync Updates'}
+                    </button>
                 </div>
             </div>
 
@@ -284,9 +266,18 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
                                             <Link href={`/user/history/order/${order.id}`} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details">
                                                 <Eye className="w-4 h-4" />
                                             </Link>
-                                            {order.status === 'PARTIAL' && (
-                                                <button className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Request Refill">
-                                                    <RefreshCw className="w-4 h-4" />
+                                            {order.service.refill && (
+                                                <button 
+                                                    onClick={() => handleRefill(order.id)}
+                                                    disabled={isRefilling === order.id || order.reffil_orders.some((r: ReffilOrder) => ['PENDING', 'SUCCESS', 'COMPLETED', 'FINISH'].includes(r.status))}
+                                                    className={`p-1.5 rounded-lg transition-colors ${
+                                                        order.reffil_orders.some((r: ReffilOrder) => ['PENDING', 'SUCCESS', 'COMPLETED', 'FINISH'].includes(r.status))
+                                                        ? 'text-slate-200 cursor-not-allowed'
+                                                        : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
+                                                    }`} 
+                                                    title={order.reffil_orders.length > 0 ? "Refill Requested" : "Request Refill"}
+                                                >
+                                                    <RefreshCw className={`w-4 h-4 ${isRefilling === order.id ? 'animate-spin' : ''}`} />
                                                 </button>
                                             )}
                                         </div>

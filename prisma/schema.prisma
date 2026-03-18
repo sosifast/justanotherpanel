@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -34,6 +33,7 @@ model User {
   tickets                  Ticket[]
   sessions                 UserSession[]
   sms_orders               OrderSms[]
+  reffil_orders            ReffilOrder[]
 
   @@map("user")
 }
@@ -136,6 +136,8 @@ model Setting {
   firebase_service_account_json String? // JSON string of Firebase Admin SDK service account
   posthog_api_key      String?
   posthog_host         String?
+  posthog_personal_api_key String?
+  posthog_project_id   String?
 
   @@map("setting")
 }
@@ -210,8 +212,9 @@ model ApiProvider {
   status     ApiProviderStatus @default(ACTIVE)
   created_at DateTime          @default(now())
   updated_at DateTime          @updatedAt
-  orders     Order[]
-  services   Service[]
+  orders         Order[]
+  services       Service[]
+  reffil_orders  ReffilOrder[]
 
   @@map("api_provider")
 }
@@ -252,6 +255,7 @@ model Order {
   api_provider    ApiProvider?    @relation(fields: [id_api_provider], references: [id])
   service         Service         @relation(fields: [id_service], references: [id])
   user            User            @relation(fields: [id_user], references: [id])
+  reffil_orders   ReffilOrder[]
 
   @@map("order")
 }
@@ -487,6 +491,14 @@ enum OrderStatus {
   CANCELED
 }
 
+enum ReffilStatus {
+  PENDING
+  ERROR
+  COMPLETED
+  SUCCESS
+  FINISH
+}
+
 enum DepositStatus {
   PENDING
   ERROR
@@ -637,4 +649,20 @@ model RateLimit {
   updated_at DateTime @updatedAt
 
   @@map("rate_limit")
+}
+
+model ReffilOrder {
+  id              Int          @id @default(autoincrement())
+  id_user         Int
+  id_api_provider Int
+  id_order        Int
+  pid_reffil      String?
+  status          ReffilStatus @default(PENDING)
+  create_at       DateTime     @default(now())
+  update_at       DateTime     @updatedAt
+  user            User         @relation(fields: [id_user], references: [id])
+  api_provider    ApiProvider  @relation(fields: [id_api_provider], references: [id])
+  order           Order        @relation(fields: [id_order], references: [id])
+
+  @@map("reffil_order")
 }

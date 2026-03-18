@@ -49,7 +49,8 @@ const AdminReportMoneyPage = async () => {
   // 5. Reseller Income: Sum of registration fees
   // Since we don't have a transaction log yet, we estimate by count * current fee
   const resellersCount = await prisma.reseller.count();
-  const settingsData = await prisma.setting.findFirst();
+  const settingsResults = await prisma.$queryRaw<any[]>`SELECT reseller_fee FROM "setting" LIMIT 1`;
+  const settingsData = settingsResults[0];
   const resellerFee = Number((settingsData as any)?.reseller_fee || 100000);
   const totalResellerIncome = resellersCount * resellerFee;
 

@@ -7,7 +7,8 @@ import { cache } from 'react';
  */
 export const getSettings = cache(async () => {
     try {
-        const settings = await prisma.setting.findFirst();
+        const settingsResults = await prisma.$queryRaw<any[]>`SELECT * FROM "setting" LIMIT 1`;
+        const settings = settingsResults[0];
         if (!settings) return null;
 
         // Manually map to ensure plain objects and handle Decimal/Date

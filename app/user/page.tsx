@@ -11,7 +11,6 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-
 export default async function UserDashboardPage() {
   // Ensure route is dynamic + resolve authenticated user
   await cookies();
@@ -95,13 +94,8 @@ export default async function UserDashboardPage() {
   });
 
   // Get site settings for social media links
-  const settings = await prisma.setting.findFirst({
-    select: {
-      instagram_url: true,
-      facebook_url: true,
-      telegram: true
-    }
-  });
+  const settingsResults = await prisma.$queryRaw<any[]>`SELECT instagram_url, facebook_url, telegram FROM "setting" LIMIT 1`;
+  const settings = settingsResults[0];
 
   // Get active sliders
   const sliders = await prisma.slider.findMany({
@@ -125,7 +119,7 @@ export default async function UserDashboardPage() {
       totalOrders,
       activeOrders
     },
-    recentOrders: recentOrders.map(order => ({
+    recentOrders: recentOrders.map((order: any) => ({
       id: order.id,
       service: order.service.name,
       serviceId: order.service.id,
@@ -134,11 +128,11 @@ export default async function UserDashboardPage() {
       status: order.status,
       created_at: order.created_at.toISOString()
     })),
-    platforms: platforms.map(p => ({
+    platforms: platforms.map((p: any) => ({
       ...p,
       _count: p._count
     })),
-    news: news.map(n => ({
+    news: news.map((n: any) => ({
       ...n,
       created_at: n.created_at.toISOString()
     })),

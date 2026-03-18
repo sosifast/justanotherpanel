@@ -47,19 +47,13 @@ export function PHProvider({
 
       if (activeKey) {
         posthog.init(activeKey, {
-          api_host: `${window.location.origin}/ingest`,
-          ui_host: activeHost,
+          api_host: activeHost,
           person_profiles: 'always',
-          capture_pageview: false 
         })
       }
     }
   }, [apiKey, apiHost])
 
-  // Skip PostHog for admin routes
-  if (pathname?.startsWith('/admin')) {
-    return <>{children}</>
-  }
 
   return (
     <PostHogProvider client={posthog}>

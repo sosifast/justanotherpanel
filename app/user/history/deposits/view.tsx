@@ -6,7 +6,6 @@ import {
     ChevronDown,
     ChevronLeft,
     ChevronRight,
-    Wallet,
     Calendar,
     Filter,
     CheckCircle,
@@ -107,48 +106,8 @@ const DepositsView = ({ initialDeposits }: DepositsViewProps) => {
         return matchesSearch && matchesStatus && matchesMethod;
     });
 
-    const totalDeposits = initialDeposits
-        .filter(d => d.status === 'PAYMENT')
-        .reduce((sum, d) => sum + Number(d.amount), 0);
-
     return (
         <div>
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-slate-900">Deposit History</h1>
-                <p className="text-slate-500">View all your deposit transactions</p>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
-                    <div className="p-3 bg-emerald-50 rounded-lg">
-                        <Wallet className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500">Total Deposited</p>
-                        <p className="text-xl font-bold text-slate-900">${totalDeposits.toFixed(2)}</p>
-                    </div>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                        <CreditCard className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500">Total Transactions</p>
-                        <p className="text-xl font-bold text-slate-900">{initialDeposits.length}</p>
-                    </div>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
-                    <div className="p-3 bg-amber-50 rounded-lg">
-                        <Clock className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500">Pending</p>
-                        <p className="text-xl font-bold text-slate-900">{initialDeposits.filter(d => d.status === 'PENDING').length}</p>
-                    </div>
-                </div>
-            </div>
-
             {/* Filters */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
                 <div className="p-4 flex flex-col md:flex-row gap-4">

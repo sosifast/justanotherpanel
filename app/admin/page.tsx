@@ -3,8 +3,8 @@ import { Users, ShoppingBag, LifeBuoy, DollarSign, AlertCircle, MoreVertical } f
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
-import PlausibleAnalytics, { PlausibleData } from './PlausibleAnalytics';
 import crypto from 'crypto';
+import PostHogAnalytics, { PostHogData } from './PostHogAnalytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,53 +52,6 @@ async function getProviders() {
   });
 }
 
-async function getPlausibleData(): Promise<PlausibleData | null> {
-  const settingsResults = await prisma.$queryRaw<any[]>`SELECT plausible_domain, plausible_api_key FROM "setting" LIMIT 1`;
-  const settings = settingsResults[0];
-
-  if (!settings?.plausible_domain || !settings?.plausible_api_key) {
-    return null;
-  }
-
-  const domain = settings.plausible_domain as string;
-  const apiKey = settings.plausible_api_key as string;
-  const base = 'https://plausible.io/api/v1';
-  const headers = { Authorization: `Bearer ${apiKey}` };
-  const opts = { headers, next: { revalidate: 3600 } } as RequestInit;
-
-  try {
-    const [aggRes, tsRes, pagesRes, refRes, countriesRes, browsersRes] = await Promise.allSettled([
-      fetch(`${base}/stats/aggregate?site_id=${domain}&period=30d&metrics=visitors,pageviews,bounce_rate,visit_duration`, opts),
-      fetch(`${base}/stats/timeseries?site_id=${domain}&period=30d&metrics=visitors`, opts),
-      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=event:page&limit=5`, opts),
-      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=visit:referrer&limit=10`, opts),
-      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=visit:country&limit=10`, opts),
-      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=visit:browser&limit=8`, opts),
-    ]);
-
-    const toJson = async (r: PromiseSettledResult<Response>) => {
-      if (r.status === 'rejected' || !r.value.ok) return null;
-      return r.value.json().catch(() => null);
-    };
-
-    const [aggData, tsData, pagesData, refData, countriesData, browsersData] = await Promise.all([
-      toJson(aggRes), toJson(tsRes), toJson(pagesRes), toJson(refRes), toJson(countriesRes), toJson(browsersRes),
-    ]);
-
-    return {
-      domain,
-      aggregate: aggData?.results ?? null,
-      timeseries: tsData?.results ?? [],
-      topPages: pagesData?.results ?? [],
-      topReferrers: refData?.results ?? [],
-      countries: countriesData?.results ?? [],
-      browsers: browsersData?.results ?? [],
-    };
-  } catch (err) {
-    console.error('Plausible fetch error:', err);
-    return null;
-  }
-}
 
 async function getCryptomusBalance() {
   try {
@@ -149,6 +102,120 @@ async function getCryptomusBalance() {
   }
 }
 
+export interface PostHogTrendPoint {
+    date: string;
+    value: number;
+}
+
+export interface PostHogBreakdownItem {
+    name: string;
+    count: number;
+}
+
+export interface PostHogData {
+    visitors: number;
+    pageviews: number;
+    bounceRate: number;
+    avgSessionDuration: number;
+    trend: PostHogTrendPoint[];
+    topPages: PostHogBreakdownItem[];
+    topReferrers: PostHogBreakdownItem[];
+    countries: PostHogBreakdownItem[];
+    browsers: PostHogBreakdownItem[];
+    devices: PostHogBreakdownItem[];
+    webVitals: {
+        lcp: number;
+        fid: number;
+        cls: number;
+        fcp: number;
+    };
+    domain: string;
+}
+
+async function getPostHogData(): Promise<PostHogData | null> {
+  const settingsResults = await prisma.$queryRaw<any[]>`SELECT posthog_api_key, posthog_host, posthog_personal_api_key, posthog_project_id, site_name FROM "setting" LIMIT 1`;
+  const settings = settingsResults[0];
+
+  if (!settings?.posthog_personal_api_key || !settings?.posthog_project_id) {
+    return null;
+  }
+
+  const apiKey = settings.posthog_personal_api_key as string;
+  const projectId = settings.posthog_project_id as string;
+  const host = (settings.posthog_host as string) || 'https://us.i.posthog.com';
+  const baseUrl = `${host}/api/projects/${projectId}/query/`;
+
+  const fetchHogQL = async (query: string) => {
+    try {
+      const res = await fetch(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: { kind: 'HogQLQuery', query } }),
+        next: { revalidate: 300 } // Cache for 5 minutes
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      console.error('PostHog fetch error:', e);
+      return null;
+    }
+  };
+
+  try {
+    const [visitorsRes, pageviewsRes, trendRes, countriesRes, browsersRes, pagesRes, referrersRes, devicesRes, vitalsRes] = await Promise.all([
+      fetchHogQL("SELECT count(DISTINCT distinct_id) FROM events WHERE timestamp > now() - interval 30 day"),
+      fetchHogQL("SELECT count() FROM events WHERE event = '$pageview' AND timestamp > now() - interval 30 day"),
+      fetchHogQL("SELECT toDate(timestamp) as d, count() FROM events WHERE event = '$pageview' AND timestamp > now() - interval 30 day GROUP BY d ORDER BY d ASC"),
+      fetchHogQL("SELECT properties.$geoip_country_code, count() FROM events WHERE timestamp > now() - interval 30 day GROUP BY properties.$geoip_country_code ORDER BY count() DESC LIMIT 10"),
+      fetchHogQL("SELECT properties.$browser, count() FROM events WHERE timestamp > now() - interval 30 day GROUP BY properties.$browser ORDER BY count() DESC LIMIT 10"),
+      fetchHogQL("SELECT properties.$current_url, count() FROM events WHERE event = '$pageview' AND timestamp > now() - interval 30 day GROUP BY properties.$current_url ORDER BY count() DESC LIMIT 10"),
+      fetchHogQL("SELECT properties.$referrer, count() FROM events WHERE timestamp > now() - interval 30 day GROUP BY properties.$referrer ORDER BY count() DESC LIMIT 10"),
+      fetchHogQL("SELECT properties.$device_type, count() FROM events WHERE timestamp > now() - interval 30 day GROUP BY properties.$device_type ORDER BY count() DESC"),
+      fetchHogQL("SELECT avg(properties.$web_vitals_LCP), avg(properties.$web_vitals_FID), avg(properties.$web_vitals_CLS), avg(properties.$web_vitals_FCP) FROM events WHERE event = '$pageview' AND timestamp > now() - interval 30 day"),
+    ]);
+
+    const visitors = visitorsRes?.results?.[0] || 0;
+    const pageviews = pageviewsRes?.results?.[0] || 0;
+    
+    // Map trend
+    const trend = (trendRes?.results || []).map((r: any) => ({
+      date: new Date(r[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      value: r[1]
+    }));
+
+    // Map breakdowns
+    const mapBreakdown = (res: any) => (res?.results || []).map((r: any) => ({ name: r[0] || 'Unknown', count: r[1] }));
+
+    const vitalsResult = vitalsRes?.results?.[0] || [0, 0, 0, 0];
+
+    return {
+      visitors,
+      pageviews,
+      bounceRate: 0, // Simplified
+      avgSessionDuration: 0, // Simplified
+      trend,
+      topPages: mapBreakdown(pagesRes),
+      topReferrers: mapBreakdown(referrersRes),
+      countries: mapBreakdown(countriesRes),
+      browsers: mapBreakdown(browsersRes),
+      devices: mapBreakdown(devicesRes),
+      webVitals: {
+          lcp: parseFloat(vitalsResult[0]) || 0,
+          fid: parseFloat(vitalsResult[1]) || 0,
+          cls: parseFloat(vitalsResult[2]) || 0,
+          fcp: parseFloat(vitalsResult[3]) || 0,
+      },
+      domain: settings.site_name,
+    };
+  } catch (err) {
+    console.error('Error processing PostHog data:', err);
+    return null;
+  }
+}
+
 const AdminDashboard = async () => {
   const session = await getCurrentUser();
 
@@ -156,12 +223,12 @@ const AdminDashboard = async () => {
     redirect('/auth/login');
   }
 
-  const [statsData, recentOrders, providers, plausibleData, cryptomusBalanceRaw] = await Promise.all([
+  const [statsData, recentOrders, providers, cryptomusBalanceRaw, phData] = await Promise.all([
     getStats(),
     getRecentOrders(),
     getProviders(),
-    getPlausibleData(),
     getCryptomusBalance(),
+    getPostHogData(),
   ]);
 
   const cryptomusBalance = Array.isArray(cryptomusBalanceRaw)
@@ -332,9 +399,8 @@ const AdminDashboard = async () => {
           </div>
         </div>
       </div>
-
-      {/* Plausible Analytics Section */}
-      <PlausibleAnalytics data={plausibleData} />
+      {/* PostHog Analytics Section */}
+      <PostHogAnalytics data={phData} />
     </>
   );
 };

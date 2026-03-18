@@ -32,6 +32,8 @@ type SettingData = {
   firebase_service_account_json: string | null;
   posthog_api_key: string | null;
   posthog_host: string | null;
+  posthog_personal_api_key: string | null;
+  posthog_project_id: string | null;
 } | null;
 
 const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) => {
@@ -65,6 +67,8 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
     firebase_service_account_json: initialSettings?.firebase_service_account_json || '',
     posthog_api_key: initialSettings?.posthog_api_key || '',
     posthog_host: initialSettings?.posthog_host || '',
+    posthog_personal_api_key: initialSettings?.posthog_personal_api_key || '',
+    posthog_project_id: initialSettings?.posthog_project_id || '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -452,6 +456,29 @@ const SettingsClient = ({ initialSettings }: { initialSettings: SettingData }) =
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="https://us.i.posthog.com"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">Personal API Key (for Querying)</label>
+              <input
+                type="password"
+                name="posthog_personal_api_key"
+                value={formData.posthog_personal_api_key}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="phx_xxxxxxxx"
+              />
+              <p className="text-xs text-slate-400">Required to fetch analytics data for the dashboard.</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">Project ID</label>
+              <input
+                type="text"
+                name="posthog_project_id"
+                value={formData.posthog_project_id}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="123456"
               />
             </div>
           </div>

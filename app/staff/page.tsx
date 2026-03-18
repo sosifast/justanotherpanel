@@ -4,7 +4,6 @@ import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import StaffDashboardClient from './StaffDashboardClient';
 import { getSettings } from '@/lib/settings';
-import PlausibleAnalytics, { PlausibleData } from '../admin/PlausibleAnalytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +46,7 @@ async function getRecentOrders() {
     }
   });
 
-  return orders.map(order => ({
+  return orders.map((order: any) => ({
     ...order,
     price_api: Number(order.price_api),
     price_sale: Number(order.price_sale),
@@ -57,54 +56,6 @@ async function getRecentOrders() {
   }));
 }
 
-async function getPlausibleData(): Promise<PlausibleData | null> {
-  const settings = await prisma.setting.findFirst({
-    select: { plausible_domain: true, plausible_api_key: true }
-  });
-
-  if (!settings?.plausible_domain || !settings?.plausible_api_key) {
-    return null;
-  }
-
-  const domain = settings.plausible_domain;
-  const apiKey = settings.plausible_api_key;
-  const base = 'https://plausible.io/api/v1';
-  const headers = { Authorization: `Bearer ${apiKey}` };
-  const opts = { headers, next: { revalidate: 3600 } } as RequestInit;
-
-  try {
-    const [aggRes, tsRes, pagesRes, refRes, countriesRes, browsersRes] = await Promise.allSettled([
-      fetch(`${base}/stats/aggregate?site_id=${domain}&period=30d&metrics=visitors,pageviews,bounce_rate,visit_duration`, opts),
-      fetch(`${base}/stats/timeseries?site_id=${domain}&period=30d&metrics=visitors`, opts),
-      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=event:page&limit=5`, opts),
-      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=visit:referrer&limit=10`, opts),
-      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=visit:country&limit=10`, opts),
-      fetch(`${base}/stats/breakdown?site_id=${domain}&period=30d&property=visit:browser&limit=8`, opts),
-    ]);
-
-    const toJson = async (r: PromiseSettledResult<Response>) => {
-      if (r.status === 'rejected' || !r.value.ok) return null;
-      return r.value.json().catch(() => null);
-    };
-
-    const [aggData, tsData, pagesData, refData, countriesData, browsersData] = await Promise.all([
-      toJson(aggRes), toJson(tsRes), toJson(pagesRes), toJson(refRes), toJson(countriesRes), toJson(browsersRes),
-    ]);
-
-    return {
-      domain,
-      aggregate: aggData?.results ?? null,
-      timeseries: tsData?.results ?? [],
-      topPages: pagesData?.results ?? [],
-      topReferrers: refData?.results ?? [],
-      countries: countriesData?.results ?? [],
-      browsers: browsersData?.results ?? [],
-    };
-  } catch (err) {
-    console.error('Plausible fetch error:', err);
-    return null;
-  }
-}
 
 export default async function StaffPage() {
   const session = await getCurrentUser();
@@ -113,11 +64,10 @@ export default async function StaffPage() {
     redirect('/auth/login');
   }
 
-  const [stats, recentOrders, settings, plausibleData] = await Promise.all([
+  const [stats, recentOrders, settings] = await Promise.all([
     getStats(),
     getRecentOrders(),
     getSettings(),
-    getPlausibleData(),
   ]);
 
   const pusherSettings = settings ? {
@@ -137,11 +87,6 @@ export default async function StaffPage() {
         initialOrders={recentOrders as any}
         pusherSettings={pusherSettings}
       />
-
-      <div className="mt-12">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-6">Traffic Analytics</h2>
-        <PlausibleAnalytics data={plausibleData} />
-      </div>
     </div>
   );
 }

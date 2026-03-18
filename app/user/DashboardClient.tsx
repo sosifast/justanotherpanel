@@ -228,11 +228,44 @@ const DashboardClient = ({ data }: Props) => {
 
     return (
         <div>
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-slate-900">Dashboard Overview</h1>
-                <p className="text-slate-500">
-                    Welcome back, {data.user?.full_name || 'User'}! Here&apos;s what&apos;s happening today.
-                </p>
+            {/* Announcement Banner */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8 mb-8 relative overflow-hidden group">
+                {/* Background Pattern */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 rounded-full -mr-32 -mt-32 transition-transform group-hover:scale-110 duration-700"></div>
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-50/30 rounded-full -ml-16 -mb-16 transition-transform group-hover:scale-110 duration-700"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 md:gap-8">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
+                        <Package className="w-10 h-10 text-white" />
+                    </div>
+                    
+                    <div className="flex-1 text-center md:text-left">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+                            <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
+                            New Application Pre-release
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2 leading-tight">Welcome to the Future of Transactions</h2>
+                        <div className="space-y-3">
+                            <p className="text-slate-600 text-lg leading-relaxed">
+                                We are pleased to inform you that we have developed an application designed to make transactions easier for our customers.
+                                Currently, the application is in the pre-release and testing phase.
+                            </p>
+                            <p className="text-slate-500 font-medium italic underline decoration-blue-200 underline-offset-4 decoration-2">
+                                We invite you to be among the first users to experience the convenience and features we offer.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex-shrink-0 w-full md:w-auto self-end md:self-center">
+                        <Link
+                            href="/user/tickets"
+                            className="flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 group/btn hover:scale-105 active:scale-95"
+                        >
+                            <Send className="w-5 h-5 transition-all group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1" />
+                            Contact Us on Tickets
+                        </Link>
+                    </div>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -549,20 +582,7 @@ const DashboardClient = ({ data }: Props) => {
                         </div>
                     )}
 
-                    {/* Help Card */}
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 text-center">
-                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <LayoutDashboard className="w-6 h-6" />
-                        </div>
-                        <h3 className="font-semibold text-slate-900 mb-1">Need Help?</h3>
-                        <p className="text-sm text-slate-500 mb-4">Our support team is available 24/7 to assist you with any issues.</p>
-                        <Link
-                            href="/user/tickets"
-                            className="block w-full py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 hover:text-slate-900 transition-all"
-                        >
-                            Open Ticket
-                        </Link>
-                    </div>
+
                 </div>
             </div>
         </div>

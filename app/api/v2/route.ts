@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Prisma } from '@prisma/client';
 
 export async function POST(req: Request) {
     try {
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
                     include: { category: true }
                 });
 
-                const formattedServices = services.map(s => ({
+                const formattedServices = services.map((s: any) => ({
                     service: s.id,
                     name: s.name,
                     type: s.type,
@@ -105,14 +105,14 @@ export async function POST(req: Request) {
 
                 // Calculate cost
                 const rate = isReseller ? service.price_reseller : service.price_sale;
-                const cost = new Decimal(rate as any).mul(qty).div(1000);
+                const cost = new Prisma.Decimal(rate as any).mul(qty).div(1000);
 
-                if (new Decimal(user.balance).lt(cost)) {
+                if (new Prisma.Decimal(user.balance).lt(cost)) {
                     return NextResponse.json({ error: 'insufficient_balance' }, { status: 400 });
                 }
 
                 // Create Order and Deduct Balance atomically
-                const order = await prisma.$transaction(async (tx) => {
+                const order = await (prisma as any).$transaction(async (tx: any) => {
                     const updatedUser = await tx.user.update({
                         where: { id: user.id },
                         data: { balance: { decrement: cost } }

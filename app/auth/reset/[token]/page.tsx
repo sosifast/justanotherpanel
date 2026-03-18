@@ -23,20 +23,23 @@ export default async function ResetPage({
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-                <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center">
-                    <div className="flex justify-center mb-6 text-red-500">
-                        <XCircle className="w-16 h-16" />
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 relative font-sans">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/10 blur-[120px] rounded-full -mr-64 -mt-64" />
+                <div className="max-w-md w-full relative bg-white/[0.02] backdrop-blur-3xl border border-white/10 p-10 lg:p-12 rounded-[3.5rem] shadow-2xl text-center">
+                    <div className="flex justify-center mb-8">
+                        <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center text-red-500">
+                            <XCircle className="w-8 h-8" />
+                        </div>
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-900 mb-4">Invalid or Expired Link</h1>
-                    <p className="text-slate-500 mb-8">
-                        The password reset link is invalid or has expired. Please request a new one.
+                    <h1 className="text-3xl font-black text-white tracking-tight mb-4">Link Expired.</h1>
+                    <p className="text-slate-400 font-medium mb-8">
+                        The password reset security token is invalid or has expired for your safety.
                     </p>
                     <Link
                         href="/auth/forget"
-                        className="inline-flex items-center justify-center w-full py-3 px-4 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-all"
+                        className="inline-flex items-center justify-center w-full py-4 bg-white text-slate-950 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-slate-100 transition-all"
                     >
-                        Request New Link
+                        Request New Security Link
                     </Link>
                 </div>
             </div>
@@ -44,14 +47,18 @@ export default async function ResetPage({
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
-            <div className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 p-8 relative z-10">
-                <div className="text-center mb-8">
-                    <h1 className="text-2xl font-bold text-slate-900 mb-2">Reset Password</h1>
-                    <p className="text-slate-500 text-sm">Please enter your new password below.</p>
-                </div>
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 relative font-sans overflow-hidden">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full -mr-64 -mt-64" />
+            
+            <div className="max-w-md w-full relative">
+                <div className="bg-white/[0.02] backdrop-blur-3xl border border-white/10 p-10 lg:p-12 rounded-[3.5rem] shadow-2xl animate-in zoom-in-95 duration-500">
+                    <div className="text-center mb-10">
+                        <h1 className="text-3xl font-black text-white tracking-tight mb-3">Reset Security.</h1>
+                        <p className="text-slate-400 font-medium tracking-tight">Enter your new passphrase below to regain access.</p>
+                    </div>
 
-                <ResetClient token={token} />
+                    <ResetClient token={token} />
+                </div>
             </div>
         </div>
     );

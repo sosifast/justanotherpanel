@@ -49,6 +49,8 @@ export default async function AdminSettingsPage() {
         firebase_service_account_json: settings.firebase_service_account_json,
         posthog_api_key: (settings as any).posthog_api_key,
         posthog_host: (settings as any).posthog_host,
+        posthog_personal_api_key: (settings as any).posthog_personal_api_key,
+        posthog_project_id: (settings as any).posthog_project_id,
     } : null;
 
     return <SettingsClient initialSettings={mappedSettings} />;

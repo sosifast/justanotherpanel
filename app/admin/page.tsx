@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import crypto from 'crypto';
-import PostHogAnalytics, { PostHogData } from './PostHogAnalytics';
+import PostHogAnalytics, { PostHogData, PostHogTrendPoint, PostHogBreakdownItem } from './PostHogAnalytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,35 +102,7 @@ async function getCryptomusBalance() {
   }
 }
 
-export interface PostHogTrendPoint {
-    date: string;
-    value: number;
-}
 
-export interface PostHogBreakdownItem {
-    name: string;
-    count: number;
-}
-
-export interface PostHogData {
-    visitors: number;
-    pageviews: number;
-    bounceRate: number;
-    avgSessionDuration: number;
-    trend: PostHogTrendPoint[];
-    topPages: PostHogBreakdownItem[];
-    topReferrers: PostHogBreakdownItem[];
-    countries: PostHogBreakdownItem[];
-    browsers: PostHogBreakdownItem[];
-    devices: PostHogBreakdownItem[];
-    webVitals: {
-        lcp: number;
-        fid: number;
-        cls: number;
-        fcp: number;
-    };
-    domain: string;
-}
 
 async function getPostHogData(): Promise<PostHogData | null> {
   const settingsResults = await prisma.$queryRaw<any[]>`SELECT posthog_api_key, posthog_host, posthog_personal_api_key, posthog_project_id, site_name FROM "setting" LIMIT 1`;
@@ -284,7 +256,7 @@ const AdminDashboard = async () => {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((order) => (
+                {recentOrders.map((order: any) => (
                   <tr
                     key={order.id}
                     className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group"
@@ -334,11 +306,11 @@ const AdminDashboard = async () => {
             {/* Total provider balance sum */}
             <div className="flex items-baseline gap-2 mb-4">
               <h2 className="text-3xl font-bold">
-                ${providers.reduce((acc, curr) => acc + Number(curr.balance), 0).toFixed(2)}
+                ${providers.reduce((acc: number, curr: any) => acc + Number(curr.balance), 0).toFixed(2)}
               </h2>
             </div>
             <div className="space-y-3">
-              {providers.map(provider => (
+              {providers.map((provider: any) => (
                 <div key={provider.id}>
                   <div className="flex justify-between text-xs items-center mb-1">
                     <span className="text-slate-400">{provider.name}</span>
@@ -384,7 +356,7 @@ const AdminDashboard = async () => {
             </h3>
             <div className="space-y-3">
               {/* Low Balance Alerts */}
-              {providers.filter(p => Number(p.balance) < 10).map(p => (
+              {providers.filter((p: any) => Number(p.balance) < 10).map((p: any) => (
                 <div key={p.id} className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
                   <p className="text-xs text-amber-700 font-medium mb-1">Low Balance</p>
                   <p className="text-xs text-amber-600/80">
@@ -392,7 +364,7 @@ const AdminDashboard = async () => {
                   </p>
                 </div>
               ))}
-              {providers.filter(p => Number(p.balance) < 10).length === 0 && (
+              {providers.filter((p: any) => Number(p.balance) < 10).length === 0 && (
                 <p className="text-sm text-slate-500 italic">No active alerts.</p>
               )}
             </div>

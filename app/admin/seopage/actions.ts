@@ -4,13 +4,17 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
 export async function getSeoPageData() {
-    let data = await prisma.seoPage.findFirst();
-    if (!data) {
-        data = await prisma.seoPage.create({
-            data: {}
-        });
+    try {
+        let data = await prisma.seoPage.findFirst();
+        if (!data) {
+            data = await prisma.seoPage.create({ data: {} });
+        }
+        return data;
+    } catch (e) {
+        // During Vercel build/export the DB connection may be temporarily unavailable.
+        // Return an empty object so the page can render without blocking the build.
+        return {};
     }
-    return data;
 }
 
 export async function updateSeoPageData(data: any) {

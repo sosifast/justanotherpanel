@@ -3,7 +3,29 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
 const prismaClientSingleton = () => {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const connectionString = process.env.DATABASE_URL;
+
+  // During Vercel build/export there may be no DB connectivity yet (or network may be slow).
+  // Make sure pg connects quickly so Next.js won't hit the >60s export timeout.
+  const connectionTimeoutMillis = Number(process.env.PG_CONNECTION_TIMEOUT_MS ?? 5000);
+  const statementTimeoutMs = Number(process.env.PG_STATEMENT_TIMEOUT_MS ?? 5000);
+
+  // If DATABASE_URL is not set, fall back to Prisma's default connection handling.
+  // The first query will still fail, but importing this module won't crash the build.
+  if (!connectionString) {
+    return new PrismaClient({
+      log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    });
+  }
+
+  const pool = new Pool({
+    connectionString,
+    connectionTimeoutMillis,
+    // Apply a statement timeout to avoid long-running queries during build.
+    // `options` is passed directly to the pg client as `-c key=value`.
+    options: `-c statement_timeout=${statementTimeoutMs}`,
+  });
+
   const adapter = new PrismaPg(pool);
   return new PrismaClient({
     adapter,

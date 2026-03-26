@@ -21,6 +21,12 @@ const prismaClientSingleton = () => {
   const pool = new Pool({
     connectionString,
     connectionTimeoutMillis,
+    idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
+    max: 20, // Limit connections per serverless function instance
+    // Recommended for cloud providers as some drop unused connections or require SSL
+    ssl: connectionString.includes('localhost') || connectionString.includes('127.0.0.1') 
+      ? false 
+      : { rejectUnauthorized: false },
     // Apply a statement timeout to avoid long-running queries during build.
     // `options` is passed directly to the pg client as `-c key=value`.
     options: `-c statement_timeout=${statementTimeoutMs}`,

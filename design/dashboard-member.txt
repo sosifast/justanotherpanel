@@ -1,0 +1,281 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Home, 
+  History, 
+  Ticket, 
+  User, 
+  Bell, 
+  Wallet, 
+  Plus, 
+  Send, 
+  Smartphone, 
+  Zap, 
+  Globe, 
+  ShoppingBag,
+  ChevronRight,
+  ArrowUpRight,
+  ArrowDownLeft,
+  CreditCard,
+  Gift,
+  Search
+} from 'lucide-react';
+
+const App = () => {
+  const [activeTab, setActiveTab] = useState('Home');
+  const [activeSlider, setActiveSlider] = useState(0);
+  const [historyType, setHistoryType] = useState('Order');
+
+  // Data Slider dengan URL Gambar Spesifik
+  const mainBanners = [
+    { 
+      id: 1, 
+      image: 'https://a.m.dana.id/danaweb/promo/1721186410-110624-EIS284-POSTPAID_ELECTRICITY_CAMPAIGN-Web_Banner-Cover.png',
+      title: 'Promo Listrik'
+    },
+    { 
+      id: 2, 
+      image: 'https://www.tanamduit.com/wp-content/uploads/2026/03/promo-berkah-ramadan-dari-trimegah-blog-banner.png',
+      title: 'Berkah Ramadan'
+    }
+  ];
+
+  const services = [
+    { icon: <Smartphone size={24} />, label: 'Pulsa', color: 'bg-emerald-100 text-emerald-600' },
+    { icon: <Zap size={24} />, label: 'PLN', color: 'bg-emerald-100 text-emerald-600' },
+    { icon: <Globe size={24} />, label: 'Internet', color: 'bg-emerald-100 text-emerald-600' },
+    { icon: <ShoppingBag size={24} />, label: 'E-Wallet', color: 'bg-emerald-100 text-emerald-600' },
+    { icon: <Gift size={24} />, label: 'Voucher', color: 'bg-emerald-100 text-emerald-600' },
+    { icon: <CreditCard size={24} />, label: 'Angsuran', color: 'bg-emerald-100 text-emerald-600' },
+    { icon: <Ticket size={24} />, label: 'Hiburan', color: 'bg-emerald-100 text-emerald-600' },
+    { icon: <Plus size={24} />, label: 'Lainnya', color: 'bg-emerald-50 text-emerald-400' },
+  ];
+
+  const promos = [
+    { id: 1, title: 'Spotify Premium', price: 'Rp 20.000', tag: 'Hot' },
+    { id: 2, title: 'Mobile Legends', price: 'Rp 15.000', tag: 'Diskon' },
+    { id: 3, title: 'Netflix 1 Bulan', price: 'Rp 35.000', tag: 'Murah' },
+  ];
+
+  const historyData = {
+    Order: [
+      { id: 'ORD-9921', title: 'Pulsa Telkomsel 50rb', date: '22 Okt, 08:00', amount: 'Rp 51.200' },
+      { id: 'ORD-9920', title: 'Token PLN 100rb', date: '21 Okt, 19:30', amount: 'Rp 102.000' },
+    ],
+    Deposit: [
+      { id: 'DEP-1102', title: 'Isi Saldo QRIS', date: '22 Okt, 07:15', amount: 'Rp 200.000' },
+      { id: 'DEP-1101', title: 'Isi Saldo Bank BCA', date: '20 Okt, 10:00', amount: 'Rp 500.000' },
+    ]
+  };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlider((prev) => (prev + 1) % mainBanners.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-white text-slate-800 font-sans pb-28 select-none">
+      
+      {/* Header */}
+      <div className="p-6 flex justify-between items-center bg-white border-b border-emerald-50 sticky top-0 z-40">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500 flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-200 text-xs">
+            JD
+          </div>
+          <div>
+            <h2 className="font-bold text-sm text-slate-900">John Doe</h2>
+            <p className="text-emerald-600 text-[10px] font-bold uppercase tracking-widest">Premium Member</p>
+          </div>
+        </div>
+        <div className="flex space-x-2">
+          <button className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
+            <Search size={20} />
+          </button>
+          <button className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600 relative">
+            <Bell size={20} />
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+          </button>
+        </div>
+      </div>
+
+      {/* Balance Card */}
+      <div className="px-6 mt-6">
+        <div className="bg-emerald-600 p-6 rounded-[2.5rem] shadow-xl shadow-emerald-100 text-white relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-emerald-100 text-[10px] font-bold uppercase tracking-widest">Saldo Aktif</span>
+              <Wallet size={16} className="text-emerald-100" />
+            </div>
+            <h1 className="text-3xl font-black mb-6 tracking-tight">Rp 1.420.500</h1>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <button className="bg-white/20 backdrop-blur-sm py-3.5 rounded-2xl flex items-center justify-center space-x-2 font-bold text-sm active:scale-95 transition-transform">
+                <Plus size={18} />
+                <span>Isi Saldo</span>
+              </button>
+              <button className="bg-white text-emerald-600 py-3.5 rounded-2xl flex items-center justify-center space-x-2 font-bold text-sm shadow-sm active:scale-95 transition-transform">
+                <Send size={18} />
+                <span>Transfer</span>
+              </button>
+            </div>
+          </div>
+          {/* Ornamen */}
+          <div className="absolute -bottom-8 -right-8 w-36 h-36 bg-emerald-500 rounded-full opacity-40"></div>
+          <div className="absolute top-[-20%] left-[-10%] w-24 h-24 bg-emerald-700 rounded-full opacity-20"></div>
+        </div>
+      </div>
+
+      {/* Image Slider */}
+      <div className="px-6 mt-8">
+        <div className="overflow-hidden rounded-3xl border border-emerald-50 shadow-sm relative h-40">
+          <div 
+            className="flex h-full transition-transform duration-700 ease-in-out" 
+            style={{ transform: `translateX(-${activeSlider * 100}%)` }}
+          >
+            {mainBanners.map((banner) => (
+              <div key={banner.id} className="min-w-full h-full">
+                <img 
+                  src={banner.image} 
+                  alt={banner.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.target.src = 'https://via.placeholder.com/400x200?text=Promo+Image'; }}
+                />
+              </div>
+            ))}
+          </div>
+          {/* Indicators */}
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center space-x-1.5">
+            {mainBanners.map((_, i) => (
+              <div 
+                key={i} 
+                className={`h-1.5 rounded-full transition-all duration-300 ${activeSlider === i ? 'w-6 bg-white shadow-sm' : 'w-1.5 bg-white/50'}`}
+              ></div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Services Grid */}
+      <div className="px-6 mt-8">
+        <h3 className="font-bold text-[11px] text-slate-400 uppercase tracking-[0.2em] mb-4">Layanan Utama</h3>
+        <div className="grid grid-cols-4 gap-y-6">
+          {services.map((item, i) => (
+            <div key={i} className="flex flex-col items-center group cursor-pointer active:scale-90 transition-transform">
+              <div className={`w-14 h-14 ${item.color} rounded-2xl flex items-center justify-center mb-2 shadow-sm`}>
+                {item.icon}
+              </div>
+              <span className="text-[10px] font-bold text-slate-600 text-center">{item.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Promo Slide */}
+      <div className="mt-10">
+        <div className="px-6 flex justify-between items-center mb-4">
+          <h3 className="font-bold text-[11px] text-slate-400 uppercase tracking-[0.2em]">Promo Pilihan</h3>
+          <button className="text-emerald-600 text-xs font-bold flex items-center">
+            Semua <ChevronRight size={14} />
+          </button>
+        </div>
+        <div className="flex space-x-4 overflow-x-auto px-6 no-scrollbar pb-2 snap-x">
+          {promos.map((p) => (
+            <div key={p.id} className="min-w-[160px] bg-emerald-50/30 border border-emerald-100/50 p-4 rounded-[2rem] snap-start">
+              <span className="text-[9px] font-black uppercase text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                {p.tag}
+              </span>
+              <h4 className="mt-3 font-bold text-sm text-slate-800 leading-snug line-clamp-1">{p.title}</h4>
+              <p className="mt-2 text-emerald-600 font-black text-xs">{p.price}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* History Tabs & List */}
+      <div className="px-6 mt-10">
+        <div className="flex items-center space-x-6 mb-5 border-b border-emerald-50">
+          <button 
+            onClick={() => setHistoryType('Order')}
+            className={`pb-3 text-xs font-bold transition-all relative ${historyType === 'Order' ? 'text-emerald-600' : 'text-slate-400'}`}
+          >
+            Pesanan
+            {historyType === 'Order' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></div>}
+          </button>
+          <button 
+            onClick={() => setHistoryType('Deposit')}
+            className={`pb-3 text-xs font-bold transition-all relative ${historyType === 'Deposit' ? 'text-emerald-600' : 'text-slate-400'}`}
+          >
+            Deposit
+            {historyType === 'Deposit' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></div>}
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {historyData[historyType].map((h) => (
+            <div key={h.id} className="p-4 bg-white border border-emerald-50 rounded-2xl flex justify-between items-center shadow-sm">
+              <div className="flex items-center space-x-3">
+                <div className={`p-2.5 rounded-xl ${historyType === 'Order' ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                  {historyType === 'Order' ? <ArrowUpRight size={18} /> : <ArrowDownLeft size={18} />}
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800">{h.title}</h4>
+                  <p className="text-[9px] text-slate-400 font-medium mt-0.5">{h.date} • {h.id}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={`text-xs font-black ${historyType === 'Deposit' ? 'text-emerald-600' : 'text-slate-800'}`}>
+                  {historyType === 'Deposit' ? '+' : '-'}{h.amount}
+                </p>
+                <div className="flex items-center justify-end mt-0.5 space-x-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                  <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-tighter">Berhasil</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer Tab Menu */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-emerald-50/50 px-8 py-4 flex justify-between items-center z-50 rounded-t-[2rem]">
+        <button 
+          onClick={() => setActiveTab('Home')}
+          className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'Home' ? 'text-emerald-600' : 'text-slate-400'}`}
+        >
+          <Home size={22} />
+          <span className="text-[10px] font-bold">Beranda</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('History')}
+          className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'History' ? 'text-emerald-600' : 'text-slate-400'}`}
+        >
+          <History size={22} />
+          <span className="text-[10px] font-bold">Riwayat</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('Ticket')}
+          className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'Ticket' ? 'text-emerald-600' : 'text-slate-400'}`}
+        >
+          <Ticket size={22} />
+          <span className="text-[10px] font-bold">Tiket</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('Account')}
+          className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'Account' ? 'text-emerald-600' : 'text-slate-400'}`}
+        >
+          <User size={22} />
+          <span className="text-[10px] font-bold">Akun</span>
+        </button>
+      </div>
+
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
+
+    </div>
+  );
+};
+
+export default App;

@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-    Wallet,
-    CreditCard,
-    Bitcoin,
-    Upload,
-    CheckCircle,
-    Clock,
-    Info,
-    Copy,
-    ExternalLink,
-    ChevronRight,
-    Loader2
+import Link from 'next/link';
+import { 
+  ChevronLeft, 
+  Plus, 
+  QrCode, 
+  Building2, 
+  SmartphoneNfc, 
+  CheckCircle2, 
+  ArrowUpRight,
+  Info,
+  Loader2,
+  Bitcoin,
+  CreditCard
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -26,75 +27,61 @@ type Gateway = {
 
 const AddFundsClient = ({ gateways, userBalance }: { gateways: Gateway[], userBalance: number }) => {
     const router = useRouter();
-    const [method, setMethod] = useState<number | null>(null);
-    const [amount, setAmount] = useState('');
+    const [depositAmount, setDepositAmount] = useState('');
+    const [selectedMethodId, setSelectedMethodId] = useState<number | null>(gateways.length > 0 ? gateways[0].id : null);
     const [loading, setLoading] = useState(false);
 
-    const quickAmounts = [10, 25, 50, 100, 250, 500];
+    const quickAmounts = ['10', '25', '50', '100', '250', '500'];
 
-    const selectedGateway = gateways.find(g => g.id === method);
-
-    const getFee = (gateway: Gateway) => {
-        const feeConfig = gateway.api_config?.fee || '0';
-        if (feeConfig.endsWith('%')) {
-            const percentage = parseFloat(feeConfig);
-            return (parseFloat(amount || '0') * percentage) / 100;
-        }
-        return parseFloat(feeConfig);
-    };
-
-    const fee = selectedGateway ? getFee(selectedGateway) : 0;
-    const total = parseFloat(amount || '0') + fee;
+    const selectedGateway = gateways.find(g => g.id === selectedMethodId);
 
     const getIcon = (provider: string) => {
         switch (provider) {
-            case 'PAYPAL': return '💳';
-            case 'CRYPTOMUS': return '₿';
-            case 'MANUAL': return '🏦';
-            default: return '💰';
+            case 'PAYPAL': return <SmartphoneNfc size={20} />;
+            case 'CRYPTOMUS': return <QrCode size={20} />;
+            case 'MANUAL': return <Building2 size={20} />;
+            default: return <Plus size={20} />;
         }
     };
 
-    const getDescription = (provider: string) => {
+    const getDesc = (provider: string) => {
         switch (provider) {
-            case 'PAYPAL': return 'Pay with PayPal balance or card';
-            case 'CRYPTOMUS': return 'Bitcoin, USDT, ETH & more';
-            case 'MANUAL': return 'Bank transfer or other methods';
-            default: return 'Add funds instantly';
+            case 'PAYPAL': return 'Pay with Cards or Balance';
+            case 'CRYPTOMUS': return 'Crypto (USDT, BTC, etc.)';
+            case 'MANUAL': return 'Bank Transfer / Manual';
+            default: return 'Instant Deposit';
         }
     };
 
-    const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text);
-        toast.success('Copied to clipboard');
+    const handleAmountClick = (amount: string) => {
+        setDepositAmount(amount);
     };
 
     const handleSubmit = async () => {
-        if (!selectedGateway || !amount) return;
+        if (!selectedGateway || !depositAmount) return;
 
         setLoading(true);
         try {
             if (selectedGateway.provider === 'MANUAL') {
-                // For manual, we might just create a pending deposit or show instructions + generic success?
-                // Usually manual requires submitting proof. For now, let's create a "Pending" deposit and tell user to contact support/wait.
                 const res = await fetch('/api/user/deposits/manual', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         gatewayId: selectedGateway.id,
-                        amount: parseFloat(amount)
+                        amount: parseFloat(depositAmount)
                     })
                 });
                 if (!res.ok) throw new Error('Failed to create deposit request');
                 toast.success('Deposit request created. Please follow instructions.');
-                // Maybe redirect to history or stay here?
+                // Maybe redirect to history or success page?
+                router.push('/user/history/order');
             } else if (selectedGateway.provider === 'PAYPAL') {
                 const res = await fetch('/api/user/deposits/paypal', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         gatewayId: selectedGateway.id,
-                        amount: parseFloat(amount)
+                        amount: parseFloat(depositAmount)
                     })
                 });
                 const data = await res.json();
@@ -109,7 +96,7 @@ const AddFundsClient = ({ gateways, userBalance }: { gateways: Gateway[], userBa
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         gatewayId: selectedGateway.id,
-                        amount: parseFloat(amount)
+                        amount: parseFloat(depositAmount)
                     })
                 });
                 const data = await res.json();
@@ -127,241 +114,154 @@ const AddFundsClient = ({ gateways, userBalance }: { gateways: Gateway[], userBa
         }
     };
 
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        }).format(amount);
+    };
+
     return (
-        <div>
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-slate-900">Add Funds</h1>
-                <p className="text-slate-500">Deposit money to your account balance</p>
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-8">
-                {/* Main Form */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Current Balance */}
-                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-6 text-white flex items-center justify-between">
-                        <div>
-                            <p className="text-slate-300 text-sm mb-1">Current Balance</p>
-                            <p className="text-3xl font-bold">${userBalance.toFixed(2)}</p>
-                        </div>
-                        <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center">
-                            <Wallet className="w-7 h-7 text-white" />
-                        </div>
-                    </div>
-
-                    {/* Payment Methods */}
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                            <h2 className="font-semibold text-slate-900">Select Payment Method</h2>
-                        </div>
-                        <div className="p-6">
-                            <div className="grid gap-4">
-                                {gateways.map((gw) => (
-                                    <button
-                                        key={gw.id}
-                                        onClick={() => setMethod(gw.id)}
-                                        className={`w-full p-4 rounded-xl border-2 text-left transition-all ${method === gw.id
-                                            ? 'border-blue-500 bg-blue-50/50'
-                                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-2xl">
-                                                {getIcon(gw.provider)}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <h3 className="font-semibold text-slate-900">{gw.provider === 'MANUAL' ? (gw.api_config?.bankName || 'Manual Transfer') : (gw.provider.charAt(0) + gw.provider.slice(1).toLowerCase())}</h3>
-                                                    {method === gw.id && <CheckCircle className="w-4 h-4 text-blue-600" />}
-                                                </div>
-                                                <p className="text-sm text-slate-500">{getDescription(gw.provider)}</p>
-                                            </div>
-                                            <div className="text-right hidden sm:block">
-                                                <p className="text-xs text-slate-400">Fee: <span className="font-medium text-slate-700">{gw.api_config?.fee || '0'}%</span></p>
-                                                <p className="text-xs text-slate-400">Min: <span className="font-medium text-slate-700">${gw.min_deposit}</span></p>
-                                            </div>
-                                            <ChevronRight className="w-5 h-5 text-slate-300" />
-                                        </div>
-                                    </button>
-                                ))}
-                                {gateways.length === 0 && (
-                                    <p className="text-center text-slate-500 py-4">No payment methods available.</p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Amount */}
-                    {selectedGateway && (
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                                <h2 className="font-semibold text-slate-900">Enter Amount</h2>
-                            </div>
-                            <div className="p-6 space-y-6">
-                                {/* Amount Input */}
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">Amount (USD)</label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-3.5 text-slate-400 font-medium">$</span>
-                                        <input
-                                            type="number"
-                                            value={amount}
-                                            onChange={(e) => setAmount(e.target.value)}
-                                            placeholder={`Min: $${selectedGateway.min_deposit}`}
-                                            className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-lg font-semibold"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Quick Amounts */}
-                                <div>
-                                    <p className="text-sm text-slate-500 mb-3">Quick select</p>
-                                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                                        {quickAmounts.map((qa) => (
-                                            <button
-                                                key={qa}
-                                                onClick={() => setAmount(qa.toString())}
-                                                className={`py-2.5 rounded-lg text-sm font-medium transition-colors ${amount === qa.toString()
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                                    }`}
-                                            >
-                                                ${qa}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Summary */}
-                                {parseFloat(amount) > 0 && (
-                                    <div className="bg-slate-50 rounded-xl p-4 space-y-3">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-slate-500">Deposit Amount</span>
-                                            <span className="text-slate-900 font-medium">${parseFloat(amount).toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-slate-500">Processing Fee ({selectedGateway.api_config?.fee || '0'}%)</span>
-                                            <span className="text-slate-900 font-medium">${fee.toFixed(2)}</span>
-                                        </div>
-                                        <div className="border-t border-slate-200 pt-3 flex justify-between">
-                                            <span className="text-slate-700 font-medium">You will pay</span>
-                                            <span className="text-lg text-slate-900 font-bold">${total.toFixed(2)}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Submit */}
-                                {selectedGateway.provider !== 'MANUAL' && (
-                                    <button
-                                        onClick={handleSubmit}
-                                        disabled={loading || !amount || parseFloat(amount) < selectedGateway.min_deposit}
-                                        className="w-full py-3.5 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                                            <>
-                                                {selectedGateway.provider === 'PAYPAL' && <CreditCard className="w-4 h-4" />}
-                                                {selectedGateway.provider === 'CRYPTOMUS' && <Bitcoin className="w-4 h-4" />}
-                                                Proceed to Payment
-                                            </>
-                                        )}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Manual Transfer Instructions */}
-                    {selectedGateway?.provider === 'MANUAL' && (
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                                <h2 className="font-semibold text-slate-900">Bank Transfer Details</h2>
-                            </div>
-                            <div className="p-6 space-y-4">
-                                <div className="bg-slate-50 rounded-lg p-4">
-                                    <div className="grid gap-4">
-                                        {selectedGateway.api_config?.bankName && (
-                                            <div className="flex justify-between items-center">
-                                                <div>
-                                                    <p className="text-xs text-slate-400 uppercase">Bank Name</p>
-                                                    <p className="font-medium text-slate-900">{selectedGateway.api_config.bankName}</p>
-                                                </div>
-                                                <button onClick={() => handleCopy(selectedGateway.api_config.bankName)} className="p-2 hover:bg-slate-200 rounded-lg transition-colors">
-                                                    <Copy className="w-4 h-4 text-slate-500" />
-                                                </button>
-                                            </div>
-                                        )}
-                                        {selectedGateway.api_config?.accountNumber && (
-                                            <div className="flex justify-between items-center">
-                                                <div>
-                                                    <p className="text-xs text-slate-400 uppercase">Account Number</p>
-                                                    <p className="font-medium text-slate-900 font-mono">{selectedGateway.api_config.accountNumber}</p>
-                                                </div>
-                                                <button onClick={() => handleCopy(selectedGateway.api_config.accountNumber)} className="p-2 hover:bg-slate-200 rounded-lg transition-colors">
-                                                    <Copy className="w-4 h-4 text-slate-500" />
-                                                </button>
-                                            </div>
-                                        )}
-                                        {selectedGateway.api_config?.accountHolder && (
-                                            <div className="flex justify-between items-center">
-                                                <div>
-                                                    <p className="text-xs text-slate-400 uppercase">Account Holder</p>
-                                                    <p className="font-medium text-slate-900">{selectedGateway.api_config.accountHolder}</p>
-                                                </div>
-                                                <button onClick={() => handleCopy(selectedGateway.api_config.accountHolder)} className="p-2 hover:bg-slate-200 rounded-lg transition-colors">
-                                                    <Copy className="w-4 h-4 text-slate-500" />
-                                                </button>
-                                            </div>
-                                        )}
-                                        {selectedGateway.api_config?.instructions && (
-                                            <div className="pt-2 border-t border-slate-200 mt-2">
-                                                <p className="text-xs text-slate-400 uppercase mb-1">Instructions</p>
-                                                <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedGateway.api_config.instructions}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="bg-amber-50 border border-amber-100 rounded-lg p-4">
-                                    <div className="flex gap-3">
-                                        <Info className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                                        <p className="text-sm text-amber-700">
-                                            After making the transfer, click below to confirm. Your balance will be credited after verification.
-                                        </p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={handleSubmit}
-                                    disabled={loading || !amount || parseFloat(amount) < selectedGateway.min_deposit}
-                                    className="w-full py-3.5 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                                        <>
-                                            <Upload className="w-4 h-4" />
-                                            Confirm Transfer
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    )}
+        <div className="min-h-screen bg-white text-slate-800 font-sans pb-32 select-none mx-auto w-full md:max-w-3xl lg:max-w-4xl shadow-2xl relative transition-all duration-300">
+          
+          {/* Header */}
+          <div className="p-6 flex items-center bg-white sticky top-0 z-40 border-b border-emerald-50">
+            <Link href="/user" className="p-2 bg-emerald-50 rounded-xl text-emerald-600 active:scale-90 transition-transform">
+              <ChevronLeft size={24} />
+            </Link>
+            <h2 className="ml-4 text-xl font-black text-slate-900 tracking-tight uppercase italic">DEPOSIT</h2>
+          </div>
+    
+          <div className="p-6 space-y-8">
+            
+            {/* Current Balance Info */}
+            <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-2xl flex items-center justify-between shadow-sm">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-emerald-500 rounded-xl text-white shadow-lg shadow-emerald-200">
+                  <Plus size={16} strokeWidth={3} />
                 </div>
-
-                {/* Sidebar */}
-                <div className="space-y-6">
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                        <div className="flex gap-3">
-                            <Info className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                            <div className="text-sm">
-                                <p className="font-medium text-blue-800 mb-1">Need Help?</p>
-                                <p className="text-blue-600 mb-3">Having trouble adding funds? Our support team is here to assist.</p>
-                                <a href="/user/tickets" className="inline-flex items-center gap-1 text-blue-700 font-medium hover:underline">
-                                    Open a Ticket <ExternalLink className="w-3 h-3" />
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Available Balance</p>
+                  <p className="text-sm font-black text-slate-800 tracking-tight">{formatCurrency(userBalance)}</p>
                 </div>
+              </div>
+              <Info size={18} className="text-emerald-300" />
             </div>
+    
+            {/* Amount Input Section */}
+            <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="bg-white border border-emerald-50 rounded-[2rem] p-8 shadow-xl shadow-emerald-50/50">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-6 text-center">
+                  Set Your Deposit Amount
+                </label>
+                
+                <div className="flex items-center justify-center border-b-2 border-emerald-500/30 pb-4 mb-8 focus-within:border-emerald-500 transition-colors">
+                  <span className="text-3xl font-black text-emerald-600 mr-3">$</span>
+                  <input 
+                    type="number"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-transparent text-4xl font-black outline-none placeholder:text-emerald-100 text-emerald-600 selection:bg-emerald-100"
+                  />
+                </div>
+    
+                {/* Quick Select Grid */}
+                <div className="grid grid-cols-3 gap-3">
+                  {quickAmounts.map((amt) => (
+                    <button 
+                      key={amt}
+                      onClick={() => handleAmountClick(amt)}
+                      className={`py-3.5 rounded-2xl text-[11px] font-black transition-all border ${
+                        depositAmount === amt 
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xl shadow-emerald-200 scale-[1.05]' 
+                        : 'bg-emerald-50 text-emerald-600 border-emerald-50 hover:bg-emerald-100 hover:border-emerald-100'
+                      }`}
+                    >
+                      {parseInt(amt).toLocaleString('en-US')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+    
+            {/* Payment Methods Section */}
+            <section className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+              <h3 className="font-black text-[11px] text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">
+                Preferred Gateway
+              </h3>
+              <div className="space-y-4 pb-8">
+                {gateways.map((method) => (
+                  <button 
+                    key={method.id}
+                    onClick={() => setSelectedMethodId(method.id)}
+                    className={`w-full p-5 rounded-[2rem] flex items-center justify-between border transition-all duration-300 ${
+                      selectedMethodId === method.id 
+                      ? 'bg-white border-emerald-500 shadow-xl ring-1 ring-emerald-500 scale-[1.02]' 
+                      : 'bg-white border-emerald-50 hover:bg-emerald-50/50 hover:border-emerald-100'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className={`p-4 rounded-2xl transition-all duration-500 ${selectedMethodId === method.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'bg-emerald-50 text-emerald-600'}`}>
+                        {getIcon(method.provider)}
+                      </div>
+                      <div className="text-left">
+                        <h4 className="text-sm font-black text-slate-800">{method.provider === 'MANUAL' ? (method.api_config?.bankName || 'Direct Transfer') : (method.provider.charAt(0) + method.provider.slice(1).toLowerCase())}</h4>
+                        <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wide opacity-70">{getDesc(method.provider)}</p>
+                      </div>
+                    </div>
+                    {selectedMethodId === method.id && (
+                      <div className="bg-emerald-500 rounded-full p-1 animate-in zoom-in duration-300 shadow-md">
+                        <CheckCircle2 size={18} className="text-white" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+                {gateways.length === 0 && (
+                  <div className="text-center py-10 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                    <Info className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Active Gateways</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+    
+          {/* Fixed Bottom CTA Container */}
+          <div className="fixed bottom-0 left-0 right-0 max-w-3xl lg:max-w-4xl mx-auto bg-white/80 backdrop-blur-xl border-t border-emerald-50/50 p-6 z-50 rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
+            <button 
+              onClick={handleSubmit}
+              disabled={loading || !depositAmount || (selectedGateway && parseFloat(depositAmount) < selectedGateway.min_deposit)}
+              className={`w-full py-5 rounded-[2rem] font-black text-sm transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl ${
+                depositAmount && (!selectedGateway || parseFloat(depositAmount) >= selectedGateway.min_deposit)
+                ? 'bg-emerald-600 text-white shadow-emerald-200 active:scale-[0.97]' 
+                : 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none'
+              }`}
+            >
+              {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
+                <>
+                  <span>Initialize Deposit</span>
+                  <ArrowUpRight size={20} strokeWidth={3} />
+                </>
+              )}
+            </button>
+            
+            <p className="text-center text-[10px] text-slate-400 mt-4 font-bold uppercase tracking-widest leading-relaxed px-4 opacity-60">
+              Processing <span className="text-emerald-600">1-5 minutes</span>. Security verified.
+            </p>
+          </div>
+    
+          {/* Hide Spin Buttons */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            input::-webkit-outer-spin-button,
+            input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+            input[type=number] { -moz-appearance: textfield; }
+            .no-scrollbar::-webkit-scrollbar { display: none; }
+          `}} />
+    
         </div>
-    );
+      );
 };
 
 export default AddFundsClient;

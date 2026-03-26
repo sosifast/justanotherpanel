@@ -229,6 +229,10 @@ const UserLayoutClient = ({ children, initialSettings }: UserLayoutClientProps) 
         }
     };
 
+    if (pathname === '/user' || pathname === '/user/add-funds' || pathname.startsWith('/user/history') || pathname === '/user/account' || pathname === '/user/tickets') {
+        return <>{children}</>;
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-500 selection:text-white pb-20">
             <div className="fixed inset-0 z-0 pointer-events-none">

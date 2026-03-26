@@ -1,30 +1,41 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-    User,
-    Mail,
-    Phone,
-    Lock,
-    Bell,
-    Shield,
-    Eye,
-    EyeOff,
-    Save,
-    Camera,
-    Key,
-    Globe,
-    CheckCircle,
-    AlertCircle,
-    Copy,
-    Loader2,
-    Monitor,
-    RefreshCw,
-    Trash2,
-    X
+import { 
+  ChevronLeft, 
+  User, 
+  Settings, 
+  ShieldCheck, 
+  Bell, 
+  Globe, 
+  HelpCircle, 
+  ShieldAlert, 
+  LogOut, 
+  ChevronRight,
+  BadgeCheck,
+  Smartphone,
+  CreditCard,
+  MapPin,
+  Camera,
+  Save,
+  Loader2,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Key,
+  CheckCircle,
+  Copy,
+  ArrowUpRight,
+  Info,
+  RotateCcw,
+  CircleDollarSign,
+  TrendingUp,
+  Headset
 } from 'lucide-react';
-import toast from 'react-hot-toast';
-import ImageUpload from '@/components/ui/ImageUpload';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { toast } from 'react-hot-toast';
 
 type UserProfile = {
     id: number;
@@ -37,17 +48,6 @@ type UserProfile = {
     created_at: string;
 };
 
-type Session = {
-    id: number;
-    ip_address: string | null;
-    user_agent: string | null;
-    device: string | null;
-    location: string | null;
-    last_active: string;
-    created_at: string;
-    is_current: boolean;
-};
-
 type NotificationPrefs = {
     email_order_updates: boolean;
     email_deposit_updates: boolean;
@@ -55,35 +55,29 @@ type NotificationPrefs = {
     email_marketing: boolean;
 };
 
-const AccountPage = () => {
-    const [activeTab, setActiveTab] = useState('profile');
-    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-    const [showNewPassword, setShowNewPassword] = useState(false);
-    const [copiedKey, setCopiedKey] = useState(false);
+const AccountView = () => {
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [subView, setSubView] = useState<'menu' | 'profile' | 'security' | 'notifications' | 'reseller'>('menu');
 
-    // Real profile data from API
+    // Profile State
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [profileForm, setProfileForm] = useState({ name: '', username: '' });
 
-    // Profile form state
-    const [profile, setProfile] = useState({
-        name: '',
-        email: '',
-        username: '',
-        phone: '',
-        skype: '',
-        timezone: 'UTC-5',
-    });
+    // Security State
+    const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [apiKey, setApiKey] = useState<string | null>(null);
+    const [hasApiKey, setHasApiKey] = useState(false);
+    const [showApiKey, setShowApiKey] = useState(false);
 
-    // Password form state
-    const [passwords, setPasswords] = useState({
-        current: '',
-        new: '',
-        confirm: '',
-    });
+    // Reseller State
+    const [isReseller, setIsReseller] = useState(false);
+    const [resellerFee, setResellerFee] = useState(0);
 
-    // Real notification settings from API
+    // Notifications State
     const [notifications, setNotifications] = useState<NotificationPrefs>({
         email_order_updates: true,
         email_deposit_updates: true,
@@ -91,154 +85,43 @@ const AccountPage = () => {
         email_marketing: false,
     });
 
-    // Real sessions from API
-    const [sessions, setSessions] = useState<Session[]>([]);
-
-    // Real API key from API
-    const [apiKey, setApiKey] = useState<string | null>(null);
-    const [maskedApiKey, setMaskedApiKey] = useState<string | null>(null);
-    const [hasApiKey, setHasApiKey] = useState(false);
-    const [showApiKey, setShowApiKey] = useState(false);
-
-    // Reseller state
-    const [isReseller, setIsReseller] = useState(false);
-    const [resellerData, setResellerData] = useState<any>(null);
-    const [resellerFee, setResellerFee] = useState(0);
-    const [registering, setRegistering] = useState(false);
-
-    // Profile picture upload state
-    const [showUploadModal, setShowUploadModal] = useState(false);
-    const [uploadingImage, setUploadingImage] = useState(false);
-
-    // Account stats
-    const [orderCount, setOrderCount] = useState<number | null>(null);
-
-    // Webhook state
-    const [webhookUrl, setWebhookUrl] = useState('');
-    const [savingWebhook, setSavingWebhook] = useState(false);
-
     useEffect(() => {
-        fetchProfile();
-        fetchSessions();
-        fetchNotifications();
-        fetchApiKey();
-        fetchResellerStatus();
-        fetchStats();
+        fetchData();
     }, []);
 
-    const fetchProfile = async () => {
+    const fetchData = async () => {
         try {
-            const response = await fetch('/api/user/profile');
-            const data = await response.json();
-            if (response.ok) {
+            setLoading(true);
+            const [profileRes, notifyRes, apiRes, resellerRes] = await Promise.all([
+                fetch('/api/user/profile'),
+                fetch('/api/user/notifications'),
+                fetch('/api/user/apikey'),
+                fetch('/api/user/reseller/register')
+            ]);
+
+            if (profileRes.ok) {
+                const data = await profileRes.json();
                 setUserProfile(data.user);
-                setProfile({
-                    name: data.user.full_name,
-                    email: data.user.email,
-                    username: data.user.username,
-                    phone: '',
-                    skype: '',
-                    timezone: 'UTC-5'
-                });
-                setWebhookUrl(data.user.webhook_url || '');
+                setProfileForm({ name: data.user.full_name, username: data.user.username });
             }
-        } catch (error) {
-            console.error('Failed to load profile');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchStats = async () => {
-        try {
-            const res = await fetch('/api/user/stats');
-            if (res.ok) {
-                const data = await res.json();
-                setOrderCount(data.order_count);
-                // Update balance in userProfile if already loaded
-                setUserProfile(prev => prev ? { ...prev, balance: data.balance } : prev);
+            if (notifyRes.ok) {
+                const data = await notifyRes.json();
+                setNotifications(data.preferences);
             }
-        } catch (e) {
-            console.error('Failed to load stats');
-        }
-    };
-
-    const fetchSessions = async () => {
-        try {
-            const response = await fetch('/api/user/sessions');
-            const data = await response.json();
-            if (response.ok) {
-                setSessions(data.sessions);
-            }
-        } catch (error) {
-            console.error('Failed to load sessions');
-        }
-    };
-
-    const fetchNotifications = async () => {
-        try {
-            const response = await fetch('/api/user/notifications');
-            const data = await response.json();
-            if (response.ok) {
-                setNotifications({
-                    email_order_updates: data.preferences.email_order_updates,
-                    email_deposit_updates: data.preferences.email_deposit_updates,
-                    email_ticket_updates: data.preferences.email_ticket_updates,
-                    email_marketing: data.preferences.email_marketing
-                });
-            }
-        } catch (error) {
-            console.error('Failed to load notifications');
-        }
-    };
-
-    const fetchApiKey = async () => {
-        try {
-            const response = await fetch('/api/user/apikey');
-            const data = await response.json();
-            if (response.ok) {
+            if (apiRes.ok) {
+                const data = await apiRes.json();
                 setApiKey(data.apikey);
-                setMaskedApiKey(data.masked_apikey);
                 setHasApiKey(data.has_apikey);
             }
-        } catch (error) {
-            console.error('Failed to load API key');
-        }
-    };
-
-    const handleUpdatePassword = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (passwords.new !== passwords.confirm) {
-            toast.error('New passwords do not match');
-            return;
-        }
-
-        if (passwords.new.length < 6) {
-            toast.error('Password must be at least 6 characters');
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/user/change-password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    currentPassword: passwords.current,
-                    newPassword: passwords.new
-                })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                toast.success('Password updated successfully');
-                setPasswords({ current: '', new: '', confirm: '' });
-            } else {
-                toast.error(data.error || 'Failed to update password');
+            if (resellerRes.ok) {
+                const data = await resellerRes.json();
+                setIsReseller(data.is_reseller);
+                setResellerFee(parseFloat(data.reseller_fee));
             }
-        } catch (error) {
-            toast.error('Failed to update password');
+        } catch (e) {
+            toast.error('Failed to sync account metrics');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -249,21 +132,43 @@ const AccountPage = () => {
             const response = await fetch('/api/user/profile', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    full_name: profile.name,
-                    username: profile.username
-                })
+                body: JSON.stringify({ full_name: profileForm.name })
             });
-            const data = await response.json();
-
             if (response.ok) {
+                const data = await response.json();
                 setUserProfile(data.user);
-                toast.success('Profile updated successfully!');
+                toast.success('Identity protocols updated');
+                setSubView('menu');
             } else {
-                toast.error(data.error || 'Failed to update profile');
+                toast.error('Failed to update identity record');
             }
-        } catch (error) {
-            toast.error('Failed to update profile');
+        } catch (e) {
+            toast.error('Temporal sync failure');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleUpdatePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (passwords.new !== passwords.confirm) return toast.error('Encryption keys mismatch');
+        try {
+            setSaving(true);
+            const res = await fetch('/api/user/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword: passwords.current, newPassword: passwords.new })
+            });
+            if (res.ok) {
+                toast.success('Security core updated successfully');
+                setPasswords({ current: '', new: '', confirm: '' });
+                setSubView('menu');
+            } else {
+                const data = await res.json();
+                toast.error(data.error || 'Security update rejected');
+            }
+        } catch (e) {
+            toast.error('Security protocol failure');
         } finally {
             setSaving(false);
         }
@@ -272,885 +177,386 @@ const AccountPage = () => {
     const handleToggleNotification = async (key: keyof NotificationPrefs) => {
         const newValue = !notifications[key];
         setNotifications({ ...notifications, [key]: newValue });
-
         try {
             const response = await fetch('/api/user/notifications', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ [key]: newValue })
             });
-
             if (!response.ok) {
                 setNotifications({ ...notifications, [key]: !newValue });
-                toast.error('Failed to update preference');
+                toast.error('Preference sync rejected');
             }
-        } catch (error) {
+        } catch (e) {
             setNotifications({ ...notifications, [key]: !newValue });
-            toast.error('Failed to update preference');
-        }
-    };
-
-    const handleRevokeSession = async (sessionId: number) => {
-        if (!confirm('Are you sure you want to revoke this session?')) return;
-
-        try {
-            const response = await fetch(`/api/user/sessions/${sessionId}`, {
-                method: 'DELETE'
-            });
-
-            if (response.ok) {
-                toast.success('Session revoked successfully');
-                fetchSessions();
-            } else {
-                const data = await response.json();
-                toast.error(data.error || 'Failed to revoke session');
-            }
-        } catch (error) {
-            toast.error('Failed to revoke session');
-        }
-    };
-
-    const handleGenerateApiKey = async () => {
-        if (hasApiKey && !confirm('This will revoke your current API key. Continue?')) return;
-
-        try {
-            const response = await fetch('/api/user/apikey', {
-                method: 'POST'
-            });
-            const data = await response.json();
-
-            if (response.ok) {
-                setApiKey(data.apikey);
-                setHasApiKey(true);
-                setShowApiKey(true);
-                toast.success('API key generated successfully!');
-                fetchApiKey();
-            } else {
-                toast.error('Failed to generate API key');
-            }
-        } catch (error) {
-            toast.error('Failed to generate API key');
-        }
-    };
-
-    const handleProfileImageChange = async (url: string) => {
-        try {
-            setUploadingImage(true);
-            const response = await fetch('/api/user/profile', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ profile_imagekit_url: url })
-            });
-            const data = await response.json();
-
-            if (response.ok) {
-                setUserProfile(data.user);
-                setShowUploadModal(false);
-                toast.success('Profile picture updated successfully!');
-                // Update local profile state as well
-                setProfile(prev => ({ ...prev, profile_imagekit_url: data.user.profile_imagekit_url }));
-                // Fetch again to sync everything
-                fetchProfile();
-            } else {
-                toast.error(data.error || 'Failed to update profile picture');
-            }
-        } catch (error) {
-            toast.error('Failed to update profile picture');
-        } finally {
-            setUploadingImage(false);
-        }
-    };
-
-    const copyApiKey = () => {
-        const keyToCopy = showApiKey ? apiKey : maskedApiKey;
-        if (keyToCopy) {
-            navigator.clipboard.writeText(apiKey || '');
-            setCopiedKey(true);
-            toast.success('API key copied to clipboard!');
-            setTimeout(() => setCopiedKey(false), 2000);
-        }
-    };
-
-    const fetchResellerStatus = async () => {
-        try {
-            const response = await fetch('/api/user/reseller/register');
-            const data = await response.json();
-            if (response.ok) {
-                setIsReseller(data.is_reseller);
-                setResellerData(data.reseller);
-                setResellerFee(parseFloat(data.reseller_fee));
-            }
-        } catch (error) {
-            console.error('Failed to load reseller status');
+            toast.error('Network sync failure');
         }
     };
 
     const handleRegisterReseller = async () => {
-        if (!confirm(`Are you sure you want to become a reseller? This will deduct $${resellerFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} from your balance.`)) {
-            return;
-        }
-
+        if (!confirm(`Authorize reseller registration? $${resellerFee.toFixed(2)} will be deducted from your liquid assets.`)) return;
         try {
-            setRegistering(true);
-            const response = await fetch('/api/user/reseller/register', {
-                method: 'POST'
-            });
-            const data = await response.json();
-
-            if (response.ok) {
-                toast.success('Successfully registered as reseller!');
-                setIsReseller(true);
-                setResellerData(data.reseller);
-                // Refresh profile to update balance
-                fetchProfile();
-                fetchResellerStatus();
+            setSaving(true);
+            const res = await fetch('/api/user/reseller/register', { method: 'POST' });
+            if (res.ok) {
+                toast.success('Reseller status activated');
+                fetchData();
+                setSubView('menu');
             } else {
-                toast.error(data.error || 'Failed to register as reseller');
-            }
-        } catch (error) {
-            toast.error('Failed to register as reseller');
-        } finally {
-            setRegistering(false);
-        }
-    };
-
-    const handleSaveWebhook = async () => {
-        try {
-            setSavingWebhook(true);
-            const response = await fetch('/api/user/profile', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ webhook_url: webhookUrl })
-            });
-            const data = await response.json();
-
-            if (response.ok) {
-                setUserProfile(data.user);
-                toast.success('Webhook URL updated successfully!');
-            } else {
-                toast.error(data.error || 'Failed to update webhook URL');
-            }
-        } catch (error) {
-            toast.error('Failed to update webhook URL');
-        } finally {
-            setSavingWebhook(false);
-        }
-    };
-
-    const handleTestWebhook = async () => {
-        try {
-            const response = await fetch('/api/user/test-webhook', { method: 'POST' });
-            const data = await response.json();
-            if (response.ok) {
-                toast.success('Test webhook sent! Check your server logs.');
-            } else {
-                toast.error(data.error || 'Failed to send test webhook');
+                const data = await res.json();
+                toast.error(data.error || 'Registration rejected');
             }
         } catch (e) {
-            toast.error('Error sending test webhook');
+            toast.error('Temporal registration failure');
+        } finally {
+            setSaving(false);
         }
     };
 
-    const tabs = [
-        { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
-        { id: 'security', label: 'Security', icon: <Lock className="w-4 h-4" /> },
-        { id: 'reseller', label: 'Reseller', icon: <Shield className="w-4 h-4" /> },
-        { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
-        { id: 'api', label: 'API Access', icon: <Key className="w-4 h-4" /> },
-    ];
+    const handleGenerateApiKey = async () => {
+        if (hasApiKey && !confirm('Rotate encryption keys? Existing keys will be voided.')) return;
+        try {
+            const response = await fetch('/api/user/apikey', { method: 'POST' });
+            if (response.ok) {
+                const data = await response.json();
+                setApiKey(data.apikey);
+                setHasApiKey(true);
+                setShowApiKey(true);
+                toast.success('API Access keys rotated');
+                fetchData();
+            }
+        } catch (e) {
+            toast.error('Key generation failure');
+        }
+    };
 
-    const timezones = [
-        'UTC-12', 'UTC-11', 'UTC-10', 'UTC-9', 'UTC-8', 'UTC-7', 'UTC-6', 'UTC-5',
-        'UTC-4', 'UTC-3', 'UTC-2', 'UTC-1', 'UTC+0', 'UTC+1', 'UTC+2', 'UTC+3',
-        'UTC+4', 'UTC+5', 'UTC+6', 'UTC+7', 'UTC+8', 'UTC+9', 'UTC+10', 'UTC+11', 'UTC+12'
-    ];
+    const handleLogout = async () => {
+        if (!confirm('Authorize session termination?')) return;
+        try {
+            const res = await fetch('/api/auth/logout', { method: 'POST' });
+            if (res.ok) {
+                window.location.href = '/auth/login';
+            } else {
+                toast.error('Termination rejected');
+            }
+        } catch (e) {
+            toast.error('Network failure during termination');
+        }
+    };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            </div>
-        );
-    }
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-white">
+            <div className="w-12 h-12 border-4 border-emerald-50 border-t-emerald-600 rounded-full animate-spin"></div>
+        </div>
+    );
+
+    const initials = userProfile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
 
     return (
-        <div>
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-slate-900">Account Settings</h1>
-                <p className="text-slate-500">Manage your profile and preferences</p>
+        <div className="min-h-screen bg-white text-slate-800 font-sans pb-10 select-none relative">
+            
+            {/* Header */}
+            <div className="p-6 flex items-center justify-between bg-white sticky top-0 z-40 border-b border-emerald-50">
+                <div className="flex items-center">
+                    <button 
+                        onClick={() => subView === 'menu' ? router.push('/user') : setSubView('menu')}
+                        className="p-2 bg-emerald-50 rounded-xl text-emerald-600 active:scale-90 transition-transform"
+                    >
+                        <ChevronLeft size={24} />
+                    </button>
+                    <h2 className="ml-4 text-xl font-black text-slate-900 tracking-tight uppercase italic">{subView === 'menu' ? 'ACCOUNT' : subView.toUpperCase()}</h2>
+                </div>
             </div>
 
-            <div className="grid lg:grid-cols-4 gap-8">
-                {/* Sidebar */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        {/* User Info */}
-                        <div className="p-6 border-b border-slate-100 text-center">
-                            <div className="relative inline-block mb-4">
-                                {userProfile?.profile_imagekit_url ? (
-                                    <img
-                                        src={userProfile.profile_imagekit_url}
-                                        alt={userProfile.full_name}
-                                        className="w-20 h-20 rounded-full object-cover border-2 border-slate-100"
-                                    />
-                                ) : (
-                                    <div className="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                                        {profile.name ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
+            {subView === 'menu' && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {/* Profile Section */}
+                    <div className="p-6">
+                        <div className="bg-emerald-600 p-8 rounded-[2.5rem] shadow-xl shadow-emerald-100 flex flex-col items-center text-center relative overflow-hidden">
+                            <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500 rounded-full opacity-30"></div>
+                            <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-emerald-700 rounded-full opacity-20"></div>
+
+                            <div className="relative">
+                                <div className="w-24 h-24 rounded-[2rem] bg-white p-1 shadow-lg">
+                                    <div className="w-full h-full rounded-[1.8rem] bg-emerald-50 flex items-center justify-center text-emerald-600 text-3xl font-black">
+                                        {initials}
                                     </div>
-                                )}
-                                <button
-                                    onClick={() => setShowUploadModal(true)}
-                                    className="absolute bottom-0 right-0 p-1.5 bg-slate-900 text-white rounded-full hover:bg-slate-800 transition-colors shadow-lg"
-                                >
-                                    <Camera className="w-3 h-3" />
-                                </button>
-                            </div>
-                            <h3 className="font-semibold text-slate-900">{profile.name}</h3>
-                            <p className="text-sm text-slate-500">{profile.email}</p>
-                            <div className="mt-3 inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">
-                                <CheckCircle className="w-3 h-3" />
-                                Verified
-                            </div>
-                        </div>
-
-                        {/* Navigation */}
-                        <nav className="p-2">
-                            {tabs.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm rounded-lg transition-colors text-left ${activeTab === tab.id
-                                        ? 'bg-blue-50 text-blue-600'
-                                        : 'text-slate-600 hover:bg-slate-50'
-                                        }`}
-                                >
-                                    {tab.icon}
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </nav>
-
-                        {/* Account Stats */}
-                        <div className="p-4 border-t border-slate-100 bg-slate-50">
-                            <div className="grid grid-cols-2 gap-4 text-center">
-                                <div>
-                                    <p className="text-lg font-bold text-slate-900">
-                                        ${userProfile?.balance
-                                            ? parseFloat(userProfile.balance.toString()).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                            : '0.00'}
-                                    </p>
-                                    <p className="text-xs text-slate-500">Balance</p>
                                 </div>
-                                <div>
-                                    <p className="text-lg font-bold text-slate-900">
-                                        {orderCount !== null ? orderCount.toLocaleString() : '—'}
-                                    </p>
-                                    <p className="text-xs text-slate-500">Orders</p>
+                                <div className="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-xl shadow-md">
+                                    <BadgeCheck size={20} className="text-emerald-500" />
+                                </div>
+                            </div>
+
+                            <div className="mt-4 relative z-10">
+                                <h3 className="text-xl font-black text-white tracking-tight">{userProfile?.full_name}</h3>
+                                <p className="text-emerald-100 text-xs font-medium opacity-80">@{userProfile?.username}</p>
+                                <div className="mt-3 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full inline-flex items-center space-x-2 border border-white/20">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-white">Verified Identity</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Content */}
-                <div className="lg:col-span-3">
-                    {/* Profile Tab */}
-                    {activeTab === 'profile' && (
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                <h2 className="font-semibold text-slate-900">Profile Information</h2>
-                                <p className="text-sm text-slate-500">Update your personal details</p>
+                    {/* Menu List */}
+                    <div className="px-6 space-y-8 mt-4">
+                        <section>
+                            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Account Settings</h4>
+                            <div className="space-y-3">
+                                <MenuBtn icon={<User size={20} />} label="Personal Information" desc="Manage your profile details" onClick={() => setSubView('profile')} />
+                                <MenuBtn icon={<CreditCard size={20} />} label="Payment Methods" desc="Saved cards and bank accounts" onClick={() => router.push('/user/add-funds')} />
+                                <MenuBtn icon={<ShieldCheck size={20} />} label="Become Reseller" desc={isReseller ? "Reseller Status Active" : "Unlock exclusive benefits"} onClick={() => setSubView('reseller')} />
                             </div>
-                            <form onSubmit={handleSaveProfile} className="p-6 space-y-6">
-                                <div className="grid md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
-                                        <div className="relative">
-                                            <User className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                                            <input
-                                                type="text"
-                                                value={profile.name}
-                                                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-2">Username</label>
-                                        <div className="relative">
-                                            <User className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                                            <input
-                                                type="text"
-                                                value={profile.username}
-                                                disabled
-                                                className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500 cursor-not-allowed"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+                        </section>
 
-                                <div className="grid md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
-                                        <div className="relative">
-                                            <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                                            <input
-                                                type="email"
-                                                value={profile.email}
-                                                disabled
-                                                className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500 cursor-not-allowed"
-                                            />
-                                        </div>
-                                        <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
-                                    </div>
-                                </div>
-
-                                <div className="pt-4 border-t border-slate-100">
-                                    <button
-                                        type="submit"
-                                        disabled={saving}
-                                        className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                        Save Changes
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* Security Tab */}
-                    {activeTab === 'security' && (
-                        <div className="space-y-6">
-                            {/* Change Password */}
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                    <h2 className="font-semibold text-slate-900">Change Password</h2>
-                                    <p className="text-sm text-slate-500">Update your password regularly to keep your account secure</p>
-                                </div>
-                                <form onSubmit={handleUpdatePassword} className="p-6 space-y-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-2">Current Password</label>
-                                        <div className="relative">
-                                            <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                                            <input
-                                                type={showCurrentPassword ? 'text' : 'password'}
-                                                value={passwords.current}
-                                                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                                                className="w-full pl-10 pr-12 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
-                                            >
-                                                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">New Password</label>
-                                            <div className="relative">
-                                                <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                                                <input
-                                                    type={showNewPassword ? 'text' : 'password'}
-                                                    value={passwords.new}
-                                                    onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                                                    className="w-full pl-10 pr-12 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowNewPassword(!showNewPassword)}
-                                                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
-                                                >
-                                                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">Confirm New Password</label>
-                                            <div className="relative">
-                                                <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                                                <input
-                                                    type="password"
-                                                    value={passwords.confirm}
-                                                    onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-4 border-t border-slate-100">
-                                        <button
-                                            type="submit"
-                                            className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors"
-                                        >
-                                            <Lock className="w-4 h-4" />
-                                            Update Password
-                                        </button>
-                                    </div>
-                                </form>
+                        <section>
+                            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">App Preferences</h4>
+                            <div className="space-y-3">
+                                <MenuBtn icon={<Bell size={20} />} label="Notifications" desc="Control your alerts and sounds" onClick={() => setSubView('notifications')} />
+                                <MenuBtn icon={<Globe size={20} />} label="Language" desc="English (US)" />
+                                <MenuBtn icon={<Smartphone size={20} />} label="Appearance" desc="Light Mode" />
                             </div>
+                        </section>
 
-                            {/* Two-Factor Authentication */}
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                    <h2 className="font-semibold text-slate-900">Two-Factor Authentication</h2>
-                                    <p className="text-sm text-slate-500">Add an extra layer of security to your account</p>
-                                </div>
-                                <div className="p-6">
-                                    <div className="flex items-center justify-between p-4 bg-amber-50 border border-amber-100 rounded-xl">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-amber-100 rounded-lg">
-                                                <Shield className="w-5 h-5 text-amber-600" />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-slate-900">This feature is under development</p>
-                                                <p className="text-sm text-slate-500">Two-factor authentication will be available soon</p>
-                                            </div>
-                                        </div>
-                                        <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
-                                            Coming Soon
-                                        </span>
-                                    </div>
-                                </div>
+                        <section>
+                            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Security & Support</h4>
+                            <div className="space-y-3">
+                                <MenuBtn icon={<Lock size={20} />} label="Security" desc="Password and biometrics" onClick={() => setSubView('security')} />
+                                <MenuBtn icon={<ShieldAlert size={20} />} label="Privacy Policy" desc="Terms and data usage" />
+                                <MenuBtn icon={<HelpCircle size={20} />} label="Help Center" desc="FAQ and support contact" onClick={() => router.push('/user/tickets')} />
                             </div>
+                        </section>
 
-                            {/* Active Sessions */}
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                    <h2 className="font-semibold text-slate-900">Active Sessions</h2>
-                                    <p className="text-sm text-slate-500">Manage your active login sessions</p>
-                                </div>
-                                <div className="divide-y divide-slate-100">
-                                    {sessions.map((session) => (
-                                        <div key={session.id} className="p-4 flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-slate-100 rounded-lg">
-                                                    <Monitor className="w-4 h-4 text-slate-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium text-slate-900 text-sm flex items-center gap-2">
-                                                        {session.device || 'Unknown Device'}
-                                                        {session.is_current && (
-                                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Current</span>
-                                                        )}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500">
-                                                        {session.ip_address} • {session.location || 'Unknown'} • {new Date(session.last_active).toLocaleString()}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            {!session.is_current && (
-                                                <button
-                                                    onClick={() => handleRevokeSession(session.id)}
-                                                    className="text-sm text-red-600 hover:text-red-700 font-medium"
-                                                >
-                                                    Revoke
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
-                                    {sessions.length === 0 && (
-                                        <div className="p-8 text-center text-slate-500">
-                                            No active sessions
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Reseller Tab */}
-                    {activeTab === 'reseller' && (
-                        <div className="space-y-6">
-                            {!isReseller ? (
-                                /* Not a Reseller - Registration UI */
-                                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                        <h2 className="font-semibold text-slate-900">Become a Reseller</h2>
-                                        <p className="text-sm text-slate-500">Join our reseller program and unlock exclusive benefits</p>
-                                    </div>
-                                    <div className="p-6 space-y-6">
-                                        {/* Benefits */}
-                                        <div>
-                                            <h3 className="text-sm font-semibold text-slate-900 mb-4">Reseller Benefits</h3>
-                                            <div className="grid md:grid-cols-2 gap-4">
-                                                {[
-                                                    { icon: <CheckCircle className="w-5 h-5 text-green-600" />, text: 'Special pricing on all services' },
-                                                    { icon: <CheckCircle className="w-5 h-5 text-green-600" />, text: 'Priority customer support' },
-                                                ].map((benefit, idx) => (
-                                                    <div key={idx} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                                                        {benefit.icon}
-                                                        <span className="text-sm text-slate-700">{benefit.text}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Registration Fee */}
-                                        <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="font-medium text-slate-900">Registration Fee</p>
-                                                    <p className="text-sm text-slate-600">One-time payment to become a reseller</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-2xl font-bold text-blue-600">
-                                                        ${resellerFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Current Balance */}
-                                        <div className="p-4 bg-slate-50 rounded-xl">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-sm text-slate-600">Your Current Balance</p>
-                                                <p className="text-lg font-semibold text-slate-900">
-                                                    ${userProfile?.balance ? parseFloat(userProfile.balance.toString()).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Register Button */}
-                                        <div className="pt-4 border-t border-slate-100">
-                                            <button
-                                                onClick={handleRegisterReseller}
-                                                disabled={registering}
-                                                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {registering ? (
-                                                    <>
-                                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                                        Processing...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Shield className="w-5 h-5" />
-                                                        Become a Reseller
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                /* Already a Reseller - Status Display */
-                                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                        <h2 className="font-semibold text-slate-900">Reseller Status</h2>
-                                        <p className="text-sm text-slate-500">Your reseller account information</p>
-                                    </div>
-                                    <div className="p-6 space-y-6">
-                                        {/* Status Badge */}
-                                        <div className="flex items-center justify-between p-4 bg-green-50 border border-green-100 rounded-xl">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-green-100 rounded-lg">
-                                                    <Shield className="w-6 h-6 text-green-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-slate-900">Active Reseller</p>
-                                                    <p className="text-sm text-slate-600">You are an active reseller member</p>
-                                                </div>
-                                            </div>
-                                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                                                {resellerData?.status}
-                                            </span>
-                                        </div>
-
-                                        {/* Reseller Info */}
-                                        <div className="grid md:grid-cols-2 gap-4">
-                                            <div className="p-4 bg-slate-50 rounded-xl">
-                                                <p className="text-xs text-slate-500 mb-1">Reseller ID</p>
-                                                <p className="font-semibold text-slate-900">#{resellerData?.id}</p>
-                                            </div>
-                                            <div className="p-4 bg-slate-50 rounded-xl">
-                                                <p className="text-xs text-slate-500 mb-1">Member Since</p>
-                                                <p className="font-semibold text-slate-900">
-                                                    {resellerData?.created_at ? new Date(resellerData.created_at).toLocaleDateString('id-ID') : '-'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Benefits */}
-                                        <div>
-                                            <h3 className="text-sm font-semibold text-slate-900 mb-3">Your Benefits</h3>
-                                            <div className="space-y-2">
-                                                {[
-                                                    'Special pricing on all services',
-                                                    'Priority customer support'
-                                                ].map((benefit, idx) => (
-                                                    <div key={idx} className="flex items-center gap-2 text-sm text-slate-700">
-                                                        <CheckCircle className="w-4 h-4 text-green-600" />
-                                                        {benefit}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Notifications Tab */}
-                    {activeTab === 'notifications' && (
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                <h2 className="font-semibold text-slate-900">Notification Preferences</h2>
-                                <p className="text-sm text-slate-500">Choose what notifications you want to receive</p>
-                            </div>
-                            <div className="p-6 space-y-6">
-                                {/* Order Notifications */}
-                                <div>
-                                    <h3 className="text-sm font-semibold text-slate-900 mb-4">Order Notifications</h3>
-                                    <div className="space-y-4">
-                                        {[
-                                            { key: 'email_order_updates' as keyof NotificationPrefs, label: 'Order Updates', desc: 'Get notified when your order status changes' },
-                                            { key: 'email_deposit_updates' as keyof NotificationPrefs, label: 'Deposit Updates', desc: 'Get notified about deposit confirmations' },
-                                            { key: 'email_ticket_updates' as keyof NotificationPrefs, label: 'Ticket Replies', desc: 'Get notified when support replies to your tickets' },
-                                        ].map((item) => (
-                                            <div key={item.key} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                                                <div>
-                                                    <p className="font-medium text-slate-900 text-sm">{item.label}</p>
-                                                    <p className="text-xs text-slate-500">{item.desc}</p>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={notifications[item.key]}
-                                                        onChange={() => handleToggleNotification(item.key)}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Marketing Notifications */}
-                                <div>
-                                    <h3 className="text-sm font-semibold text-slate-900 mb-4">Marketing & Updates</h3>
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                                            <div>
-                                                <p className="font-medium text-slate-900 text-sm">Marketing Emails</p>
-                                                <p className="text-xs text-slate-500">Receive promotional offers and updates</p>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={notifications.email_marketing}
-                                                    onChange={() => handleToggleNotification('email_marketing')}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* API Access Tab */}
-                    {activeTab === 'api' && (
-                        <div className="space-y-6">
-                            {/* API Key */}
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                    <h2 className="font-semibold text-slate-900">API Key</h2>
-                                    <p className="text-sm text-slate-500">Use this key to authenticate API requests</p>
-                                </div>
-                                <div className="p-6">
-                                    {hasApiKey ? (
-                                        <>
-                                            <div className="flex flex-col sm:flex-row gap-3">
-                                                <div className="flex-1 px-4 py-3 bg-slate-900 rounded-lg flex items-center justify-between">
-                                                    <code className="text-amber-400 font-mono text-sm truncate">
-                                                        {showApiKey ? apiKey : maskedApiKey}
-                                                    </code>
-                                                </div>
-                                                <button
-                                                    onClick={() => setShowApiKey(!showApiKey)}
-                                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg font-medium transition-colors"
-                                                >
-                                                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                    {showApiKey ? 'Hide' : 'Show'}
-                                                </button>
-                                                <button
-                                                    onClick={copyApiKey}
-                                                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${copiedKey
-                                                        ? 'bg-green-500 text-white'
-                                                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                                        }`}
-                                                >
-                                                    {copiedKey ? (
-                                                        <>
-                                                            <CheckCircle className="w-4 h-4" />
-                                                            Copied!
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Copy className="w-4 h-4" />
-                                                            Copy
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </div>
-
-                                            <div className="mt-4 p-4 bg-amber-50 border border-amber-100 rounded-xl">
-                                                <div className="flex gap-3">
-                                                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                                                    <div className="text-sm">
-                                                        <p className="font-medium text-amber-800">Keep your API key secret</p>
-                                                        <p className="text-amber-700">Do not share your API key in public repositories or client-side code.</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="text-center py-8">
-                                            <Key className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                                            <p className="text-slate-600 mb-4">You don't have an API key yet</p>
-                                            <button
-                                                onClick={handleGenerateApiKey}
-                                                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                                            >
-                                                Generate API Key
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Regenerate Key */}
-                            {hasApiKey && (
-                                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                        <h2 className="font-semibold text-slate-900">Regenerate API Key</h2>
-                                        <p className="text-sm text-slate-500">Generate a new API key if your current one is compromised</p>
-                                    </div>
-                                    <div className="p-6">
-                                        <p className="text-sm text-slate-600 mb-4">
-                                            Generating a new API key will immediately invalidate your old key. All applications using the old key will stop working.
-                                        </p>
-                                        <button
-                                            onClick={handleGenerateApiKey}
-                                            className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
-                                        >
-                                            <RefreshCw className="w-4 h-4" />
-                                            Regenerate Key
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Webhook Configuration */}
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                    <h2 className="font-semibold text-slate-900">Webhook Configuration</h2>
-                                    <p className="text-sm text-slate-500">Receive automatic updates when your order status changes</p>
-                                </div>
-                                <div className="p-6">
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-slate-700 mb-2">Webhook URL</label>
-                                        <div className="relative">
-                                            <Globe className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                                            <input
-                                                type="url"
-                                                value={webhookUrl}
-                                                onChange={(e) => setWebhookUrl(e.target.value)}
-                                                placeholder="https://your-domain.com/api/callback"
-                                                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
-                                            />
-                                        </div>
-                                        <p className="text-xs text-slate-500 mt-2">
-                                            We will send a POST request to this URL with order status updates.
-                                        </p>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={handleSaveWebhook}
-                                            disabled={savingWebhook}
-                                            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors disabled:opacity-50"
-                                        >
-                                            {savingWebhook ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                            Save Webhook URL
-                                        </button>
-                                        <button
-                                            onClick={handleTestWebhook}
-                                            disabled={!webhookUrl}
-                                            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
-                                        >
-                                            <Globe className="w-4 h-4" />
-                                            Test Webhook
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* API Usage Stats */}
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                    <h2 className="font-semibold text-slate-900">API Usage</h2>
-                                    <p className="text-sm text-slate-500">Your API usage statistics for this month</p>
-                                </div>
-                                <div className="p-6">
-                                    <div className="grid grid-cols-3 gap-6">
-                                        <div className="text-center p-4 bg-slate-50 rounded-xl">
-                                            <p className="text-2xl font-bold text-slate-900">1,542</p>
-                                            <p className="text-sm text-slate-500">Total Requests</p>
-                                        </div>
-                                        <div className="text-center p-4 bg-slate-50 rounded-xl">
-                                            <p className="text-2xl font-bold text-green-600">1,498</p>
-                                            <p className="text-sm text-slate-500">Successful</p>
-                                        </div>
-                                        <div className="text-center p-4 bg-slate-50 rounded-xl">
-                                            <p className="text-2xl font-bold text-red-600">44</p>
-                                            <p className="text-sm text-slate-500">Failed</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Profile Picture Upload Modal */}
-            {showUploadModal && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowUploadModal(false)} />
-                    <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                            <h3 className="font-semibold text-slate-900">Update Profile Picture</h3>
-                            <button onClick={() => setShowUploadModal(false)} className="p-1 hover:bg-slate-200 rounded-lg transition-colors">
-                                <X className="w-5 h-5 text-slate-500" />
+                        <section className="pt-4">
+                            <button 
+                                onClick={handleLogout}
+                                className="w-full py-5 rounded-[2rem] bg-rose-50 border border-rose-100 text-rose-600 font-black text-sm flex items-center justify-center space-x-3 active:scale-[0.98] transition-all shadow-sm shadow-rose-100/50"
+                            >
+                                <LogOut size={20} />
+                                <span>Terminate Current Session</span>
                             </button>
-                        </div>
-                        <div className="p-8 text-center">
-                            <p className="text-sm text-slate-500 mb-6">Choose a new photo to update your profile. Max size 5MB.</p>
-                            <div className="flex justify-center">
-                                <ImageUpload
-                                    value={userProfile?.profile_imagekit_url || ''}
-                                    onChange={handleProfileImageChange}
-                                    folder="profile_pictures"
-                                    label="Click to upload new photo"
-                                    previewClassName="h-32 w-32 rounded-full mx-auto"
-                                />
+                            <div className="mt-8 text-center pb-8 opacity-40">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Emerald Matrix v4.2.0-PRO</p>
                             </div>
-                        </div>
+                        </section>
                     </div>
                 </div>
             )}
+
+            {/* Sub-Views */}
+            {subView === 'profile' && (
+                <div className="p-6 space-y-8 animate-in slide-in-from-right duration-300">
+                    <section>
+                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Update record</h4>
+                        <form onSubmit={handleSaveProfile} className="space-y-4">
+                            <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1 ml-1">Full Identity Name</label>
+                                <input 
+                                    type="text" 
+                                    value={profileForm.name}
+                                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                                    className="w-full bg-white border-none rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                                />
+                                <p className="mt-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest ml-1 leading-relaxed">Email: {userProfile?.email}<br/>Username: {userProfile?.username}</p>
+                            </div>
+                            <button 
+                                type="submit"
+                                disabled={saving}
+                                className="w-full bg-emerald-600 text-white py-5 rounded-[2.5rem] font-black text-sm flex items-center justify-center space-x-2 shadow-lg shadow-emerald-100 active:scale-95 transition-all"
+                            >
+                                {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                                <span>Commit Changes</span>
+                            </button>
+                        </form>
+                    </section>
+                </div>
+            )}
+
+            {subView === 'notifications' && (
+                <div className="p-6 space-y-6 animate-in slide-in-from-right duration-300">
+                    <section className="space-y-4">
+                        <NotifyToggle label="Order Status Updates" desc="Acquisition milestones" active={notifications.email_order_updates} onToggle={() => handleToggleNotification('email_order_updates')} />
+                        <NotifyToggle label="Financial Influx" desc="Deposit verification" active={notifications.email_deposit_updates} onToggle={() => handleToggleNotification('email_deposit_updates')} />
+                        <NotifyToggle label="Support Transmissions" desc="Ticket resolution alerts" active={notifications.email_ticket_updates} onToggle={() => handleToggleNotification('email_ticket_updates')} />
+                        <NotifyToggle label="Broadcast Matrix" desc="Marketing protocols" active={notifications.email_marketing} onToggle={() => handleToggleNotification('email_marketing')} />
+                    </section>
+                </div>
+            )}
+
+            {subView === 'security' && (
+                <div className="p-6 space-y-10 animate-in slide-in-from-right duration-300">
+                    <section>
+                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Password Rotation</h4>
+                        <form onSubmit={handleUpdatePassword} className="space-y-4">
+                            <div className="space-y-3">
+                                <SettingsInp type={showCurrentPassword ? 'text' : 'password'} label="Current Passkey" value={passwords.current} onChange={(v: string) => setPasswords({...passwords, current: v})} show={showCurrentPassword} toggle={() => setShowCurrentPassword(!showCurrentPassword)} />
+                                <SettingsInp type={showNewPassword ? 'text' : 'password'} label="New Passkey" value={passwords.new} onChange={(v: string) => setPasswords({...passwords, new: v})} show={showNewPassword} toggle={() => setShowNewPassword(!showNewPassword)} />
+                                <SettingsInp type="password" label="Confirm Passkey" value={passwords.confirm} onChange={(v: string) => setPasswords({...passwords, confirm: v})} />
+                            </div>
+                            <button 
+                                type="submit"
+                                disabled={saving}
+                                className="w-full bg-slate-900 text-white py-5 rounded-[2.5rem] font-black text-sm flex items-center justify-center space-x-2 transition-all active:scale-95 shadow-xl shadow-slate-100"
+                            >
+                                {saving ? <Loader2 className="animate-spin" size={20} /> : <ShieldCheck size={20} />}
+                                <span>Authorize Rotation</span>
+                            </button>
+                        </form>
+                    </section>
+
+                    <section className="pt-6 border-t border-slate-50">
+                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">API Access Protocols</h4>
+                        <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+                            {hasApiKey ? (
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-white rounded-xl border border-slate-100 flex items-center justify-between">
+                                        <code className="text-[10px] font-black tracking-widest text-slate-500 truncate mr-2">
+                                            {showApiKey ? apiKey : '••••••••••••••••••••••••'}
+                                        </code>
+                                        <div className="flex items-center space-x-2">
+                                            <button onClick={() => setShowApiKey(!showApiKey)} className="p-2 text-slate-400 hover:text-emerald-500 transition-colors">
+                                                {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(apiKey || '');
+                                                    toast.success('Key copied to vault');
+                                                }}
+                                                className="p-2 text-slate-400 hover:text-emerald-500 transition-colors"
+                                            >
+                                                <Copy size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={handleGenerateApiKey}
+                                        className="w-full py-4 bg-white border border-emerald-100 text-emerald-600 rounded-2xl font-black text-[10px] uppercase tracking-widest active:bg-emerald-50 transition-colors"
+                                    >
+                                        Rotate API Key
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="text-center py-4 space-y-4">
+                                    <Info className="mx-auto text-emerald-200" size={32} />
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No Active API Key Registered</p>
+                                    <button 
+                                        onClick={handleGenerateApiKey}
+                                        className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-50"
+                                    >
+                                        Initiate API Integration
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                </div>
+            )}
+
+            {subView === 'reseller' && (
+                <div className="p-6 space-y-8 animate-in slide-in-from-right duration-300">
+                    <section>
+                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Reseller Matrix</h4>
+                        {isReseller ? (
+                            <div className="p-8 bg-emerald-600 rounded-[2.5rem] text-center space-y-6 shadow-xl shadow-emerald-100 relative overflow-hidden">
+                                <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500 rounded-full opacity-30"></div>
+                                <BadgeCheck size={64} className="mx-auto text-white opacity-90" />
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-black text-white uppercase italic">Status: Active</h3>
+                                    <p className="text-xs text-emerald-100 font-bold uppercase tracking-widest opacity-80 leading-relaxed px-4">You have full access to our proprietary service network and priority fulfillment protocols.</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-6">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="p-3 bg-white rounded-2xl text-emerald-600 shadow-sm"><CircleDollarSign size={24} /></div>
+                                        <div>
+                                            <p className="text-sm font-black text-slate-800 tracking-tight">Preferential Pricing</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Locked acquisition rates</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-4">
+                                        <div className="p-3 bg-white rounded-2xl text-emerald-600 shadow-sm"><TrendingUp size={24} /></div>
+                                        <div>
+                                            <p className="text-sm font-black text-slate-800 tracking-tight">Growth Acceleration</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Unlimited temporal scale</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-4">
+                                        <div className="p-3 bg-white rounded-2xl text-emerald-600 shadow-sm"><Headset size={24} /></div>
+                                        <div>
+                                            <p className="text-sm font-black text-slate-800 tracking-tight">Priority Uplink</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Instant support mediation</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100 text-center space-y-2">
+                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em]">Registration Fee</p>
+                                    <p className="text-3xl font-black text-slate-900 tracking-tighter">${resellerFee.toFixed(2)}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">One-time authorization charge</p>
+                                </div>
+
+                                <button 
+                                    onClick={handleRegisterReseller}
+                                    disabled={saving}
+                                    className="w-full bg-slate-900 text-white py-5 rounded-[2.5rem] font-black text-sm flex items-center justify-center space-x-2 shadow-xl shadow-slate-100 active:scale-95 transition-all disabled:opacity-50"
+                                >
+                                    {saving ? <Loader2 className="animate-spin" size={20} /> : <TrendingUp size={20} />}
+                                    <span>Initiate Partnership</span>
+                                </button>
+                            </div>
+                        )}
+                    </section>
+                </div>
+            )}
+
         </div>
     );
 };
 
-export default AccountPage;
+const MenuBtn = ({ icon, label, desc, onClick }: { icon: any, label: string, desc: string, onClick?: () => void }) => (
+    <button onClick={onClick} className="w-full p-4 bg-white border border-emerald-50 rounded-[1.8rem] flex items-center justify-between active:bg-emerald-50 transition-all hover:border-emerald-200 group">
+        <div className="flex items-center space-x-4">
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:scale-110 transition-transform">
+                {icon}
+            </div>
+            <div className="text-left">
+                <p className="text-sm font-black text-slate-800 tracking-tight">{label}</p>
+                <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">{desc}</p>
+            </div>
+        </div>
+        <ChevronRight size={18} className="text-slate-200 group-hover:text-emerald-500 transition-colors" />
+    </button>
+);
+
+const NotifyToggle = ({ label, desc, active, onToggle }: { label: string, desc: string, active: boolean, onToggle: () => void }) => (
+    <button onClick={onToggle} className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center justify-between transition-all active:scale-[0.98]">
+        <div className="text-left">
+            <p className="text-sm font-black text-slate-800">{label}</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{desc}</p>
+        </div>
+        <div className={`w-12 h-6 rounded-full p-1 transition-colors ${active ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+            <div className={`w-4 h-4 bg-white rounded-full transition-transform ${active ? 'translate-x-6' : 'translate-x-0'}`}></div>
+        </div>
+    </button>
+);
+
+const SettingsInp = ({ label, type, value, onChange, show, toggle }: { label: string, type: string, value: string, onChange: (v: string) => void, show?: boolean, toggle?: () => void }) => (
+    <div className="p-5 bg-slate-50 rounded-[1.8rem] border border-slate-100 flex flex-col relative">
+        <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 ml-1">{label}</label>
+        <input 
+            type={type} 
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="bg-transparent border-none p-0 text-sm font-black tracking-widest outline-none focus:ring-0 placeholder:text-slate-200"
+            placeholder="••••••••"
+        />
+        {toggle && (
+            <button type="button" onClick={toggle} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-emerald-500 transition-colors">
+                {show ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+        )}
+    </div>
+);
+
+export default AccountView;

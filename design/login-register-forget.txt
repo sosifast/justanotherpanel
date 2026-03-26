@@ -1,0 +1,125 @@
+import React, { useState } from 'react';
+import { 
+  Mail, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  ArrowRight, 
+  Chrome, 
+  ChevronLeft,
+  Smartphone,
+  Fingerprint
+} from 'lucide-react';
+
+const App = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Login attempt:', { email, password });
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white font-sans flex flex-col">
+      
+      {/* Area Atas (Branding/Hero) - Fokus Mobile */}
+      <div className="relative h-[35vh] flex flex-col justify-end p-8 bg-gradient-to-b from-zinc-800 to-black">
+        <button className="absolute top-12 left-6 p-2 rounded-full bg-white/10 backdrop-blur-md border border-white/10">
+          <ChevronLeft size={24} />
+        </button>
+        
+        <div className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="w-12 h-1.5 bg-indigo-500 rounded-full mb-4"></div>
+          <h1 className="text-4xl font-black tracking-tight leading-none">
+            MASUK<br/><span className="text-zinc-500">SEKARANG.</span>
+          </h1>
+          <p className="text-zinc-400 font-medium">Masuk untuk mengelola profil Anda</p>
+        </div>
+      </div>
+
+      {/* Area Form (Bottom Sheet Style) */}
+      <div className="flex-1 bg-zinc-900 rounded-t-[2.5rem] p-8 pb-12 shadow-2xl">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          
+          {/* Email Input */}
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 ml-1">Alamat Email</label>
+            <div className="relative border-b-2 border-zinc-800 focus-within:border-indigo-500 transition-colors py-1">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="email@anda.com"
+                className="w-full bg-transparent py-2 outline-none text-lg placeholder:text-zinc-700 transition-all"
+              />
+              <Mail className="absolute right-0 top-1/2 -translate-y-1/2 text-zinc-700" size={20} />
+            </div>
+          </div>
+
+          {/* Password Input */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-end">
+              <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 ml-1">Kata Sandi</label>
+              <button type="button" className="text-xs font-bold text-indigo-400">Lupa?</button>
+            </div>
+            <div className="relative border-b-2 border-zinc-800 focus-within:border-indigo-500 transition-colors py-1">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-transparent py-2 outline-none text-lg placeholder:text-zinc-700 transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-zinc-700"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Login Button - Big Touch Target */}
+          <button
+            type="submit"
+            className="w-full bg-white text-black h-16 rounded-2xl font-black text-lg shadow-lg shadow-white/5 flex items-center justify-center space-x-3 active:scale-[0.97] transition-transform mt-4"
+          >
+            <span>MASUK</span>
+            <ArrowRight size={22} strokeWidth={3} />
+          </button>
+        </form>
+
+        {/* Biometric / Social Option */}
+        <div className="mt-10 flex flex-col items-center space-y-8">
+          <div className="flex items-center space-x-6">
+            <button className="p-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 transition-colors border border-zinc-700/50 group">
+              <Fingerprint size={28} className="text-zinc-400 group-active:text-indigo-400" />
+            </button>
+            <button className="p-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 transition-colors border border-zinc-700/50 group">
+              <Chrome size={28} className="text-zinc-400 group-active:text-red-400" />
+            </button>
+            <button className="p-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 transition-colors border border-zinc-700/50 group">
+              <Smartphone size={28} className="text-zinc-400 group-active:text-green-400" />
+            </button>
+          </div>
+
+          <p className="text-zinc-500 text-sm font-medium">
+            Belum punya akun? <button className="text-white font-bold underline underline-offset-4 decoration-indigo-500">Daftar sekarang</button>
+          </p>
+        </div>
+      </div>
+
+      {/* Footer Branding Mini */}
+      <div className="bg-zinc-900 text-center pb-6">
+        <span className="text-[10px] font-black tracking-[0.3em] text-zinc-800">APP VERSION 2.0.4</span>
+      </div>
+    </div>
+  );
+};
+
+export default App;

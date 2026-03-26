@@ -1,0 +1,323 @@
+import React, { useState } from 'react';
+import { 
+  ChevronLeft, 
+  Search, 
+  ArrowUpRight, 
+  ArrowDownLeft, 
+  Filter, 
+  Calendar,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Smartphone,
+  Zap,
+  ShoppingBag,
+  CreditCard,
+  History,
+  X,
+  RotateCcw
+} from 'lucide-react';
+
+const App = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
+  // Filter States
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState('All');
+
+  // Combined Mock Data
+  const transactions = [
+    {
+      id: 'DEP-77102',
+      title: 'Deposit via QRIS',
+      date: 'Mar 25, 2026',
+      time: '10:00',
+      amount: '+$ 100.00',
+      status: 'Success',
+      icon: <ArrowDownLeft size={18} />,
+      isIncome: true,
+      category: 'Deposit'
+    },
+    {
+      id: 'ORD-99218',
+      title: 'Mobile Legends 500 Diamonds',
+      date: 'Mar 24, 2026',
+      time: '14:20',
+      amount: '-$ 12.50',
+      status: 'Completed',
+      icon: <ShoppingBag size={18} />,
+      isIncome: false,
+      category: 'Games'
+    },
+    {
+      id: 'ORD-99215',
+      title: 'Electricity Token $50',
+      date: 'Mar 22, 2026',
+      time: '09:15',
+      amount: '-$ 50.00',
+      status: 'Pending',
+      icon: <Zap size={18} />,
+      isIncome: false,
+      category: 'Utility'
+    },
+    {
+      id: 'DEP-77098',
+      title: 'Bank Transfer BCA',
+      date: 'Mar 21, 2026',
+      time: '11:30',
+      amount: '+$ 500.00',
+      status: 'Success',
+      icon: <CreditCard size={18} />,
+      isIncome: true,
+      category: 'Deposit'
+    },
+    {
+      id: 'ORD-99210',
+      title: 'Internet Package 50GB',
+      date: 'Mar 20, 2026',
+      time: '18:45',
+      amount: '-$ 15.20',
+      status: 'Completed',
+      icon: <Smartphone size={18} />,
+      isIncome: false,
+      category: 'Data'
+    },
+    {
+      id: 'DEP-77085',
+      title: 'Virtual Account BNI',
+      date: 'Mar 18, 2026',
+      time: '15:20',
+      amount: '+$ 50.00',
+      status: 'Failed',
+      icon: <ArrowDownLeft size={18} />,
+      isIncome: true,
+      category: 'Deposit'
+    }
+  ];
+
+  // Filtering Logic
+  const filteredData = transactions.filter(item => {
+    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         item.id.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
+    const matchesType = typeFilter === 'All' || 
+                       (typeFilter === 'Income' && item.isIncome) || 
+                       (typeFilter === 'Expense' && !item.isIncome);
+
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  const resetFilters = () => {
+    setStatusFilter('All');
+    setTypeFilter('All');
+  };
+
+  return (
+    <div className="min-h-screen bg-white text-slate-800 font-sans pb-10 select-none relative">
+      
+      {/* Header */}
+      <div className="p-6 bg-white sticky top-0 z-40 border-b border-emerald-50">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <button className="p-2 bg-emerald-50 rounded-xl text-emerald-600 active:scale-90 transition-transform">
+              <ChevronLeft size={24} />
+            </button>
+            <h2 className="ml-4 text-xl font-black text-slate-900 tracking-tight">History</h2>
+          </div>
+          <button 
+            onClick={() => setIsFilterOpen(true)}
+            className={`p-2.5 rounded-xl border transition-all ${
+              statusFilter !== 'All' || typeFilter !== 'All' 
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-100' 
+              : 'bg-emerald-50 text-emerald-600 border-emerald-50'
+            }`}
+          >
+            <Filter size={20} />
+          </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" size={18} />
+          <input 
+            type="text"
+            placeholder="Search transactions..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all outline-none text-sm placeholder:text-slate-300"
+          />
+        </div>
+      </div>
+
+      {/* Active Filters Tag Display */}
+      {(statusFilter !== 'All' || typeFilter !== 'All') && (
+        <div className="px-6 mt-4 flex flex-wrap gap-2">
+          {statusFilter !== 'All' && (
+            <span className="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full text-[10px] font-bold border border-emerald-100 flex items-center">
+              Status: {statusFilter}
+              <button onClick={() => setStatusFilter('All')} className="ml-2"><X size={12} /></button>
+            </span>
+          )}
+          {typeFilter !== 'All' && (
+            <span className="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full text-[10px] font-bold border border-emerald-100 flex items-center">
+              Type: {typeFilter}
+              <button onClick={() => setTypeFilter('All')} className="ml-2"><X size={12} /></button>
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Transaction List */}
+      <div className="p-6 space-y-4">
+        {filteredData.length > 0 ? (
+          filteredData.map((item) => (
+            <div 
+              key={item.id} 
+              className="p-4 bg-white border border-emerald-50 rounded-[2rem] flex justify-between items-center shadow-sm active:scale-[0.98] transition-transform"
+            >
+              <div className="flex items-center space-x-4">
+                <div className={`p-3.5 rounded-2xl ${
+                  item.isIncome ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-500'
+                }`}>
+                  {item.icon}
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-bold text-slate-800 line-clamp-1">{item.title}</h4>
+                  <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-medium">
+                    <span className="flex items-center"><Calendar size={10} className="mr-1" /> {item.date}</span>
+                    <span>•</span>
+                    <span className="flex items-center"><Clock size={10} className="mr-1" /> {item.time}</span>
+                  </div>
+                  <p className="text-[9px] font-bold text-slate-300 tracking-wider uppercase">{item.id}</p>
+                </div>
+              </div>
+
+              <div className="text-right space-y-1.5">
+                <p className={`text-sm font-black ${
+                  item.isIncome && item.status !== 'Failed' ? 'text-emerald-600' : 'text-slate-800'
+                }`}>
+                  {item.amount}
+                </p>
+                <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${
+                  item.status === 'Completed' || item.status === 'Success' 
+                  ? 'bg-emerald-50 text-emerald-600' 
+                  : item.status === 'Pending' 
+                  ? 'bg-amber-50 text-amber-600' 
+                  : 'bg-red-50 text-red-600'
+                }`}>
+                  {item.status === 'Completed' || item.status === 'Success' ? (
+                    <CheckCircle2 size={10} className="mr-1" />
+                  ) : item.status === 'Pending' ? (
+                    <Clock size={10} className="mr-1" />
+                  ) : (
+                    <XCircle size={10} className="mr-1" />
+                  )}
+                  {item.status}
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          /* Empty State */
+          <div className="py-20 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-200">
+              <History size={40} />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-bold text-slate-800">No transactions found</h3>
+              <p className="text-xs text-slate-400 px-10">Try adjusting your filters or search query.</p>
+              {(statusFilter !== 'All' || typeFilter !== 'All') && (
+                <button 
+                  onClick={resetFilters}
+                  className="mt-4 text-emerald-600 font-bold text-xs flex items-center mx-auto"
+                >
+                  <RotateCcw size={14} className="mr-2" /> Reset Filters
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Filter Bottom Sheet / Modal Overlay */}
+      {isFilterOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={() => setIsFilterOpen(false)}
+          ></div>
+          
+          {/* Bottom Sheet Content */}
+          <div className="relative w-full max-w-md bg-white rounded-t-[2.5rem] p-8 pb-10 shadow-2xl animate-in slide-in-from-bottom duration-500">
+            {/* Handle Bar */}
+            <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mb-8"></div>
+            
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Filter Options</h3>
+              <button 
+                onClick={resetFilters}
+                className="text-xs font-bold text-emerald-600 flex items-center bg-emerald-50 px-3 py-1.5 rounded-full"
+              >
+                <RotateCcw size={14} className="mr-1.5" /> Reset
+              </button>
+            </div>
+
+            {/* Filter Section: Status */}
+            <div className="mb-8">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block mb-4 ml-1">Transaction Status</label>
+              <div className="flex flex-wrap gap-2">
+                {['All', 'Success', 'Pending', 'Failed', 'Completed'].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={`px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all border ${
+                      statusFilter === status 
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' 
+                      : 'bg-slate-50 text-slate-500 border-slate-50'
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter Section: Type */}
+            <div className="mb-10">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block mb-4 ml-1">Transaction Type</label>
+              <div className="grid grid-cols-3 gap-3">
+                {['All', 'Income', 'Expense'].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setTypeFilter(type)}
+                    className={`py-3 rounded-2xl text-[11px] font-bold transition-all border ${
+                      typeFilter === type 
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' 
+                      : 'bg-slate-50 text-slate-500 border-slate-50'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Apply Button */}
+            <button 
+              onClick={() => setIsFilterOpen(false)}
+              className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-sm active:scale-[0.98] transition-all"
+            >
+              Apply Filters
+            </button>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+export default App;

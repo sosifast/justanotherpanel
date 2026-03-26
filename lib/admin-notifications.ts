@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma';
-import { getPusherClient } from '@/lib/pusher';
 
 type AdminNotificationType = 'NEW_USER' | 'NEW_ORDER' | 'ORDER_UPDATE' | 'NEW_DEPOSIT' | 'DEPOSIT_UPDATE' | 'NEW_TICKET' | 'TICKET_UPDATE' | 'SYSTEM';
 
@@ -22,10 +21,8 @@ export async function createAdminNotification(
         });
 
         // 2. Trigger Pusher
-        const pusher = await getPusherClient();
-        // Channel: private-admin
-        // Event: admin-notification
-        await pusher.trigger('private-admin', 'admin-notification', {
+        const { triggerPusher } = await import('@/lib/pusher');
+        await triggerPusher('private-admin', 'admin-notification', {
             id: notification.id,
             title: notification.title,
             message: notification.message,

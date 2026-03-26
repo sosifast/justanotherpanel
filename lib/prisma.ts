@@ -24,7 +24,9 @@ const prismaClientSingleton = () => {
     idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
     max: 20, // Limit connections per serverless function instance
     // Recommended for cloud providers as some drop unused connections or require SSL
-    ssl: connectionString.includes('localhost') || connectionString.includes('127.0.0.1') 
+    ssl: connectionString.includes('localhost') || 
+         connectionString.includes('127.0.0.1') || 
+         connectionString.includes('sslmode=disable')
       ? false 
       : { rejectUnauthorized: false },
     // Apply a statement timeout to avoid long-running queries during build.

@@ -1,32 +1,38 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import {
-    MessageSquare,
-    Plus,
-    Search,
-    Filter,
-    ChevronDown,
-    Clock,
-    CheckCircle,
-    AlertCircle,
-    XCircle,
-    ChevronLeft,
-    Send,
-    Loader2,
-    Paperclip,
-    X,
-    ImageIcon,
-    Upload
+import { 
+  ChevronLeft, 
+  Search, 
+  MessageSquare, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle, 
+  Plus, 
+  ChevronRight,
+  Filter,
+  LifeBuoy,
+  X,
+  Send,
+  Loader2,
+  Paperclip,
+  ImageIcon,
+  ShieldAlert,
+  Calendar,
+  ArrowRight,
+  Save,
+  Trash2,
+  Image as LucideImage
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 type TicketMessage = {
     id: number;
     id_ticket: number;
-    sender: string;
+    sender: 'user' | 'admin';
     content: string;
     image_url?: string | null;
     created_at: string;
@@ -37,7 +43,7 @@ type Ticket = {
     id_user: number;
     subject: string;
     category: string;
-    status: string;
+    status: 'OPEN' | 'PENDING' | 'ANSWERED' | 'CLOSED';
     priority: string;
     created_at: string;
     updated_at: string;
@@ -45,100 +51,12 @@ type Ticket = {
     _count?: { messages: number };
 };
 
-// ─── Upload progress bar component ───────────────────────────────────────────
-function UploadProgress({ progress }: { progress: number }) {
-    return (
-        <div className="flex items-center gap-3 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg">
-            <Upload className="w-4 h-4 text-blue-500 shrink-0 animate-bounce" />
-            <div className="flex-1">
-                <div className="flex justify-between text-xs text-blue-600 mb-1">
-                    <span>Uploading image...</span>
-                    <span>{progress}%</span>
-                </div>
-                <div className="w-full bg-blue-100 rounded-full h-1.5">
-                    <div
-                        className="bg-blue-500 h-1.5 rounded-full transition-all duration-200"
-                        style={{ width: `${progress}%` }}
-                    />
-                </div>
-            </div>
-        </div>
-    );
-}
+// ── Shared UI Constants ───────────────────────────────────────
+const CATEGORIES = ['General', 'Billing', 'Technical', 'Order Issue', 'Other'];
+const STATUS_CHIPS = ['All', 'OPEN', 'PENDING', 'ANSWERED', 'CLOSED'];
 
-// ─── File preview component ───────────────────────────────────────────────────
-function FilePreview({ file, onRemove }: { file: File; onRemove: () => void }) {
-    const [previewUrl, setPreviewUrl] = useState('');
-    useEffect(() => {
-        const url = URL.createObjectURL(file);
-        setPreviewUrl(url);
-        return () => URL.revokeObjectURL(url);
-    }, [file]);
-
-    return (
-        <div className="relative inline-block">
-            {previewUrl && <img src={previewUrl} alt="preview" className="h-16 w-16 object-cover rounded-lg border border-slate-200" />}
-            <button
-                type="button"
-                onClick={onRemove}
-                className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
-            >
-                <X className="w-3 h-3" />
-            </button>
-        </div>
-    );
-}
-
-// ─── ImageKit upload via XHR (for progress tracking) ─────────────────────────
-function uploadToImageKit(
-    file: File,
-    authData: { token: string; expire: string; signature: string; publicKey: string; urlEndpoint: string },
-    onProgress: (pct: number) => void
-): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('fileName', `ticket_${Date.now()}_${file.name}`);
-        formData.append('folder', '/tickets');
-        formData.append('token', authData.token);
-        formData.append('expire', String(authData.expire));
-        formData.append('signature', authData.signature);
-        formData.append('publicKey', authData.publicKey);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', 'https://upload.imagekit.io/api/v1/files/upload');
-
-        xhr.upload.addEventListener('progress', (e) => {
-            if (e.lengthComputable) {
-                onProgress(Math.round((e.loaded / e.total) * 100));
-            }
-        });
-
-        xhr.addEventListener('load', () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const result = JSON.parse(xhr.responseText);
-                    resolve(result.url);
-                } catch {
-                    reject(new Error('Invalid response from ImageKit'));
-                }
-            } else {
-                try {
-                    const err = JSON.parse(xhr.responseText || '{}');
-                    reject(new Error(err.message || `Upload failed (HTTP ${xhr.status})`));
-                } catch {
-                    reject(new Error(`Upload failed (HTTP ${xhr.status})`));
-                }
-            }
-        });
-
-        xhr.addEventListener('error', () => reject(new Error('Network error during upload — check CORS or internet connection')));
-        xhr.send(formData);
-    });
-}
-
-// ─── Main component ───────────────────────────────────────────────────────────
 const TicketsView = () => {
+    const router = useRouter();
     const [view, setView] = useState<'list' | 'create' | 'detail'>('list');
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -146,83 +64,109 @@ const TicketsView = () => {
     const [sending, setSending] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
-    // Filters
-    const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
+    // Filter State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeFilter, setActiveFilter] = useState('All');
 
-    // Create form
+    // Create State
     const [subject, setSubject] = useState('');
     const [category, setCategory] = useState('');
     const [message, setMessage] = useState('');
     const [createImageFile, setCreateImageFile] = useState<File | null>(null);
     const createFileRef = useRef<HTMLInputElement>(null);
 
-    // Reply
+    // Reply State
     const [newMessage, setNewMessage] = useState('');
     const [replyImageFile, setReplyImageFile] = useState<File | null>(null);
     const replyFileRef = useRef<HTMLInputElement>(null);
+    const chatEndRef = useRef<HTMLDivElement>(null);
 
-    // Lightbox
+    // Lightbox State
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
-    const categories = ['General', 'Billing', 'Technical', 'Order Issue', 'Other'];
-    const statuses = ['all', 'OPEN', 'PENDING', 'ANSWERED', 'CLOSED'];
+    useEffect(() => {
+        fetchTickets();
+    }, []);
 
     useEffect(() => {
-        if (view === 'list') fetchTickets();
-    }, [view, statusFilter]);
+        if (view === 'detail') scrollToBottom();
+    }, [selectedTicket, view]);
+
+    const scrollToBottom = () => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
 
     const fetchTickets = async () => {
         try {
             setLoading(true);
-            const params = new URLSearchParams();
-            if (statusFilter !== 'all') params.append('status', statusFilter);
-            const res = await fetch(`/api/user/tickets?${params}`);
+            const res = await fetch('/api/user/tickets');
             const data = await res.json();
             if (res.ok) setTickets(data.tickets);
-            else toast.error(data.error || 'Failed to fetch tickets');
-        } catch { toast.error('Failed to fetch tickets'); }
-        finally { setLoading(false); }
+        } catch (e) {
+            toast.error('Sync failed');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const fetchTicketDetail = async (ticketId: number) => {
         try {
+            setLoading(true);
             const res = await fetch(`/api/user/tickets/${ticketId}`);
-            const data = await res.json();
-            if (res.ok) { setSelectedTicket(data.ticket); setView('detail'); }
-            else toast.error(data.error || 'Failed to fetch ticket details');
-        } catch { toast.error('Failed to fetch ticket details'); }
+            if (res.ok) {
+                const data = await res.json();
+                setSelectedTicket(data.ticket);
+                setView('detail');
+            }
+        } catch (e) {
+            toast.error('Detail fetch rejected');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setter: (f: File | null) => void) => {
         const file = e.target.files?.[0] ?? null;
         if (file && file.size > MAX_FILE_SIZE) {
-            toast.error('Image must be smaller than 5 MB');
-            e.target.value = '';
+            toast.error('Max 5MB per upload');
             return;
         }
         setter(file);
     };
 
-    // ── Upload helper ────────────────────────────────────────────────────────
     const doUpload = async (file: File): Promise<string> => {
         const authRes = await fetch('/api/imagekit/auth');
         const authData = await authRes.json();
-        if (!authRes.ok) {
-            throw new Error(authData.error || 'Failed to get ImageKit auth');
-        }
-        setUploadProgress(0);
-        const url = await uploadToImageKit(file, authData, (pct) => setUploadProgress(pct));
-        setUploadProgress(null);
-        return url;
+        
+        return new Promise((resolve, reject) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('fileName', `tck_${Date.now()}_${file.name}`);
+            formData.append('folder', '/tickets');
+            formData.append('token', authData.token);
+            formData.append('expire', String(authData.expire));
+            formData.append('signature', authData.signature);
+            formData.append('publicKey', authData.publicKey);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'https://upload.imagekit.io/api/v1/files/upload');
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
+            };
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText).url);
+                else reject(new Error('Upload rejected'));
+            };
+            xhr.send(formData);
+        });
     };
 
-    // ── Create ticket ────────────────────────────────────────────────────────
     const handleCreateTicket = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!category) return toast.error('Select category');
         try {
             setSending(true);
-            let image_url: string | null = null;
+            let image_url = null;
             if (createImageFile) image_url = await doUpload(createImageFile);
 
             const res = await fetch('/api/user/tickets', {
@@ -230,30 +174,25 @@ const TicketsView = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ subject, category, message, image_url })
             });
-            const data = await res.json();
             if (res.ok) {
-                toast.success('Ticket created successfully!');
-                setSubject(''); setCategory(''); setMessage('');
-                setCreateImageFile(null);
+                toast.success('Support ticket initiated');
+                setSubject(''); setCategory(''); setMessage(''); setCreateImageFile(null);
                 setView('list'); fetchTickets();
-            } else {
-                toast.error(data.error || 'Failed to create ticket');
             }
-        } catch (err: any) {
-            toast.error(err.message || 'Failed to create ticket');
+        } catch (e) {
+            toast.error('Temporal sync failure');
         } finally {
             setSending(false);
             setUploadProgress(null);
         }
     };
 
-    // ── Send reply ───────────────────────────────────────────────────────────
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedTicket || (!newMessage.trim() && !replyImageFile)) return;
         try {
             setSending(true);
-            let image_url: string | null = null;
+            let image_url = null;
             if (replyImageFile) image_url = await doUpload(replyImageFile);
 
             const res = await fetch(`/api/user/tickets/${selectedTicket.id}/messages`, {
@@ -261,18 +200,12 @@ const TicketsView = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: newMessage, image_url })
             });
-            const data = await res.json();
             if (res.ok) {
-                setNewMessage('');
-                setReplyImageFile(null);
-                if (replyFileRef.current) replyFileRef.current.value = '';
+                setNewMessage(''); setReplyImageFile(null);
                 await fetchTicketDetail(selectedTicket.id);
-                toast.success('Message sent!');
-            } else {
-                toast.error(data.error || 'Failed to send message');
             }
-        } catch (err: any) {
-            toast.error(err.message || 'Failed to send message');
+        } catch (e) {
+            toast.error('Transmission failure');
         } finally {
             setSending(false);
             setUploadProgress(null);
@@ -280,327 +213,392 @@ const TicketsView = () => {
     };
 
     const handleCloseTicket = async () => {
-        if (!selectedTicket) return;
+        if (!selectedTicket || !confirm('Archive this conversation?')) return;
         try {
             const res = await fetch(`/api/user/tickets/${selectedTicket.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: 'CLOSED' })
             });
-            if (res.ok) { toast.success('Ticket closed!'); await fetchTicketDetail(selectedTicket.id); }
-            else { const d = await res.json(); toast.error(d.error || 'Failed to close ticket'); }
-        } catch { toast.error('Failed to close ticket'); }
+            if (res.ok) {
+                toast.success('Conversation archived');
+                await fetchTicketDetail(selectedTicket.id);
+            }
+        } catch (e) {
+            toast.error('Action rejected');
+        }
     };
 
-    const getStatusStyle = (s: string) => ({ OPEN: 'bg-blue-100 text-blue-700', PENDING: 'bg-amber-100 text-amber-700', ANSWERED: 'bg-green-100 text-green-700', CLOSED: 'bg-slate-100 text-slate-600' }[s] ?? 'bg-slate-100 text-slate-600');
-    const getStatusIcon = (s: string) => ({ OPEN: <AlertCircle className="w-3 h-3" />, PENDING: <Clock className="w-3 h-3" />, ANSWERED: <CheckCircle className="w-3 h-3" />, CLOSED: <XCircle className="w-3 h-3" /> }[s] ?? null);
-    const getPriorityStyle = (p: string) => ({ HIGH: 'text-red-600', MEDIUM: 'text-amber-600', LOW: 'text-green-600' }[p] ?? 'text-slate-600');
+    const filteredTickets = tickets.filter(t => {
+        const matchSearch = t.subject.toLowerCase().includes(searchQuery.toLowerCase()) || t.id.toString().includes(searchQuery);
+        const matchFilter = activeFilter === 'All' || t.status === activeFilter;
+        return matchSearch && matchFilter;
+    });
 
-    const filteredTickets = tickets.filter(t =>
-        t.subject.toLowerCase().includes(search.toLowerCase()) || t.id.toString().includes(search)
+    const activeTicketsCount = tickets.filter(t => t.status !== 'CLOSED').length;
+    const resolvedCount = tickets.filter(t => t.status === 'CLOSED').length;
+
+    if (loading && view === 'list') return (
+        <div className="min-h-screen flex items-center justify-center bg-white">
+            <div className="w-12 h-12 border-4 border-emerald-50 border-t-emerald-600 rounded-full animate-spin"></div>
+        </div>
     );
 
     return (
-        <div>
-            {/* Lightbox */}
-            {lightboxUrl && (
-                <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setLightboxUrl(null)}>
-                    <button className="absolute top-4 right-4 text-white hover:text-slate-300" onClick={() => setLightboxUrl(null)}>
-                        <X className="w-8 h-8" />
-                    </button>
-                    <img src={lightboxUrl} alt="full size" className="max-w-full max-h-full rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-                </div>
-            )}
-
+        <div className="min-h-screen bg-white text-slate-800 font-sans pb-32 select-none relative">
+            
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Support Tickets</h1>
-                    <p className="text-slate-500">Get help from our support team</p>
+            <div className="p-6 bg-white sticky top-0 z-40 border-b border-emerald-50">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center">
+                        <button 
+                            onClick={() => view === 'list' ? router.push('/user') : setView('list')}
+                            className="p-2 bg-emerald-50 rounded-xl text-emerald-600 active:scale-90 transition-transform"
+                        >
+                            <ChevronLeft size={24} />
+                        </button>
+                        <h2 className="ml-4 text-xl font-black text-slate-900 tracking-tight uppercase italic">
+                            {view === 'list' ? 'SUPPORT' : view === 'create' ? 'NEW TICKET' : 'CONVERSATION'}
+                        </h2>
+                    </div>
                 </div>
+
                 {view === 'list' && (
-                    <button onClick={() => setView('create')} className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors">
-                        <Plus className="w-4 h-4" /> New Ticket
-                    </button>
-                )}
-                {(view === 'create' || view === 'detail') && (
-                    <button onClick={() => { setView('list'); setSelectedTicket(null); }} className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors">
-                        <ChevronLeft className="w-4 h-4" /> Back to Tickets
-                    </button>
+                    <div className="relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" size={18} />
+                        <input 
+                            type="text"
+                            placeholder="Trace ticket ID or subject..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all outline-none text-sm font-bold placeholder:text-slate-300"
+                        />
+                    </div>
                 )}
             </div>
 
-            {/* ── List View ── */}
+            {/* ── LIST VIEW ── */}
             {view === 'list' && (
-                <>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        {[
-                            { label: 'Total Tickets', value: tickets.length, color: 'text-slate-900' },
-                            { label: 'Open', value: tickets.filter(t => t.status === 'OPEN').length, color: 'text-blue-600' },
-                            { label: 'Pending', value: tickets.filter(t => t.status === 'PENDING').length, color: 'text-amber-600' },
-                            { label: 'Answered', value: tickets.filter(t => t.status === 'ANSWERED').length, color: 'text-green-600' },
-                        ].map(({ label, value, color }) => (
-                            <div key={label} className="bg-white rounded-xl border border-slate-200 p-4">
-                                <p className="text-sm text-slate-500 mb-1">{label}</p>
-                                <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                <div className="p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {/* Metrics Section */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-emerald-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-emerald-100 relative overflow-hidden group">
+                            <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500 rounded-full opacity-30 group-hover:scale-125 transition-transform"></div>
+                            <div className="relative z-10">
+                                <p className="text-[10px] font-black opacity-80 uppercase tracking-widest italic">In Progress</p>
+                                <h3 className="text-3xl font-black mt-1 leading-none">{String(activeTicketsCount).padStart(2, '0')}</h3>
+                                <div className="mt-4 flex items-center space-x-2">
+                                    <div className="px-2 py-0.5 bg-white/20 rounded-full text-[9px] font-black uppercase tracking-wider">Active Protocols</div>
+                                </div>
                             </div>
+                        </div>
+                        <div className="bg-slate-50 border border-slate-100 p-6 rounded-[2.5rem] relative group">
+                            <div className="relative z-10 text-left">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Archived</p>
+                                <h3 className="text-3xl font-black text-slate-900 mt-1 leading-none">{String(resolvedCount).padStart(2, '0')}</h3>
+                                <div className="mt-4 flex items-center space-x-2">
+                                    <div className="px-2 py-0.5 bg-slate-200 text-slate-500 rounded-full text-[9px] font-black uppercase tracking-wider">Resolved</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Filter Navigation */}
+                    <div className="flex space-x-2 overflow-x-auto no-scrollbar py-2">
+                        {STATUS_CHIPS.map((filter) => (
+                            <button
+                                key={filter}
+                                onClick={() => setActiveFilter(filter)}
+                                className={`px-6 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap transition-all uppercase tracking-widest ${
+                                    activeFilter === filter 
+                                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-100' 
+                                    : 'bg-emerald-50/50 text-emerald-600 border border-emerald-100'
+                                }`}
+                            >
+                                {filter}
+                            </button>
                         ))}
                     </div>
 
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
-                        <div className="p-4 flex flex-col md:flex-row gap-4">
-                            <div className="flex-1 relative">
-                                <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                                <input type="text" placeholder="Search by ticket ID or subject..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm" />
-                            </div>
-                            <div className="relative">
-                                <Filter className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm min-w-[150px]">
-                                    {statuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Status' : s}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        {loading ? (
-                            <div className="p-12 text-center">
-                                <Loader2 className="w-8 h-8 text-blue-600 mx-auto mb-4 animate-spin" />
-                                <p className="text-slate-500">Loading tickets...</p>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
-                                            <tr>
-                                                <th className="px-6 py-4">Ticket</th>
-                                                <th className="px-6 py-4">Category</th>
-                                                <th className="px-6 py-4 text-center">Priority</th>
-                                                <th className="px-6 py-4 text-center">Status</th>
-                                                <th className="px-6 py-4">Last Updated</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredTickets.map(ticket => (
-                                                <tr key={ticket.id} onClick={() => fetchTicketDetail(ticket.id)} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer">
-                                                    <td className="px-6 py-4">
-                                                        <p className="font-medium text-slate-900 mb-1">#{ticket.id}</p>
-                                                        <p className="text-slate-600 truncate max-w-[300px]">{ticket.subject}</p>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-slate-600">{ticket.category}</td>
-                                                    <td className="px-6 py-4 text-center"><span className={`font-medium ${getPriorityStyle(ticket.priority)}`}>{ticket.priority}</span></td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusStyle(ticket.status)}`}>
-                                                            {getStatusIcon(ticket.status)} {ticket.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-slate-500">{new Date(ticket.updated_at).toLocaleString()}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                {filteredTickets.length === 0 && (
-                                    <div className="p-12 text-center">
-                                        <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                                        <p className="text-slate-500">No tickets found</p>
+                    {/* Ticket Grid */}
+                    <div className="space-y-4">
+                        {filteredTickets.length > 0 ? (
+                            filteredTickets.map((ticket) => (
+                                <button 
+                                    key={ticket.id} 
+                                    onClick={() => fetchTicketDetail(ticket.id)}
+                                    className="w-full bg-white border border-emerald-50 rounded-[2.2rem] p-6 shadow-sm active:scale-[0.98] hover:border-emerald-200 transition-all text-left flex flex-col group"
+                                >
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest ${
+                                            ticket.status === 'CLOSED' ? 'bg-slate-100 text-slate-500' : 
+                                            ticket.status === 'ANSWERED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                                        }`}>
+                                            {ticket.status}
+                                        </div>
+                                        <span className="text-[10px] font-black text-slate-300 tracking-widest group-hover:text-emerald-400 transition-colors uppercase italic">#TCK-{ticket.id}</span>
                                     </div>
-                                )}
-                            </>
+                                    
+                                    <h4 className="text-[15px] font-black text-slate-800 leading-snug mb-5 tracking-tight group-hover:text-emerald-700 transition-colors">
+                                        {ticket.subject}
+                                    </h4>
+
+                                    <div className="flex items-center justify-between pt-5 border-t border-emerald-50/50">
+                                        <div className="flex items-center space-x-4">
+                                            <div className="flex items-center text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">
+                                                <Clock size={12} className="mr-1.5" />
+                                                {new Date(ticket.updated_at).toLocaleDateString()}
+                                            </div>
+                                            <div className="flex items-center text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">
+                                                <LifeBuoy size={12} className="mr-1.5" />
+                                                {ticket.category}
+                                            </div>
+                                        </div>
+                                        <ChevronRight size={18} className="text-emerald-100 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+                                    </div>
+                                </button>
+                            ))
+                        ) : (
+                            <div className="py-24 flex flex-col items-center justify-center text-center animate-in zoom-in duration-500">
+                                <div className="w-24 h-24 bg-emerald-50 rounded-[2.5rem] flex items-center justify-center text-emerald-200 mb-6 drop-shadow-sm">
+                                    <ShieldAlert size={48} />
+                                </div>
+                                <h3 className="font-black text-slate-800 uppercase italic tracking-tight">No Tickets Located</h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 px-12 leading-relaxed">The support matrix is currently empty.<br/>Initiate a new ticket below.</p>
+                            </div>
                         )}
                     </div>
-                </>
-            )}
-
-            {/* ── Create Ticket View ── */}
-            {view === 'create' && (
-                <div className="max-w-2xl">
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                            <h2 className="font-semibold text-slate-900">Create New Ticket</h2>
-                            <p className="text-sm text-slate-500">Describe your issue and we&apos;ll get back to you as soon as possible</p>
-                        </div>
-                        <form onSubmit={handleCreateTicket} className="p-6 space-y-5">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Subject</label>
-                                <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Brief description of your issue" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm" required />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
-                                <div className="relative">
-                                    <select value={category} onChange={e => setCategory(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm" required>
-                                        <option value="">Select category</option>
-                                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Message</label>
-                                <textarea value={message} onChange={e => setMessage(e.target.value)} rows={5} placeholder="Describe your issue in detail..." className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm resize-none" />
-                            </div>
-
-                            {/* Attachment */}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    Attachment <span className="text-slate-400 font-normal">(optional, max 5 MB)</span>
-                                </label>
-                                <input ref={createFileRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileChange(e, setCreateImageFile)} />
-                                {createImageFile ? (
-                                    <div className="flex items-center gap-3">
-                                        <FilePreview file={createImageFile} onRemove={() => { setCreateImageFile(null); if (createFileRef.current) createFileRef.current.value = ''; }} />
-                                        <span className="text-xs text-slate-500 truncate max-w-[200px]">{createImageFile.name}</span>
-                                    </div>
-                                ) : (
-                                    <button type="button" onClick={() => createFileRef.current?.click()} className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-colors">
-                                        <Paperclip className="w-4 h-4" /> Attach image
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Upload progress */}
-                            {uploadProgress !== null && <UploadProgress progress={uploadProgress} />}
-
-                            <div className="flex items-center justify-end pt-2 border-t border-slate-100">
-                                <button type="submit" disabled={sending || (!message.trim() && !createImageFile)} className="px-6 py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                                    {sending && <Loader2 className="w-4 h-4 animate-spin" />}
-                                    Create Ticket
-                                </button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
             )}
 
-            {/* ── Ticket Detail View ── */}
-            {view === 'detail' && selectedTicket && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Chat */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                                <h2 className="font-semibold text-slate-900">Conversation</h2>
-                                <span className="text-xs text-slate-500">ID: #{selectedTicket.id}</span>
+            {/* ── CREATE VIEW ── */}
+            {view === 'create' && (
+                <div className="p-6 space-y-8 animate-in slide-in-from-right duration-300 pb-40">
+                    <form onSubmit={handleCreateTicket} className="space-y-6">
+                        <div className="space-y-3">
+                            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">New transmission</h4>
+                            
+                            <div className="p-6 bg-slate-50 rounded-[1.8rem] border border-slate-100 space-y-4">
+                                <div>
+                                    <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 ml-1">Issue Subject</label>
+                                    <input 
+                                        type="text" 
+                                        required
+                                        value={subject}
+                                        onChange={(e) => setSubject(e.target.value)}
+                                        placeholder="Concise summary..."
+                                        className="w-full bg-transparent border-none p-0 text-sm font-black tracking-tight outline-none focus:ring-0 placeholder:text-slate-200"
+                                    />
+                                </div>
                             </div>
 
-                            {/* Messages */}
-                            <div className="p-6 space-y-6 max-h-[600px] overflow-y-auto">
-                                {selectedTicket.messages?.map((msg, i) => (
-                                    <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[80%] rounded-2xl px-5 py-3 ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-slate-100 text-slate-800 rounded-bl-none'}`}>
-                                            {msg.content && <p className="text-sm">{msg.content}</p>}
-                                            {msg.image_url && (
-                                                <img
-                                                    src={msg.image_url}
-                                                    alt="attachment"
-                                                    className={`max-w-[240px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity ${msg.content ? 'mt-2' : ''}`}
-                                                    onClick={() => setLightboxUrl(msg.image_url!)}
-                                                />
-                                            )}
-                                            <p className={`text-[10px] mt-1 ${msg.sender === 'user' ? 'text-blue-200' : 'text-slate-400'}`}>
-                                                {new Date(msg.created_at).toLocaleString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="p-6 bg-slate-50 rounded-[1.8rem] border border-slate-100 space-y-2">
+                                <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 ml-1">Category Core</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {CATEGORIES.map(cat => (
+                                        <button 
+                                            key={cat}
+                                            type="button"
+                                            onClick={() => setCategory(cat)}
+                                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
+                                                category === cat ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-100' : 'bg-white border-slate-100 text-slate-400'
+                                            }`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            {/* Reply box */}
-                            {selectedTicket.status !== 'CLOSED' && (
-                                <div className="p-4 border-t border-slate-100 bg-slate-50 space-y-3">
-                                    {/* Upload progress */}
-                                    {uploadProgress !== null && <UploadProgress progress={uploadProgress} />}
+                            <div className="p-6 bg-slate-50 rounded-[1.8rem] border border-slate-100">
+                                <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 ml-1">Full Description</label>
+                                <textarea 
+                                    rows={6}
+                                    required
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    placeholder="Explain your case in detail..."
+                                    className="w-full bg-transparent border-none p-0 text-sm font-bold tracking-tight outline-none focus:ring-0 placeholder:text-slate-200 resize-none min-h-[120px]"
+                                />
+                            </div>
 
-                                    {/* Image preview */}
-                                    {replyImageFile && (
-                                        <div className="flex items-center gap-3">
-                                            <FilePreview file={replyImageFile} onRemove={() => { setReplyImageFile(null); if (replyFileRef.current) replyFileRef.current.value = ''; }} />
-                                            <span className="text-xs text-slate-500 truncate max-w-[200px]">{replyImageFile.name}</span>
+                            <div className="p-6 bg-slate-50 rounded-[1.8rem] border border-slate-100">
+                                <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-3 ml-1 block">Attachment (Max 5MB)</label>
+                                <div className="flex items-center space-x-4">
+                                    <button 
+                                        type="button"
+                                        onClick={() => createFileRef.current?.click()}
+                                        className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-2xl border-2 border-dashed transition-all ${
+                                            createImageFile ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-slate-200 bg-white text-slate-400'
+                                        }`}
+                                    >
+                                        <ImageIcon size={18} />
+                                        <span className="text-[10px] font-black uppercase tracking-wider">{createImageFile ? 'Change File' : 'Pick Image'}</span>
+                                    </button>
+                                    <input ref={createFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, setCreateImageFile)} />
+                                    
+                                    {createImageFile && (
+                                        <div className="relative w-12 h-12">
+                                            <img src={URL.createObjectURL(createImageFile)} className="w-full h-full object-cover rounded-xl" />
+                                            <button onClick={() => setCreateImageFile(null)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600"><X size={10} /></button>
                                         </div>
                                     )}
-
-                                    <form onSubmit={handleSendMessage} className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={newMessage}
-                                            onChange={e => setNewMessage(e.target.value)}
-                                            placeholder="Type your message..."
-                                            className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
-                                            disabled={sending}
-                                        />
-                                        {/* Attach */}
-                                        <button
-                                            type="button"
-                                            onClick={() => replyFileRef.current?.click()}
-                                            disabled={sending}
-                                            title="Attach image (max 5 MB)"
-                                            className={`p-2.5 border rounded-lg transition-colors ${replyImageFile ? 'border-blue-400 bg-blue-50 text-blue-600' : 'border-slate-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-500'}`}
-                                        >
-                                            <ImageIcon className="w-4 h-4" />
-                                        </button>
-                                        <input ref={replyFileRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileChange(e, setReplyImageFile)} />
-                                        {/* Send */}
-                                        <button
-                                            type="submit"
-                                            disabled={sending || (!newMessage.trim() && !replyImageFile)}
-                                            className="px-4 py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                        >
-                                            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                            Send
-                                        </button>
-                                    </form>
                                 </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Ticket Info */}
-                    <div>
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                            <h3 className="font-semibold text-slate-900 mb-4">Ticket Details</h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <p className="text-xs text-slate-500 mb-1">Subject</p>
-                                    <p className="text-sm font-medium text-slate-900">{selectedTicket.subject}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-slate-500 mb-1">Category</p>
-                                    <p className="text-sm font-medium text-slate-900">{selectedTicket.category}</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-xs text-slate-500 mb-1">Status</p>
-                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusStyle(selectedTicket.status)}`}>
-                                            {getStatusIcon(selectedTicket.status)} {selectedTicket.status}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-500 mb-1">Priority</p>
-                                        <span className={`font-medium ${getPriorityStyle(selectedTicket.priority)}`}>{selectedTicket.priority}</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-slate-500 mb-1">Created At</p>
-                                    <p className="text-sm text-slate-900">{new Date(selectedTicket.created_at).toLocaleString()}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-slate-500 mb-1">Last Updated</p>
-                                    <p className="text-sm text-slate-900">{new Date(selectedTicket.updated_at).toLocaleString()}</p>
-                                </div>
-                                {selectedTicket.status !== 'CLOSED' && (
-                                    <div className="pt-4 border-t border-slate-100">
-                                        <button onClick={handleCloseTicket} className="w-full px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors">
-                                            Close Ticket
-                                        </button>
+                                {uploadProgress !== null && (
+                                    <div className="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
                                     </div>
                                 )}
                             </div>
                         </div>
-                    </div>
+
+                        <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-emerald-50/50 p-6 z-40 rounded-t-[2.5rem]">
+                            <button 
+                                type="submit"
+                                disabled={sending}
+                                className="w-full bg-emerald-600 text-white py-5 rounded-[2rem] font-black text-sm shadow-xl shadow-emerald-200 active:scale-[0.97] transition-all flex items-center justify-center space-x-3 disabled:opacity-50"
+                            >
+                                {sending ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} />}
+                                <span>Commit Transmission</span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             )}
+
+            {/* ── DETAIL VIEW (CHAT) ── */}
+            {view === 'detail' && selectedTicket && (
+                <div className="flex flex-col animate-in slide-in-from-right duration-300">
+                    {/* Ticket Summary Bar */}
+                    <div className="px-6 py-4 bg-emerald-50/50 border-b border-emerald-100 flex items-center justify-between">
+                        <div>
+                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{selectedTicket.category} Matrix</p>
+                            <h4 className="text-xs font-black text-slate-900 tracking-tight leading-none mt-1 uppercase italic">{selectedTicket.subject}</h4>
+                        </div>
+                        {selectedTicket.status !== 'CLOSED' && (
+                            <button 
+                                onClick={handleCloseTicket}
+                                className="px-4 py-2 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+                            >
+                                Archive
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Messages Area */}
+                    <div className="p-6 space-y-6 overflow-y-auto pb-48 flex-grow min-h-[60vh]">
+                        {selectedTicket.messages?.map((msg, i) => (
+                            <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className="flex flex-col space-y-1">
+                                    <div className={`max-w-[85vw] md:max-w-md rounded-[2rem] p-5 shadow-sm ${
+                                        msg.sender === 'user' 
+                                        ? 'bg-slate-900 text-white rounded-br-small rounded-tl-[2rem]' 
+                                        : 'bg-emerald-50 text-emerald-900 rounded-bl-small border border-emerald-100'
+                                    }`}>
+                                        {msg.content && <p className="text-sm font-medium leading-relaxed">{msg.content}</p>}
+                                        {msg.image_url && (
+                                            <div className="mt-3 relative rounded-2xl overflow-hidden border border-white/20 shadow-lg">
+                                                <img 
+                                                    src={msg.image_url} 
+                                                    className="w-full h-auto cursor-pointer hover:scale-105 transition-transform" 
+                                                    onClick={() => setLightboxUrl(msg.image_url!)}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className={`text-[9px] font-black uppercase tracking-[0.2em] opacity-40 ${msg.sender === 'user' ? 'text-right mr-3' : 'text-left ml-3'}`}>
+                                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {msg.sender.toUpperCase()}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                        <div ref={chatEndRef} />
+                    </div>
+
+                    {/* Reply Input (Sticky Bottom) */}
+                    {selectedTicket.status !== 'CLOSED' && (
+                        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur-xl border-t border-emerald-50 z-50 rounded-t-[2.5rem] shadow-2xl">
+                            <form onSubmit={handleSendMessage} className="space-y-4">
+                                {replyImageFile && (
+                                    <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 animate-in slide-in-from-bottom-2">
+                                        <div className="w-12 h-12 relative rounded-xl overflow-hidden">
+                                            <img src={URL.createObjectURL(replyImageFile)} className="w-full h-full object-cover" />
+                                            <button type="button" onClick={() => setReplyImageFile(null)} className="absolute top-0 right-0 bg-rose-500 text-white p-1 rounded-bl-xl shadow-lg"><X size={10} /></button>
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest truncate">{replyImageFile.name}</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Ready for transmission</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex items-center space-x-3">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => replyFileRef.current?.click()}
+                                        className={`p-4 rounded-2xl border-2 border-dashed transition-all flex-shrink-0 ${
+                                            replyImageFile ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-slate-100 bg-white text-slate-400'
+                                        }`}
+                                    >
+                                        <Paperclip size={20} />
+                                    </button>
+                                    <input ref={replyFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, setReplyImageFile)} />
+                                    
+                                    <div className="flex-1 relative flex items-center">
+                                        <input 
+                                            type="text"
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            placeholder="Transmit message..."
+                                            className="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 placeholder:text-slate-300"
+                                        />
+                                        <button 
+                                            type="submit"
+                                            disabled={sending || (!newMessage.trim() && !replyImageFile)}
+                                            className="absolute right-2 p-3 bg-emerald-600 text-white rounded-[1.2rem] shadow-lg shadow-emerald-200 active:scale-90 transition-all disabled:opacity-40 disabled:grayscale disabled:scale-100"
+                                        >
+                                            {sending ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* List View Floating CTA */}
+            {view === 'list' && (
+                <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-emerald-50/50 p-6 z-40 rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
+                    <button 
+                        onClick={() => setView('create')}
+                        className="w-full bg-emerald-600 text-white py-5 rounded-[2rem] font-black text-sm shadow-xl shadow-emerald-200 active:scale-[0.97] transition-all flex items-center justify-center space-x-3"
+                    >
+                        <Plus size={20} strokeWidth={3} />
+                        <span>Open New Ticket</span>
+                    </button>
+                </div>
+            )}
+
+            {/* Lightbox for Images */}
+            {lightboxUrl && (
+                <div className="fixed inset-0 z-50 bg-slate-900/95 flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => setLightboxUrl(null)}>
+                    <button className="absolute top-8 right-8 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all backdrop-blur-md border border-white/20">
+                        <X size={28} />
+                    </button>
+                    <img 
+                        src={lightboxUrl} 
+                        className="max-w-full max-h-[85vh] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300" 
+                        onClick={e => e.stopPropagation()} 
+                    />
+                </div>
+            )}
+
+            <style>{`
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
+
         </div>
     );
 };

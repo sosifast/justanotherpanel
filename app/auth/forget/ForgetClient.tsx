@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
-    Mail, ArrowRight, Loader2, 
-    ArrowLeft, CheckCircle2, AlertCircle,
-    KeyRound
+  Mail, 
+  ArrowRight, 
+  ChevronLeft,
+  Loader2,
+  CheckCircle2,
+  X,
+  KeyRound
 } from 'lucide-react';
 
 const ForgetPassword = () => {
@@ -13,22 +17,6 @@ const ForgetPassword = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [settings, setSettings] = useState<any>(null);
-
-    useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const res = await fetch('/api/settings/public');
-                if (res.ok) {
-                    const data = await res.json();
-                    setSettings(data);
-                }
-            } catch (error) {
-                console.error('Failed to fetch settings:', error);
-            }
-        };
-        fetchSettings();
-    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,102 +44,97 @@ const ForgetPassword = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 relative overflow-hidden font-sans">
+        <div className="min-h-screen bg-white text-slate-900 font-sans flex flex-col overflow-x-hidden">
             
-            {/* Ambient Background Glows */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full -mr-64 -mt-64" />
-            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] rounded-full -ml-64 -mb-64" />
-            
-            <div className="max-w-md w-full relative">
-                {/* Branding Above Card */}
-                <div className="text-center mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <Link href="/" className="inline-block mb-6">
-                        {settings?.logo_imagekit_url ? (
-                            <img src={settings.logo_imagekit_url} alt="Logo" className="h-12 w-auto object-contain brightness-0 invert" />
-                        ) : (
-                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-900 font-black text-2xl shadow-2xl">J</div>
-                        )}
-                    </Link>
+            {/* Top Area (Hero) - Light Theme */}
+            <div className="relative h-[35vh] flex flex-col justify-end p-8 bg-emerald-600 overflow-hidden shadow-lg">
+                <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500 rounded-full opacity-40"></div>
+                
+                <Link href="/auth/login" className="absolute top-12 left-6 p-2.5 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 text-white hover:bg-white/30 transition-all z-10">
+                    <ChevronLeft size={24} />
+                </Link>
+                
+                <div className="relative z-10 space-y-2 pb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="w-12 h-1.5 bg-white rounded-full mb-4 shadow-sm"></div>
+                    <h1 className="text-4xl font-black tracking-tight leading-none text-white uppercase italic">
+                        RECOVER<br/><span className="text-emerald-100 not-italic uppercase opacity-80 text-3xl">YOUR KEY.</span>
+                    </h1>
                 </div>
+            </div>
 
-                {/* Main Card */}
-                <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-10 shadow-3xl animate-in zoom-in-95 duration-500">
-                    <div className="mb-8">
-                        <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 mb-6">
-                            <KeyRound className="w-6 h-6" />
-                        </div>
-                        <h2 className="text-3xl font-black text-white tracking-tight mb-2">Lost Access?</h2>
-                        <p className="text-slate-400 font-medium tracking-tight">Enter your email and we&apos;ll help you regain control of your account.</p>
+            {/* Form Area */}
+            <div className="flex-1 bg-white rounded-t-[3rem] -mt-10 p-8 pb-12 shadow-[0_-20px_50px_rgba(0,0,0,0.05)] relative z-20">
+                
+                {success && (
+                    <div className="mb-6 p-8 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-[2.5rem] animate-in fade-in zoom-in duration-300 shadow-sm">
+                        <CheckCircle2 className="w-10 h-10 mb-6 text-emerald-600" />
+                        <h3 className="text-lg font-black text-slate-900 mb-2">Request Successful</h3>
+                        <p className="text-sm font-bold leading-relaxed opacity-70 mb-8">{success}</p>
+                        <Link 
+                            href="/auth/login" 
+                            className="w-full h-14 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-emerald-100 group transition-all active:scale-95"
+                        >
+                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                            Return to Entry Portal
+                        </Link>
                     </div>
+                )}
 
-                    {success ? (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                            <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl text-emerald-400">
-                                <CheckCircle2 className="w-8 h-8 mb-4" />
-                                <p className="text-sm font-bold leading-relaxed">{success}</p>
+                {!success && (
+                    <>
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-[1.5rem] text-xs font-bold flex items-center gap-3 animate-in shake-in duration-300">
+                                <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-black text-xs">!</div>
+                                <span className="flex-1">{error}</span>
+                                <button onClick={() => setError('')}><X size={14} /></button>
                             </div>
-                            <Link 
-                                href="/auth/login" 
-                                className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                                Back to Log In
-                            </Link>
-                        </div>
-                    ) : (
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {error && (
-                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-bold flex items-center gap-3">
-                                    <AlertCircle className="w-4 h-4" />
-                                    {error}
-                                </div>
-                            )}
+                        )}
 
+                        <form onSubmit={handleSubmit} className="space-y-10 mt-4">
+                            
+                            {/* Email Input */}
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Recovery Email</label>
-                                <div className="relative group">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600 group-focus-within:text-blue-400 transition-colors" />
-                                    <input 
-                                        type="email" 
+                                <label className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-300 ml-1">Recovery Destination</label>
+                                <div className="relative border-b-2 border-slate-50 focus-within:border-emerald-500 transition-colors py-1 group">
+                                    <input
+                                        type="email"
+                                        required
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="your@email.com" 
-                                        className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-medium placeholder:text-slate-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none" 
-                                        required
+                                        placeholder="name@domain.com"
+                                        className="w-full bg-transparent py-3 outline-none text-lg text-slate-800 placeholder:text-slate-300 transition-all font-bold"
                                     />
+                                    <Mail className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" size={20} />
                                 </div>
                             </div>
 
-                            <button 
-                                type="submit" 
+                            {/* Reset Button */}
+                            <button
+                                type="submit"
                                 disabled={loading}
-                                className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-slate-100 hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
+                                className="w-full bg-emerald-600 text-white h-16 rounded-[2rem] font-black text-lg shadow-xl shadow-emerald-100 flex items-center justify-center space-x-3 active:scale-[0.97] transition-all disabled:opacity-50"
                             >
-                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                                {loading ? (
+                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                ) : (
                                     <>
-                                        Send Rescue Link
-                                        <ArrowRight className="w-4 h-4" />
+                                        <span>SEND RECOVERY LINK</span>
+                                        <ArrowRight size={22} strokeWidth={3} className="ml-2" />
                                     </>
                                 )}
                             </button>
                         </form>
-                    )}
 
-                    <div className="mt-10 pt-8 border-t border-white/5 text-center">
-                        <Link 
-                            href="/auth/login" 
-                            className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors flex items-center justify-center gap-2 group"
-                        >
-                            <ArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
-                            Return to Login
-                        </Link>
-                    </div>
-                </div>
-
-                {/* Footer Info */}
-                <p className="mt-8 text-center text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">
-                    SECURE RECOVERY PROCESS
-                </p>
+                        <div className="mt-12 text-center">
+                            <Link 
+                                href="/auth/login" 
+                                className="text-slate-400 text-sm font-medium hover:text-emerald-600 transition-colors"
+                            >
+                                Remembered your access key? <span className="text-emerald-600 font-bold underline underline-offset-4 decoration-emerald-500/30 hover:decoration-emerald-500 transition-all">Sign in here</span>
+                            </Link>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

@@ -22,6 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
 
   return {
+    metadataBase: new URL('https://www.apkey.net'),
     title: settings?.site_name || "JustAnotherPanel - SMM Panel Solutions",
     description: "The most advanced and reliable SMM panel provider for all your social media marketing needs.",
     icons: {
@@ -32,6 +33,9 @@ export async function generateMetadata(): Promise<Metadata> {
     verification: {
       google: "blhcJmHuehxy-vqbcHBA4Dclxc3iFlqhyGMFLATzG_c",
     },
+    alternates: {
+      canonical: '/',
+    }
   };
 }
 

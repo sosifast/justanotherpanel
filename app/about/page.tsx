@@ -12,6 +12,9 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
         title: `About | ${siteName}`,
         description: `Learn more about ${siteName} and our mission to revolutionize social media marketing.`,
+        alternates: {
+            canonical: '/about'
+        }
     };
 }
 

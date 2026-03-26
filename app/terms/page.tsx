@@ -19,6 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
             title: seo?.term_title || `Terms of Service | ${siteName}`,
             description: seo?.term_desc || `Terms of Service for ${siteName}.`,
             siteName
+        },
+        alternates: {
+            canonical: '/terms'
         }
     };
 }

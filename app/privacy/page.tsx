@@ -19,6 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
             title: seo?.privacy_title || `Privacy Policy | ${siteName}`,
             description: seo?.privacy_desc || `Privacy Policy for ${siteName}.`,
             siteName
+        },
+        alternates: {
+            canonical: '/privacy'
         }
     };
 }

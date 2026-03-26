@@ -123,6 +123,9 @@ export async function generateMetadata(): Promise<Metadata> {
             title,
             description,
             siteName: siteName,
+        },
+        alternates: {
+            canonical: '/services'
         }
     };
 }

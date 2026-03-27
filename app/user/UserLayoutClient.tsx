@@ -229,7 +229,7 @@ const UserLayoutClient = ({ children, initialSettings }: UserLayoutClientProps) 
         }
     };
 
-    if (pathname === '/user' || pathname === '/user/add-funds' || pathname.startsWith('/user/history') || pathname === '/user/account' || pathname === '/user/tickets') {
+    if (pathname === '/user' || pathname === '/user/add-funds' || pathname.startsWith('/user/history') || pathname === '/user/account' || pathname === '/user/tickets' || pathname === '/user/voucher' || pathname.startsWith('/user/redeem')) {
         return <>{children}</>;
     }
 

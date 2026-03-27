@@ -9,7 +9,7 @@ const isBuild = process.env.NEXT_PHASE === 'phase-production-build' || process.e
 // We export the provider but only configure processors if we are not in the build phase
 // This prevents the build from hanging due to active background log processors
 export const loggerProvider = new LoggerProvider({
-  resource: resourceFromAttributes({ 'service.name': 'my-nextjs-app' }),
+  resource: resourceFromAttributes({ 'service.name': 'justanotherpanel' }),
   processors: isBuild ? [] : [
     new BatchLogRecordProcessor(
       new OTLPLogExporter({

@@ -2,19 +2,19 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  ArrowRight, 
-  Chrome, 
-  ChevronLeft,
-  Smartphone,
-  Fingerprint,
-  Loader2,
-  CheckCircle2,
-  X
+import {
+    Mail,
+    Lock,
+    Eye,
+    EyeOff,
+    ArrowRight,
+    Chrome,
+    ChevronLeft,
+    Smartphone,
+    Fingerprint,
+    Loader2,
+    CheckCircle2,
+    X
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -64,7 +64,7 @@ const LoginForm = () => {
 
     return (
         <div className="min-h-screen bg-white text-slate-900 font-sans flex flex-col overflow-hidden">
-            
+
             {/* Top Area (Hero) - Light Theme */}
             <div className="relative h-[35vh] flex flex-col justify-end px-8 pb-16 bg-emerald-600 overflow-hidden shadow-lg">
                 {/* Decoration Ornaments */}
@@ -74,18 +74,18 @@ const LoginForm = () => {
                 <Link href="/" className="absolute top-12 left-6 p-2.5 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 text-white hover:bg-white/30 transition-all z-10">
                     <ChevronLeft size={24} />
                 </Link>
-                
+
                 <div className="relative z-10 space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="w-12 h-1.5 bg-white rounded-full mb-4 shadow-sm"></div>
                     <h1 className="text-4xl font-black tracking-tight leading-none text-white uppercase italic">
-                        LOGIN<br/><span className="text-emerald-100 not-italic uppercase opacity-80">ACCOUNT.</span>
+                        LOGIN<br /><span className="text-emerald-100 not-italic uppercase opacity-80">ACCOUNT.</span>
                     </h1>
                 </div>
             </div>
 
             {/* Form Area (Clean Sheet) */}
             <div className="flex-1 bg-white rounded-t-[3rem] -mt-10 p-8 pb-12 shadow-[0_-20px_50px_rgba(0,0,0,0.05)] relative z-20">
-                
+
                 {/* Alert Messages */}
                 {success && (
                     <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-[1.5rem] text-xs font-bold flex items-center gap-3 animate-in fade-in duration-300">
@@ -104,7 +104,7 @@ const LoginForm = () => {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    
+
                     {/* Email Input */}
                     <div className="space-y-2">
                         <label className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-400 ml-1">Email or Username</label>
@@ -156,7 +156,7 @@ const LoginForm = () => {
                             <Loader2 className="w-6 h-6 animate-spin" />
                         ) : (
                             <>
-                                <span>LOG IN NOW</span>
+                                <span>LOG IN</span>
                                 <ArrowRight size={22} strokeWidth={3} className="ml-2" />
                             </>
                         )}

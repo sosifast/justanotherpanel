@@ -1,7 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Ticket, Loader, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  Gift, 
+  Ticket, 
+  ArrowRight, 
+  Info,
+  CheckCircle2,
+  Loader
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -10,8 +18,8 @@ const ClaimRedeemClient = () => {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<{ amount: number; new_balance: number | string } | null>(null);
 
-    const handleClaim = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleClaim = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         if (!code.trim()) return toast.error('Please enter a redeem code');
 
         setLoading(true);
@@ -39,108 +47,131 @@ const ClaimRedeemClient = () => {
     };
 
     return (
-        <div className="max-w-2xl mx-auto space-y-6">
-            <div className="text-center space-y-2">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-2xl text-blue-600 mb-2">
-                    <Ticket className="w-8 h-8" />
+        <div className="min-h-screen bg-white text-slate-800 font-sans pb-32 select-none">
+          
+          {/* Header */}
+          <div className="p-6 flex items-center bg-white sticky top-0 z-40 border-b border-emerald-50">
+            <Link href="/user" className="p-2 bg-emerald-50 rounded-xl text-emerald-600 active:scale-90 transition-transform">
+              <ChevronLeft size={24} />
+            </Link>
+            <h2 className="ml-4 text-xl font-black text-slate-900 tracking-tight">Redeem Code</h2>
+          </div>
+
+          <div className="p-6 space-y-8 max-w-2xl mx-auto">
+            
+            {/* Illustration / Icon Section */}
+            <div className="flex flex-col items-center justify-center py-10">
+              <div className="w-24 h-24 bg-emerald-50 rounded-[2.5rem] flex items-center justify-center text-emerald-600 relative shadow-inner">
+                <Gift size={48} strokeWidth={1.5} />
+                <div className="absolute -top-2 -right-2 bg-white p-2 rounded-2xl shadow-md border border-emerald-50 text-emerald-500">
+                  <Ticket size={20} />
                 </div>
-                <h1 className="text-3xl font-bold text-slate-900">Claim Redeem Code</h1>
-                <p className="text-slate-500">Enter your code below to add balance to your account instantly.</p>
+              </div>
+              <div className="mt-6 text-center">
+                <h3 className="text-xl font-black text-slate-900">Claim Your Reward</h3>
+                <p className="text-xs text-slate-400 font-medium mt-1 px-10 leading-relaxed">
+                  Enter your unique voucher or promo code below to receive your special rewards.
+                </p>
+              </div>
             </div>
 
-            {result ? (
-                <div className="bg-white rounded-3xl p-8 border border-emerald-100 shadow-xl shadow-emerald-500/5 text-center space-y-6 animate-in fade-in zoom-in duration-300">
-                    <div className="flex justify-center">
-                        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                            <CheckCircle2 className="w-10 h-10" />
-                        </div>
+            {/* Form Section */}
+            <form onSubmit={handleClaim} className="space-y-6">
+              <div className="bg-white border border-emerald-100 rounded-[2.5rem] p-8 shadow-sm">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] block mb-6 text-center">
+                  Enter Redemption Code
+                </label>
+                
+                <div className="flex flex-col items-center">
+                  <input 
+                    type="text"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    placeholder="EX: PROMO2026"
+                    className="w-full bg-slate-50 border-2 border-dashed border-emerald-100 rounded-2xl py-5 px-6 text-center text-2xl font-black text-emerald-600 placeholder:text-emerald-100 outline-none focus:border-emerald-500 focus:bg-white transition-all uppercase tracking-widest"
+                    disabled={loading}
+                  />
+                  
+                  <div className="mt-6 flex items-start space-x-3 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                    <div className="mt-0.5 shrink-0">
+                      <Info size={18} className="text-emerald-500" />
                     </div>
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-bold text-slate-900">Successfully Claimed!</h2>
-                        <p className="text-slate-500">The balance has been added to your account.</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
-                        <div className="text-center">
-                            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Amount Added</p>
-                            <p className="text-2xl font-black text-emerald-700">${Number(result.amount).toFixed(2)}</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">New Balance</p>
-                            <p className="text-2xl font-black text-emerald-700">${Number(result.new_balance).toFixed(2)}</p>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <button
-                            onClick={() => setResult(null)}
-                            className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all"
-                        >
-                            Claim Another
-                        </button>
-                        <Link
-                            href="/user/history/deposits"
-                            className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2"
-                        >
-                            View Deposits <ArrowRight className="w-4 h-4" />
-                        </Link>
-                    </div>
+                    <p className="text-[10px] text-emerald-700 font-medium leading-relaxed">
+                      Code is usually 8-12 characters long and consists of letters and numbers. Please check your spelling carefully.
+                    </p>
+                  </div>
                 </div>
-            ) : (
-                <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl shadow-slate-200/50">
-                    <form onSubmit={handleClaim} className="space-y-6">
-                        <div>
-                            <label className="text-xs font-bold text-slate-400 uppercase mb-2 block ml-1">Redeem Code</label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={code}
-                                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                                    placeholder="EX: WELCOME-2024"
-                                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-black tracking-widest placeholder:text-slate-300 focus:outline-none focus:border-blue-500 focus:bg-white transition-all text-center uppercase"
-                                    disabled={loading}
-                                />
-                                {code && !loading && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setCode('')}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
-                                    >
-                                        <AlertCircle className="w-5 h-5 rotate-45" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
+              </div>
+            </form>
 
-                        <button
-                            type="submit"
-                            disabled={loading || !code.trim()}
-                            className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-black text-lg rounded-2xl shadow-xl shadow-blue-500/20 transition-all flex items-center justify-center gap-2"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader className="w-6 h-6 animate-spin" />
-                                    Claiming...
-                                </>
-                            ) : (
-                                'Claim Reward Now'
-                            )}
-                        </button>
-                    </form>
+            {/* Tips / Help */}
+            <div className="px-2">
+              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Redemption Tips</h4>
+              <ul className="space-y-3">
+                <li className="flex items-center space-x-3 text-xs font-bold text-slate-600">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                  <span>Each code can only be used once</span>
+                </li>
+                <li className="flex items-center space-x-3 text-xs font-bold text-slate-600">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                  <span>Check for expiration dates on your voucher</span>
+                </li>
+                <li className="flex items-center space-x-3 text-xs font-bold text-slate-600">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                  <span>Rewards are added instantly to your account</span>
+                </li>
+              </ul>
+            </div>
+          </div>
 
-                    <div className="mt-8 pt-8 border-t border-slate-50 flex items-start gap-3 bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50">
-                        <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                        <div className="text-xs text-blue-700 leading-relaxed">
-                            <p className="font-bold mb-1">Important Information:</p>
-                            <ul className="list-disc list-inside space-y-1 opacity-80">
-                                <li>Each code can only be used once per account.</li>
-                                <li>Make sure to check the expiration date of your code.</li>
-                                <li>Balance will be added instantly to your wallet.</li>
-                            </ul>
-                        </div>
-                    </div>
+          {/* Success Overlay */}
+          {result && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setResult(null)}></div>
+              <div className="relative bg-white w-full max-w-md rounded-[3rem] p-10 flex flex-col items-center text-center animate-in zoom-in duration-300 shadow-2xl">
+                <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
+                  <CheckCircle2 size={40} />
                 </div>
-            )}
+                <h3 className="text-xl font-black text-slate-900 mb-2">Redeem Successful!</h3>
+                <p className="text-xs text-slate-400 font-medium leading-relaxed mb-4">
+                  Successfully claimed <span className="text-emerald-600 font-bold">${Number(result.amount).toFixed(2)}</span>.
+                </p>
+                <div className="w-full p-4 bg-emerald-50 rounded-2xl border border-emerald-100 mb-8">
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">New Account Balance</p>
+                    <p className="text-2xl font-black text-emerald-700">${Number(result.new_balance).toFixed(2)}</p>
+                </div>
+                <button 
+                  onClick={() => setResult(null)}
+                  className="w-full bg-emerald-600 text-white py-4 rounded-[1.5rem] font-black text-sm shadow-lg shadow-emerald-100 active:scale-[0.98] transition-transform"
+                >
+                  Great, thanks!
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Fixed Bottom CTA */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-emerald-50/50 p-6 z-40 rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)] max-w-2xl mx-auto">
+            <button 
+              onClick={() => handleClaim()}
+              disabled={!code || loading}
+              className={`w-full py-5 rounded-[2rem] font-black text-sm transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl ${
+                code && !loading
+                ? 'bg-emerald-600 text-white shadow-emerald-200 active:scale-[0.97]' 
+                : 'bg-emerald-100 text-emerald-300 cursor-not-allowed'
+              }`}
+            >
+              {loading ? (
+                  <Loader className="w-6 h-6 animate-spin" />
+              ) : (
+                  <>
+                    <span>Redeem Now</span>
+                    <ArrowRight size={20} strokeWidth={3} />
+                  </>
+              )}
+            </button>
+          </div>
+
         </div>
     );
 };

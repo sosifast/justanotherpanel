@@ -4,6 +4,11 @@ import { compare } from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 import { getJwtSecret } from '@/lib/auth';
+import { SeverityNumber } from '@opentelemetry/api-logs'
+import { after } from 'next/server'
+import { loggerProvider } from '@/instrumentation'
+
+const logger = loggerProvider.getLogger('justanotherpanel')
 
 export async function POST(req: Request) {
   try {
@@ -95,12 +100,40 @@ export async function POST(req: Request) {
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
+    // Log success
+    after(async () => {
+      logger.emit({
+        body: `User login successful: ${user.email}`,
+        severityNumber: SeverityNumber.INFO,
+        attributes: {
+          userId: user.id,
+          username: user.username,
+          endpoint: '/api/auth/login',
+          method: 'POST',
+        },
+      });
+      await loggerProvider.forceFlush();
+    });
+
     return NextResponse.json(
       { message: 'Login successful', user: userWithoutPassword },
       { status: 200 }
     );
   } catch (error: any) {
     console.error('Login error:', error);
+    
+    // Log error
+    after(async () => {
+      logger.emit({
+        body: `Login error: ${error.message}`,
+        severityNumber: SeverityNumber.ERROR,
+        attributes: {
+          endpoint: '/api/auth/login',
+          method: 'POST',
+        },
+      });
+      await loggerProvider.forceFlush();
+    });
 
     // Check for specific configuration errors
     if (error.message === 'JWT_SECRET environment variable is not configured') {

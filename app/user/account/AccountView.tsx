@@ -31,7 +31,8 @@ import {
   RotateCcw,
   CircleDollarSign,
   TrendingUp,
-  Headset
+  Headset,
+  Ticket
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -312,7 +313,7 @@ const AccountView = () => {
                             <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">App Preferences</h4>
                             <div className="space-y-3">
                                 <MenuBtn icon={<Bell size={20} />} label="Notifications" desc="Control your alerts and sounds" onClick={() => setSubView('notifications')} />
-                                <MenuBtn icon={<Globe size={20} />} label="Language" desc="English (US)" />
+                                <MenuBtn icon={<Ticket size={20} />} label="Redeem" desc="Voucher activation hub" onClick={() => router.push('/user/redeem/claim')} />
                                 <MenuBtn icon={<Smartphone size={20} />} label="Appearance" desc="Light Mode" />
                             </div>
                         </section>

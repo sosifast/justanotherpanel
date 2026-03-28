@@ -30,6 +30,7 @@ type Notification = {
     message: string;
     type: 'ORDER' | 'DEPOSIT' | 'TICKET' | 'SYSTEM';
     is_read: boolean;
+    related_id?: number | null;
     created_at: string;
 };
 

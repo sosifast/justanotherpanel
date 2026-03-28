@@ -27,7 +27,8 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
-  ArrowRight
+  ArrowRight,
+  Megaphone
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
@@ -87,6 +88,12 @@ type DashboardData = {
     activeOrders: number;
   };
   recentOrders: Order[];
+  recentDeposits: {
+    id: number;
+    amount: number;
+    status: string;
+    created_at: string;
+  }[];
   platforms: Platform[];
   news: News[];
   socialMedia: {
@@ -146,6 +153,24 @@ const DashboardClient = ({ data }: Props) => {
     return () => clearInterval(interval);
   }, []);
 
+  const handleViewNotification = (n: Notification) => {
+    setShowNotifications(false);
+    switch (n.type) {
+      case 'ORDER':
+        if (n.related_id) router.push(`/user/history/order/${n.related_id}`);
+        else router.push('/user/history/order');
+        break;
+      case 'DEPOSIT':
+        router.push('/user/history/deposits');
+        break;
+      case 'TICKET':
+        router.push('/user/tickets');
+        break;
+      default:
+        break;
+    }
+  };
+
   const handleOpenNotifications = async () => {
     setShowNotifications(true);
     setNotifLoading(true);
@@ -204,7 +229,7 @@ const DashboardClient = ({ data }: Props) => {
       {/* Header */}
       <div className="p-6 flex justify-between items-center bg-white border-b border-emerald-50 sticky top-0 z-40">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500 flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-200 text-xs overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-200 text-xs overflow-hidden">
             {data.user?.profile_imagekit_url ? (
               <img src={data.user.profile_imagekit_url} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -262,8 +287,33 @@ const DashboardClient = ({ data }: Props) => {
         </div>
       </div>
 
+      {/* Services Grid */}
+      <div className="px-6 mt-10">
+        <h3 className="font-bold text-[11px] text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Main Services</h3>
+        <div className="grid grid-cols-4 gap-y-8">
+          {data.platforms.slice(0, 7).map((item) => (
+            <Link key={item.id} href={`/user/new-order?platform=${item.slug}`} className="flex flex-col items-center group cursor-pointer active:scale-90 transition-transform">
+              <div className={`w-14 h-14 bg-emerald-50 text-emerald-600 rounded-[1.5rem] flex items-center justify-center mb-3 shadow-sm group-hover:bg-emerald-100 group-hover:shadow-emerald-100 transition-all duration-300`}>
+                {item.icon_imagekit_url ? (
+                  <img src={item.icon_imagekit_url} alt={item.name} className="w-7 h-7 object-contain group-hover:scale-110 transition-transform" />
+                ) : (
+                  <Smartphone size={24} />
+                )}
+              </div>
+              <span className="text-[10px] font-bold text-slate-600 text-center line-clamp-1 px-1 uppercase tracking-tight">{item.name}</span>
+            </Link>
+          ))}
+          <Link href="/user/services" className="flex flex-col items-center group cursor-pointer active:scale-90 transition-transform">
+            <div className="w-14 h-14 bg-slate-50 text-slate-400 rounded-[1.5rem] flex items-center justify-center mb-3 shadow-sm group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-all duration-300">
+              <Plus size={24} />
+            </div>
+            <span className="text-[10px] font-bold text-slate-600 text-center uppercase tracking-tight">Others</span>
+          </Link>
+        </div>
+      </div>
+
       {/* Image Slider */}
-      <div className="px-6 mt-8">
+      <div className="px-6 mt-10">
         <div className="overflow-hidden rounded-3xl border border-emerald-50 shadow-sm relative h-40">
           <div
             className="flex h-full transition-transform duration-700 ease-in-out"
@@ -295,31 +345,6 @@ const DashboardClient = ({ data }: Props) => {
         </div>
       </div>
 
-      {/* Services Grid */}
-      <div className="px-6 mt-10">
-        <h3 className="font-bold text-[11px] text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Main Services</h3>
-        <div className="grid grid-cols-4 gap-y-8">
-          {data.platforms.slice(0, 7).map((item) => (
-            <Link key={item.id} href={`/user/new-order?platform=${item.slug}`} className="flex flex-col items-center group cursor-pointer active:scale-90 transition-transform">
-              <div className={`w-14 h-14 bg-emerald-50 text-emerald-600 rounded-[1.5rem] flex items-center justify-center mb-3 shadow-sm group-hover:bg-emerald-100 group-hover:shadow-emerald-100 transition-all duration-300`}>
-                {item.icon_imagekit_url ? (
-                  <img src={item.icon_imagekit_url} alt={item.name} className="w-7 h-7 object-contain group-hover:scale-110 transition-transform" />
-                ) : (
-                  <Smartphone size={24} />
-                )}
-              </div>
-              <span className="text-[10px] font-bold text-slate-600 text-center line-clamp-1 px-1 uppercase tracking-tight">{item.name}</span>
-            </Link>
-          ))}
-          <Link href="/user/services" className="flex flex-col items-center group cursor-pointer active:scale-90 transition-transform">
-            <div className="w-14 h-14 bg-slate-50 text-slate-400 rounded-[1.5rem] flex items-center justify-center mb-3 shadow-sm group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-all duration-300">
-              <Plus size={24} />
-            </div>
-            <span className="text-[10px] font-bold text-slate-600 text-center uppercase tracking-tight">Others</span>
-          </Link>
-        </div>
-      </div>
-
       {/* Promo Slide */}
       <div className="mt-12">
         <div className="px-6 flex justify-between items-center mb-5">
@@ -328,20 +353,24 @@ const DashboardClient = ({ data }: Props) => {
             See All <ArrowRight size={14} className="ml-1" />
           </Link>
         </div>
-        <div className="flex space-x-4 overflow-x-auto px-6 no-scrollbar pb-4 snap-x">
+        <div className="flex space-x-5 overflow-x-auto px-6 no-scrollbar pb-8 snap-x">
           {data.news.map((p) => (
-            <div key={p.id} onClick={() => setSelectedNews(p)} className="min-w-[180px] bg-white border border-emerald-50 p-5 rounded-[2.5rem] snap-start cursor-pointer hover:border-emerald-200 hover:shadow-lg hover:shadow-emerald-50/50 transition-all group">
-              <span className="text-[9px] font-black uppercase text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full italic tracking-widest">
-                Flash
-              </span>
-              <h4 className="mt-4 font-black text-[13px] text-slate-800 leading-tight line-clamp-2 uppercase tracking-tight">{p.subject}</h4>
-              <div className="mt-4 flex items-center text-emerald-600 font-black text-[10px] uppercase tracking-widest italic group-hover:translate-x-1 transition-transform">
-                Claim Now <ChevronRight size={14} />
+            <div 
+              key={p.id} 
+              onClick={() => setSelectedNews(p)} 
+              className="min-w-[300px] max-w-[300px] bg-white p-7 rounded-[3rem] snap-start cursor-pointer shadow-xl shadow-emerald-900/5 hover:shadow-2xl hover:shadow-emerald-900/10 transition-all group border border-emerald-50/50"
+            >
+              <h4 className="font-black text-[16px] text-slate-900 leading-tight uppercase tracking-tight">{p.subject}</h4>
+              <p className="mt-4 text-[12px] font-medium text-slate-500 leading-relaxed line-clamp-3">
+                {p.content.split(' ').slice(0, 30).join(' ')}{p.content.split(' ').length > 30 ? '...' : ''}
+              </p>
+              <div className="mt-7 flex items-center text-emerald-600 font-black text-[10px] uppercase tracking-widest italic group-hover:translate-x-1 transition-transform">
+                See Detail <ChevronRight size={14} className="ml-1" />
               </div>
             </div>
           ))}
           {data.news.length === 0 && (
-            <div className="w-full text-center py-8 text-slate-300 text-[10px] font-black uppercase tracking-[0.2em] italic bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-100">No active transmissions</div>
+            <div className="w-full text-center py-12 text-slate-300 text-[10px] font-black uppercase tracking-[0.3em] italic bg-slate-50/50 rounded-[2.5rem] border border-dashed border-emerald-100">No active transmissions</div>
           )}
         </div>
       </div>
@@ -360,47 +389,110 @@ const DashboardClient = ({ data }: Props) => {
             onClick={() => setHistoryType('Deposit')}
             className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${historyType === 'Deposit' ? 'text-slate-900' : 'text-slate-400'}`}
           >
-            Financial Influx
+            History Deposit
             {historyType === 'Deposit' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-600 rounded-full animate-in slide-in-from-left duration-300"></div>}
           </button>
+        </div>
+
+        <div className="flex justify-between items-center mb-6 px-1">
+          <h3 className="font-bold text-[11px] text-slate-400 uppercase tracking-[0.2em]">
+            {historyType === 'Order' ? 'Latest Activity' : 'Deposit Matrix'}
+          </h3>
+          <Link 
+            href={historyType === 'Order' ? '/user/history/order' : '/user/history/deposits'} 
+            className="text-emerald-600 text-[10px] font-bold uppercase tracking-widest flex items-center hover:scale-105 transition-transform"
+          >
+            See All <ArrowRight size={14} className="ml-1" />
+          </Link>
         </div>
 
         <div className="space-y-4">
           {historyType === 'Order' ? (
             data.recentOrders.slice(0, 5).map((h) => (
-              <div key={h.id} className="p-5 bg-white border border-emerald-50 rounded-[2rem] flex justify-between items-center shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer group">
-                <div className="flex items-center space-x-4 min-w-0">
-                  <div className={`p-3.5 rounded-2xl bg-emerald-50 text-emerald-600 flex-shrink-0 group-hover:scale-110 transition-transform`}>
-                    <Zap size={20} />
+              <div 
+                key={h.id} 
+                onClick={() => router.push(`/user/history/order/${h.id}`)}
+                className="p-4 bg-white border border-emerald-50 rounded-3xl flex items-center shadow-sm hover:shadow-md transition-all active:scale-[0.98] group cursor-pointer"
+              >
+                {/* Horizontal Slim Design */}
+                <div className="shrink-0 w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Zap size={18} />
+                </div>
+                
+                <div className="flex-1 min-w-0 ml-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-[12px] font-black text-slate-800 truncate uppercase tracking-tight pr-2">{h.service}</h4>
+                    <span className="text-[12px] font-black text-slate-900 shrink-0">#{h.id}</span>
                   </div>
-                  <div className="min-w-0">
-                    <h4 className="text-[13px] font-black text-slate-800 truncate uppercase tracking-tight">{h.service}</h4>
-                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.1em] mt-1 italic">{formatDate(h.created_at)} • ORD-{h.id}</p>
+                  
+                  <div className="flex items-center space-x-2 mt-1.5">
+                    <div className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
+                      h.status === 'COMPLETED' || h.status === 'SUCCESS' 
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                      : 'bg-orange-50 text-orange-600 border-orange-100'
+                    }`}>
+                      {h.status === 'COMPLETED' || h.status === 'SUCCESS' ? 'Succeeded' : h.status}
+                    </div>
+                    <span className="w-1 h-1 bg-slate-100 rounded-full"></span>
+                    <span className="text-[9px] font-black text-slate-400 opacity-60 uppercase">{formatDate(h.created_at)}</span>
                   </div>
                 </div>
-                <div className="text-right flex-shrink-0 ml-4">
-                  <p className={`text-sm font-black text-slate-900`}>
-                    {h.quantity} <span className="text-[10px] text-slate-300 opacity-60">QTY</span>
-                  </p>
-                  <div className="flex items-center justify-end mt-1.5 space-x-1.5">
-                    <div className={`w-1.5 h-1.5 rounded-full ${h.status === 'COMPLETED' || h.status === 'SUCCESS' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`}></div>
-                    <span className={`text-[9px] font-black uppercase tracking-widest ${h.status === 'COMPLETED' || h.status === 'SUCCESS' ? 'text-emerald-500' : 'text-amber-500'} italic`}>
-                      {h.status === 'COMPLETED' || h.status === 'SUCCESS' ? 'Succeeded' : h.status}
-                    </span>
-                  </div>
+                
+                <div className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ChevronRight size={18} className="text-emerald-500" />
                 </div>
               </div>
             ))
           ) : (
-            <div className="py-12 text-center text-slate-300 text-[10px] font-black uppercase tracking-[0.3em] italic bg-emerald-50/20 rounded-[2rem] border border-dashed border-emerald-100 flex flex-col items-center">
-              <Wallet size={32} className="mb-4 opacity-20" />
-              No financial activity detected
-            </div>
+            data.recentDeposits.map((d) => (
+              <div 
+                key={d.id} 
+                className="p-4 bg-white border border-emerald-50 rounded-3xl flex items-center shadow-sm hover:shadow-md transition-all active:scale-[0.98] group cursor-pointer"
+                onClick={() => router.push('/user/history/deposits')}
+              >
+                <div className="shrink-0 w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Wallet size={18} />
+                </div>
+                
+                <div className="flex-1 min-w-0 ml-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-[12px] font-black text-slate-800 truncate uppercase tracking-tight pr-2">Automatic Top-Up</h4>
+                    <span className="text-sm font-black text-emerald-600 shrink-0">+${d.amount.toFixed(2)}</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 mt-1.5">
+                    <div className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
+                      d.status === 'SUCCESS' || d.status === 'PAYMENT' || d.status === 'COMPLETED'
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                      : d.status === 'PENDING'
+                      ? 'bg-amber-50 text-amber-600 border-amber-100'
+                      : 'bg-rose-50 text-rose-600 border-rose-100'
+                    }`}>
+                      {d.status === 'PAYMENT' ? 'Success' : d.status}
+                    </div>
+                    <span className="w-1 h-1 bg-slate-100 rounded-full"></span>
+                    <span className="text-[9px] font-black text-slate-400 opacity-60 uppercase">{formatDate(d.created_at)}</span>
+                  </div>
+                </div>
+                
+                <div className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ChevronRight size={18} className="text-emerald-500" />
+                </div>
+              </div>
+            ))
           )}
+
           {historyType === 'Order' && data.recentOrders.length === 0 && (
             <div className="py-12 text-center text-slate-300 text-[10px] font-black uppercase tracking-[0.3em] italic bg-emerald-50/20 rounded-[2rem] border border-dashed border-emerald-100 flex flex-col items-center">
               <ShoppingBag size={32} className="mb-4 opacity-20" />
               No acquisitions found in matrix
+            </div>
+          )}
+
+          {historyType === 'Deposit' && data.recentDeposits.length === 0 && (
+            <div className="py-12 text-center text-slate-300 text-[10px] font-black uppercase tracking-[0.3em] italic bg-emerald-50/20 rounded-[2rem] border border-dashed border-emerald-100 flex flex-col items-center">
+              <Wallet size={32} className="mb-4 opacity-20" />
+              Your financial log is currently baseline
             </div>
           )}
         </div>
@@ -414,7 +506,7 @@ const DashboardClient = ({ data }: Props) => {
           className={`flex flex-col items-center space-y-1.5 transition-all active:scale-90 group ${activeTab === 'Home' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
         >
           <Home size={22} strokeWidth={activeTab === 'Home' ? 3 : 2} />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Matrix</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest">Home</span>
         </Link>
         <Link
           href="/user/history/order"
@@ -438,7 +530,7 @@ const DashboardClient = ({ data }: Props) => {
           className={`flex flex-col items-center space-y-1.5 transition-all active:scale-90 group ${activeTab === 'Account' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
         >
           <User size={22} strokeWidth={activeTab === 'Account' ? 3 : 2} />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Portal</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest">Account</span>
         </Link>
       </div>
 
@@ -453,7 +545,7 @@ const DashboardClient = ({ data }: Props) => {
                   <Bell size={20} strokeWidth={3} />
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-900 uppercase italic tracking-tight">Transmissions</h3>
+                  <h3 className="font-black text-slate-900 uppercase italic tracking-tight">Notifications</h3>
                   <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Realtime Feed</p>
                 </div>
               </div>
@@ -492,7 +584,10 @@ const DashboardClient = ({ data }: Props) => {
                           <Clock size={10} className="mr-1" />
                           {formatDate(n.created_at)}
                         </div>
-                        <button className="text-[9px] font-black text-emerald-600 uppercase tracking-widest italic flex items-center group-hover:underline">
+                        <button 
+                          onClick={() => handleViewNotification(n)}
+                          className="text-[9px] font-black text-emerald-600 uppercase tracking-widest italic flex items-center group-hover:underline"
+                        >
                           View <ExternalLink size={10} className="ml-1" />
                         </button>
                       </div>
@@ -504,7 +599,7 @@ const DashboardClient = ({ data }: Props) => {
                   <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-200 mb-6 border border-slate-100/50">
                     <Bell size={40} className="opacity-40" />
                   </div>
-                  <h3 className="font-black text-slate-800 uppercase italic tracking-tight">No Protocols Logged</h3>
+                  <h3 className="font-black text-slate-800 uppercase italic tracking-tight">No Notifications</h3>
                   <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-2 px-12 leading-relaxed">Your secure feed is currently at baseline.</p>
                 </div>
               )}
@@ -515,45 +610,33 @@ const DashboardClient = ({ data }: Props) => {
 
       {/* News Modal (Promo Details) */}
       {selectedNews && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setSelectedNews(null)}></div>
-          <div className="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in duration-300 border border-white/20">
-            <div className="px-8 py-6 border-b border-emerald-50 flex items-center justify-between bg-emerald-50/30">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center sm:items-center p-0 sm:p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setSelectedNews(null)}></div>
+          <div className="relative bg-white rounded-t-[3rem] sm:rounded-[3rem] shadow-2xl w-full max-w-lg h-[80vh] sm:h-auto sm:max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-500">
+            <div className="px-8 py-7 border-b border-emerald-50 flex items-center justify-between bg-emerald-50/20 sticky top-0 z-10">
               <div className="flex items-center space-x-3">
-                <div className="p-2.5 bg-emerald-100 rounded-2xl text-emerald-600">
-                  <Zap size={20} strokeWidth={3} />
+                <div className="p-3 bg-emerald-500 rounded-2xl text-white shadow-lg shadow-emerald-200">
+                  <Megaphone size={22} strokeWidth={3} />
                 </div>
-                <div>
-                  <h3 className="font-black text-slate-900 uppercase italic tracking-tight">Matrix Offer</h3>
-                  <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest italic">Verified Update</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-black text-slate-900 uppercase italic tracking-tight truncate max-w-[200px]">{selectedNews.subject}</h3>
+                  <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest italic">Official Broadcast</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedNews(null)} className="p-2 hover:bg-emerald-100/50 rounded-xl text-slate-400 transition-all">
-                <X className="w-6 h-6" />
+              <button onClick={() => setSelectedNews(null)} className="p-3 hover:bg-emerald-100/50 rounded-2xl text-slate-400 transition-all active:scale-95">
+                <X size={24} />
               </button>
             </div>
-            <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar">
-              <div className="flex items-center space-x-2">
-                <span className="text-[9px] font-black bg-emerald-600 text-white px-3 py-1 rounded-full uppercase tracking-widest italic shadow-lg shadow-emerald-100">Hot Protocol</span>
-                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">• Priority Uplink</span>
-              </div>
-              <h2 className="text-2xl font-black text-slate-900 leading-tight uppercase tracking-tighter">{selectedNews.subject}</h2>
+            <div className="p-8 pt-6 space-y-6 overflow-y-auto h-full pb-32 no-scrollbar">
               <div className="prose prose-emerald">
                 <p className="text-slate-600 text-sm font-medium leading-relaxed whitespace-pre-wrap">
                   {selectedNews.content}
                 </p>
               </div>
-              <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-center justify-between group cursor-pointer hover:border-emerald-200 transition-all">
-                <div className="flex items-center space-x-3">
-                  <Smartphone size={20} className="text-emerald-500" />
-                  <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">Engage Service Now</span>
-                </div>
-                <ArrowUpRight size={18} className="text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
-              </div>
             </div>
-            <div className="px-8 py-6 bg-white border-t border-emerald-50 flex justify-end">
+            <div className="px-8 py-6 bg-white border-t border-emerald-50 flex justify-end absolute bottom-0 w-full">
               <button onClick={() => setSelectedNews(null)} className="w-full py-4 bg-emerald-600 text-white text-xs font-black rounded-[2rem] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 uppercase tracking-[0.2em] italic">
-                Acknowledge
+                Close
               </button>
             </div>
           </div>

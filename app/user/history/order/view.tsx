@@ -13,13 +13,10 @@ import {
   Smartphone,
   Zap,
   ShoppingBag,
-  CreditCard,
   History,
   X,
   RotateCcw,
-  RefreshCw,
-  Eye,
-  AlertCircle
+  RefreshCw
 } from 'lucide-react';
 import { Order, OrderStatus, Service } from '@prisma/client';
 import { toast } from 'react-hot-toast';
@@ -89,11 +86,12 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
     const statuses = ['All', 'COMPLETED', 'IN_PROGRESS', 'PROCESSING', 'PENDING', 'PARTIAL', 'ERROR', 'CANCELED', 'SUCCESS'];
 
     const getPlatformIcon = (serviceName: string) => {
-        if (serviceName.includes('Instagram')) return <Smartphone size={18} />;
-        if (serviceName.includes('TikTok')) return <Zap size={18} />;
-        if (serviceName.includes('YouTube')) return <ShoppingBag size={18} />;
-        if (serviceName.includes('Twitter')) return <Zap size={18} />;
-        if (serviceName.includes('Facebook')) return <Smartphone size={18} />;
+        const lowerName = serviceName.toLowerCase();
+        if (lowerName.includes('instagram')) return <Smartphone size={18} />;
+        if (lowerName.includes('tiktok')) return <Zap size={18} />;
+        if (lowerName.includes('youtube')) return <ShoppingBag size={18} />;
+        if (lowerName.includes('twitter')) return <Zap size={18} />;
+        if (lowerName.includes('facebook')) return <Smartphone size={18} />;
         return <ShoppingBag size={18} />;
     };
 
@@ -101,50 +99,43 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
         switch (status) {
             case 'COMPLETED':
             case 'SUCCESS':
-                return 'bg-emerald-50 text-emerald-600';
+                return 'bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-emerald-100/10';
             case 'IN_PROGRESS':
             case 'PROCESSING':
+                return 'bg-blue-50 text-blue-600 border border-blue-100 shadow-blue-100/10';
             case 'PENDING':
-                return 'bg-amber-50 text-amber-600';
+                return 'bg-orange-50 text-orange-600 border border-orange-100 shadow-orange-100/10';
             case 'PARTIAL':
-                return 'bg-purple-50 text-purple-600';
+                return 'bg-purple-50 text-purple-600 border border-purple-100 shadow-purple-100/10';
             case 'ERROR':
             case 'CANCELED':
-                return 'bg-red-50 text-red-600';
+                return 'bg-rose-50 text-rose-600 border border-rose-100 shadow-rose-100/10';
             default:
-                return 'bg-slate-50 text-slate-500';
+                return 'bg-slate-50 text-slate-600 border border-slate-100';
         }
     };
-
-    const getStatusLabel = (status: string) => {
-        return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-    };
-
-    const getPlatformFromService = (serviceName: string) => {
-        if (serviceName.includes('Instagram')) return 'Instagram';
-        if (serviceName.includes('TikTok')) return 'TikTok';
-        if (serviceName.includes('YouTube')) return 'YouTube';
-        if (serviceName.includes('Twitter')) return 'Twitter';
-        if (serviceName.includes('Facebook')) return 'Facebook';
-        return 'Other';
-    };
-
-    const filteredOrders = initialOrders.filter(order => {
-        const matchesSearch = order.id.toString().includes(searchQuery) ||
-            order.service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            order.link.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
-        const matchesPlatform = platformFilter === 'All' || getPlatformFromService(order.service.name) === platformFilter;
-        return matchesSearch && matchesStatus && matchesPlatform;
-    });
 
     const resetFilters = () => {
         setStatusFilter('All');
         setPlatformFilter('All');
+        setSearchQuery('');
     };
 
+    const filteredOrders = initialOrders.filter((order) => {
+        const matchesSearch = 
+            order.id.toString().includes(searchQuery) ||
+            order.service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            order.link.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
+        
+        const matchesPlatform = platformFilter === 'All' || order.service.name.toLowerCase().includes(platformFilter.toLowerCase());
+
+        return matchesSearch && matchesStatus && matchesPlatform;
+    });
+
     return (
-        <div className="min-h-screen bg-white text-slate-800 font-sans pb-10 select-none relative">
+        <div className="min-h-screen bg-white text-slate-800 font-sans pb-32 select-none relative">
             
             {/* Header */}
             <div className="p-6 bg-white sticky top-0 z-40 border-b border-emerald-50">
@@ -213,78 +204,71 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
                     filteredOrders.map((item) => (
                         <div 
                             key={item.id} 
-                            className="p-4 bg-white border border-emerald-50 rounded-[2rem] flex justify-between items-center shadow-sm active:scale-[0.98] transition-transform hover:shadow-md hover:border-emerald-100 group"
+                            onClick={() => router.push(`/user/history/order/${item.id}`)}
+                            className="p-4 bg-white border border-emerald-50 rounded-[1.75rem] flex items-center shadow-sm hover:shadow-md transition-all active:scale-[0.98] group cursor-pointer"
                         >
-                            <div className="flex items-center space-x-4">
-                                <div className={`p-4 rounded-2xl transition-all group-hover:scale-105 ${
-                                    item.status === 'ERROR' || item.status === 'CANCELED' ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600 shadow-sm'
-                                }`}>
-                                    {getPlatformIcon(item.service.name)}
-                                </div>
-                                <div className="space-y-1 pr-2">
-                                    <h4 className="text-sm font-black text-slate-800 line-clamp-1 leading-tight">{item.service.name}</h4>
-                                    <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                                        <span className="flex items-center"><Calendar size={10} className="mr-1 opacity-60" /> {new Date(item.created_at).toLocaleDateString()}</span>
-                                        <span className="opacity-30">•</span>
-                                        <span className="flex items-center"><Clock size={10} className="mr-1 opacity-60" /> {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    </div>
-                                    <p className="text-[9px] font-black text-slate-300 tracking-[0.2em] uppercase italic bg-slate-50 inline-block px-1.5 py-0.5 rounded-md mt-1">#ID-{item.id}</p>
-                                </div>
+                            {/* Compact Icon Section */}
+                            <div className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 ${
+                                ['ERROR', 'CANCELED'].includes(item.status) ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-600'
+                            }`}>
+                                {getPlatformIcon(item.service.name)}
                             </div>
 
-                            <div className="text-right space-y-1.5 min-w-[90px]">
-                                <p className="text-sm font-black text-slate-900 tracking-tight">
-                                    -${Number(item.price_sale).toFixed(2)}
-                                </p>
-                                <div className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm ${getStatusStyle(item.status)}`}>
-                                    {item.status === 'COMPLETED' || item.status === 'SUCCESS' ? (
-                                        <CheckCircle2 size={10} className="mr-1" />
-                                    ) : item.status === 'PENDING' || item.status === 'PROCESSING' || item.status === 'IN_PROGRESS' ? (
-                                        <Clock size={10} className="mr-1" />
-                                    ) : (
-                                        <XCircle size={10} className="mr-1" />
-                                    )}
-                                    {item.status}
+                            <div className="flex-1 min-w-0 ml-4">
+                                {/* Row 1: Title and Price */}
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <h4 className="text-xs font-black text-slate-900 truncate tracking-tight pr-4 uppercase italic leading-none">{item.service.name}</h4>
+                                    <span className="text-sm font-black text-slate-900 leading-none shrink-0">-${Number(item.price_sale).toFixed(2)}</span>
                                 </div>
-                                <div className="flex items-center justify-end space-x-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Link href={`/user/history/order/${item.id}`} className="p-1 px-2.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all">
-                                        <ArrowUpRight size={14} strokeWidth={3} />
-                                    </Link>
+
+                                {/* Row 2: Status, Meta, and Actions */}
+                                <div className="flex items-center">
+                                    <div className="flex items-center space-x-2">
+                                        <div className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider flex items-center shadow-sm border ${getStatusStyle(item.status)}`}>
+                                            {item.status === 'COMPLETED' || item.status === 'SUCCESS' ? (
+                                                <CheckCircle2 size={10} className="mr-1" />
+                                            ) : (
+                                                <Clock size={10} className="mr-1" />
+                                            )}
+                                            {item.status}
+                                        </div>
+                                        
+                                        <span className="text-[8px] font-black text-slate-300 tracking-widest uppercase">ID:{item.id}</span>
+                                        
+                                        <span className="w-1 h-1 bg-slate-100 rounded-full"></span>
+                                        
+                                        <div className="flex items-center text-[8px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                            <Calendar size={10} className="mr-1 opacity-40" /> 
+                                            {new Date(item.created_at).toLocaleDateString()}
+                                        </div>
+                                    </div>
+
                                     {item.service.refill && (
-                                        <button 
-                                            onClick={() => handleRefill(item.id)}
-                                            disabled={isRefilling === item.id || item.reffil_orders.some((r: ReffilOrder) => ['PENDING', 'SUCCESS', 'COMPLETED', 'FINISH'].includes(r.status))}
-                                            className={`p-1 px-2.5 rounded-lg transition-all ${
-                                                item.reffil_orders.some((r: ReffilOrder) => ['PENDING', 'SUCCESS', 'COMPLETED', 'FINISH'].includes(r.status))
-                                                ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                                                : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200'
-                                            }`}
-                                        >
-                                            <RotateCcw size={14} strokeWidth={3} className={isRefilling === item.id ? 'animate-spin' : ''} />
-                                        </button>
+                                        <div className="ml-auto pl-2">
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleRefill(item.id); }}
+                                                disabled={isRefilling === item.id || item.reffil_orders.some((r: ReffilOrder) => ['PENDING', 'SUCCESS', 'COMPLETED', 'FINISH'].includes(r.status))}
+                                                className={`p-1.5 rounded-lg transition-all ${
+                                                    item.reffil_orders.some((r: ReffilOrder) => ['PENDING', 'SUCCESS', 'COMPLETED', 'FINISH'].includes(r.status))
+                                                        ? 'bg-slate-50 text-slate-200 cursor-not-allowed'
+                                                        : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+                                                }`}
+                                            >
+                                                <RotateCcw size={12} strokeWidth={3} className={isRefilling === item.id ? 'animate-spin' : ''} />
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
                         </div>
                     ))
                 ) : (
-                    /* Empty State */
-                    <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in zoom-in duration-500">
-                        <div className="w-20 h-20 bg-emerald-50 rounded-[2rem] flex items-center justify-center text-emerald-200 shadow-inner">
-                            <History size={40} />
+                    <div className="py-24 flex flex-col items-center justify-center text-center animate-in zoom-in duration-500">
+                        <div className="w-24 h-24 bg-emerald-50 rounded-[2.5rem] flex items-center justify-center text-emerald-200 mb-6 transition-transform hover:scale-110">
+                            <History size={48} />
                         </div>
-                        <div className="space-y-1">
-                            <h3 className="font-black text-slate-900 uppercase">Archive Is Empty</h3>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest px-10 leading-relaxed">Adjust your temporal filters or initiate a new acquisition protocol.</p>
-                            {(statusFilter !== 'All' || platformFilter !== 'All') && (
-                                <button 
-                                    onClick={resetFilters}
-                                    className="mt-6 text-white bg-emerald-600 px-6 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center mx-auto shadow-lg shadow-emerald-100 active:scale-95 transition-all"
-                                >
-                                    <RotateCcw size={14} className="mr-2" /> Reset Metrics
-                                </button>
-                            )}
-                        </div>
+                        <h3 className="font-black text-slate-800 uppercase italic tracking-tight">No Protocols Logged</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 px-12 leading-relaxed">System logs for the current filter<br/>selection are currently empty.</p>
                     </div>
                 )}
             </div>
@@ -292,17 +276,11 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
             {/* Filter Bottom Sheet */}
             {isFilterOpen && (
                 <div className="fixed inset-0 z-50 flex items-end justify-center">
-                    {/* Backdrop */}
-                    <div 
-                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
-                        onClick={() => setIsFilterOpen(false)}
-                    ></div>
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
                     
-                    {/* Bottom Sheet Content */}
                     <div className="relative w-full max-w-md bg-white rounded-t-[3rem] p-8 pb-12 shadow-2xl animate-in slide-in-from-bottom duration-500 z-50 overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 opacity-50"></div>
                         
-                        {/* Handle Bar */}
                         <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mb-8 relative z-10"></div>
                         
                         <div className="flex items-center justify-between mb-8 relative z-10">
@@ -315,8 +293,7 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
                             </button>
                         </div>
 
-                        {/* Filter Section: Status */}
-                        <div className="mb-8 relative z-10">
+                        <div className="mb-8 relative z-10 text-left">
                             <label className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] block mb-4 ml-1">Current Status</label>
                             <div className="flex flex-wrap gap-2">
                                 {statuses.map((status) => (
@@ -335,8 +312,7 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
                             </div>
                         </div>
 
-                        {/* Filter Section: Platform */}
-                        <div className="mb-10 relative z-10">
+                        <div className="mb-10 relative z-10 text-left">
                             <label className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] block mb-4 ml-1">Social Platform</label>
                             <div className="grid grid-cols-3 gap-3">
                                 {platforms.map((p) => (
@@ -355,7 +331,6 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
                             </div>
                         </div>
 
-                        {/* Apply Button */}
                         <button 
                             onClick={() => setIsFilterOpen(false)}
                             className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-sm active:scale-[0.98] transition-all shadow-xl shadow-slate-200 uppercase tracking-widest relative z-10 flex items-center justify-center space-x-2"
@@ -366,7 +341,6 @@ const OrderHistoryView = ({ initialOrders }: OrdersViewProps) => {
                     </div>
                 </div>
             )}
-
         </div>
     );
 };

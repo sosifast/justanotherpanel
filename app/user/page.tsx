@@ -108,6 +108,13 @@ export default async function UserDashboardPage() {
     }
   });
 
+  // Get recent deposits (last 5)
+  const recentDeposits = await prisma.deposits.findMany({
+    where: { id_user: userId },
+    orderBy: { created_at: 'desc' },
+    take: 5
+  });
+
   const dashboardData = {
     user: user ? {
       ...user,
@@ -127,6 +134,12 @@ export default async function UserDashboardPage() {
       quantity: order.quantity,
       status: order.status,
       created_at: order.created_at.toISOString()
+    })),
+    recentDeposits: recentDeposits.map((d: any) => ({
+      id: d.id,
+      amount: Number(d.amount),
+      status: d.status,
+      created_at: d.created_at.toISOString()
     })),
     platforms: platforms.map((p: any) => ({
       ...p,

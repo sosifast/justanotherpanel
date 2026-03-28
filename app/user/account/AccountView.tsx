@@ -32,7 +32,8 @@ import {
   CircleDollarSign,
   TrendingUp,
   Headset,
-  Ticket
+  Ticket,
+  Moon
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -60,6 +61,8 @@ const AccountView = () => {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [subView, setSubView] = useState<'menu' | 'profile' | 'security' | 'notifications' | 'reseller'>('menu');
 
     // Profile State
@@ -232,7 +235,6 @@ const AccountView = () => {
     };
 
     const handleLogout = async () => {
-        if (!confirm('Authorize session termination?')) return;
         try {
             const res = await fetch('/api/auth/logout', { method: 'POST' });
             if (res.ok) {
@@ -242,6 +244,57 @@ const AccountView = () => {
             }
         } catch (e) {
             toast.error('Network failure during termination');
+        }
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) return toast.error('Max file size is 5MB');
+        if (!file.type.startsWith('image/')) return toast.error('Please upload an image file');
+
+        try {
+            setUploading(true);
+            const authRes = await fetch('/api/imagekit/auth');
+            const { token, expire, signature } = await authRes.json();
+
+            const settingsRes = await fetch('/api/admin/settings');
+            const settings = await settingsRes.json();
+
+            if (!settings.imagekit_publickey || !settings.imagekit_url) throw new Error('Storage not configured');
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('publicKey', settings.imagekit_publickey);
+            formData.append('signature', signature);
+            formData.append('expire', expire.toString());
+            formData.append('token', token);
+            formData.append('fileName', `user-${userProfile?.id}-${Date.now()}`);
+            formData.append('folder', '/profile_photos');
+
+            const uploadRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!uploadRes.ok) throw new Error('Upload failed');
+            const uploadData = await uploadRes.json();
+
+            const patchRes = await fetch('/api/user/profile', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ profile_imagekit_url: uploadData.url })
+            });
+
+            if (patchRes.ok) {
+                toast.success('Profile avatar updated');
+                fetchData();
+            }
+        } catch (err: any) {
+            toast.error(err.message || 'Transmission failure');
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -256,8 +309,8 @@ const AccountView = () => {
     return (
         <div className="min-h-screen bg-white text-slate-800 font-sans pb-10 select-none relative">
             
-            {/* Header */}
-            <div className="p-6 flex items-center justify-between bg-white sticky top-0 z-40 border-b border-emerald-50">
+            {/* Header Navigasi */}
+            <div className="p-6 bg-white sticky top-0 z-50 border-b border-emerald-50">
                 <div className="flex items-center">
                     <button 
                         onClick={() => subView === 'menu' ? router.push('/user') : setSubView('menu')}
@@ -265,80 +318,110 @@ const AccountView = () => {
                     >
                         <ChevronLeft size={24} />
                     </button>
-                    <h2 className="ml-4 text-xl font-black text-slate-900 tracking-tight uppercase italic">{subView === 'menu' ? 'ACCOUNT' : subView.toUpperCase()}</h2>
+                    <h2 className="ml-4 text-xl font-black text-slate-900 tracking-tight uppercase italic">
+                        {subView === 'menu' ? 'MY PROFILE' : subView.toUpperCase()}
+                    </h2>
                 </div>
             </div>
 
             {subView === 'menu' && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {/* Profile Section */}
-                    <div className="p-6">
-                        <div className="bg-emerald-600 p-8 rounded-[2.5rem] shadow-xl shadow-emerald-100 flex flex-col items-center text-center relative overflow-hidden">
-                            <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500 rounded-full opacity-30"></div>
-                            <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-emerald-700 rounded-full opacity-20"></div>
-
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
+                    {/* Bagian Profil (Modern & Integrated) */}
+                    <div className="px-6 py-4">
+                        <input 
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                        />
+                        <div className="flex items-center space-x-5">
                             <div className="relative">
-                                <div className="w-24 h-24 rounded-[2rem] bg-white p-1 shadow-lg">
-                                    <div className="w-full h-full rounded-[1.8rem] bg-emerald-50 flex items-center justify-center text-emerald-600 text-3xl font-black">
-                                        {initials}
+                                <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-2xl shadow-emerald-200">
+                                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden border-2 border-white">
+                                        {userProfile?.profile_imagekit_url ? (
+                                            <img src={userProfile.profile_imagekit_url} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="text-emerald-600 text-2xl font-black uppercase text-center">{initials}</span>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-xl shadow-md">
-                                    <BadgeCheck size={20} className="text-emerald-500" />
-                                </div>
+                                <button 
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploading}
+                                    className="absolute -bottom-1 -right-1 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center border-2 border-white active:scale-90 transition-all disabled:opacity-50"
+                                >
+                                    {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                                </button>
                             </div>
-
-                            <div className="mt-4 relative z-10">
-                                <h3 className="text-xl font-black text-white tracking-tight">{userProfile?.full_name}</h3>
-                                <p className="text-emerald-100 text-xs font-medium opacity-80">@{userProfile?.username}</p>
-                                <div className="mt-3 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full inline-flex items-center space-x-2 border border-white/20">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-white">Verified Identity</span>
+                            <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                    <h2 className="text-2xl font-black tracking-tight text-slate-900">{userProfile?.full_name}</h2>
+                                    <BadgeCheck size={22} className="text-blue-500 fill-blue-50" fill="currentColor" />
+                                </div>
+                                <p className="text-slate-400 text-sm font-medium">{userProfile?.email}</p>
+                                <div className="mt-2 flex items-center space-x-2">
+                                    <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-100">
+                                        Active Account
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Menu List */}
-                    <div className="px-6 space-y-8 mt-4">
+                    {/* Daftar Navigasi Menu */}
+                    <div className="px-6 mt-6 space-y-10">
+                        {/* Grup: Pengaturan Akun */}
                         <section>
-                            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Account Settings</h4>
-                            <div className="space-y-3">
-                                <MenuBtn icon={<User size={20} />} label="Personal Information" desc="Manage your profile details" onClick={() => setSubView('profile')} />
-                                <MenuBtn icon={<CreditCard size={20} />} label="Payment Methods" desc="Saved cards and bank accounts" onClick={() => router.push('/user/add-funds')} />
-                                <MenuBtn icon={<ShieldCheck size={20} />} label="Become Reseller" desc={isReseller ? "Reseller Status Active" : "Unlock exclusive benefits"} onClick={() => setSubView('reseller')} />
+                            <div className="flex items-center justify-between mb-4 px-2">
+                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Account Settings</h4>
+                            </div>
+                            <div className="bg-slate-50/50 rounded-[2.5rem] p-2 space-y-1">
+                                <ActionBtn icon={<User size={22} />} label="Profile Information" desc="Change your details and photo" color="text-blue-500" onClick={() => setSubView('profile')} />
+                                <ActionBtn icon={<TrendingUp size={22} />} label="Become Reseller" desc={isReseller ? "Partnership Active" : "Scale your business uplink"} color="text-amber-500" onClick={() => setSubView('reseller')} />
+                                <ActionBtn icon={<CreditCard size={22} />} label="Payment Methods" desc="Manage cards & balance" color="text-emerald-500" onClick={() => router.push('/user/add-funds')} />
+                                <ActionBtn icon={<Ticket size={22} />} label="Redeem Credits" desc="Claim access vouchers" color="text-orange-500" onClick={() => router.push('/user/redeem/claim')} />
                             </div>
                         </section>
 
+                        {/* Grup: Preferences */}
                         <section>
-                            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">App Preferences</h4>
-                            <div className="space-y-3">
-                                <MenuBtn icon={<Bell size={20} />} label="Notifications" desc="Control your alerts and sounds" onClick={() => setSubView('notifications')} />
-                                <MenuBtn icon={<Ticket size={20} />} label="Redeem" desc="Voucher activation hub" onClick={() => router.push('/user/redeem/claim')} />
-                                <MenuBtn icon={<Smartphone size={20} />} label="Appearance" desc="Light Mode" />
+                            <div className="flex items-center justify-between mb-4 px-2">
+                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Preferences</h4>
+                            </div>
+                            <div className="bg-slate-50/50 rounded-[2.5rem] p-2 space-y-1">
+                                <ActionBtn icon={<Bell size={22} />} label="Notifications" desc="Set app alerts" color="text-purple-500" onClick={() => setSubView('notifications')} />
+                                <ActionBtn icon={<Globe size={22} />} label="Language" desc="English (US)" color="text-indigo-500" />
+                                <ActionBtn icon={<Moon size={22} />} label="App Theme" desc="Light Mode" color="text-slate-700" />
                             </div>
                         </section>
 
+                        {/* Grup: Support */}
                         <section>
-                            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Security & Support</h4>
-                            <div className="space-y-3">
-                                <MenuBtn icon={<Lock size={20} />} label="Security" desc="Password and biometrics" onClick={() => setSubView('security')} />
-                                <MenuBtn icon={<ShieldAlert size={20} />} label="Privacy Policy" desc="Terms and data usage" />
-                                <MenuBtn icon={<HelpCircle size={20} />} label="Help Center" desc="FAQ and support contact" onClick={() => router.push('/user/tickets')} />
+                            <div className="flex items-center justify-between mb-4 px-2">
+                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Help & Security</h4>
+                            </div>
+                            <div className="bg-slate-50/50 rounded-[2.5rem] p-2 space-y-1">
+                                <ActionBtn icon={<ShieldCheck size={22} />} label="Security Center" desc="Privacy & Passwords" color="text-teal-500" onClick={() => setSubView('security')} />
+                                <ActionBtn icon={<HelpCircle size={22} />} label="Help Center" desc="Contact 24/7 support" color="text-rose-500" onClick={() => router.push('/user/tickets')} />
                             </div>
                         </section>
 
-                        <section className="pt-4">
+                        {/* Logout Button & Version Info */}
+                        <div className="pt-6 pb-12 space-y-8">
                             <button 
                                 onClick={handleLogout}
-                                className="w-full py-5 rounded-[2rem] bg-rose-50 border border-rose-100 text-rose-600 font-black text-sm flex items-center justify-center space-x-3 active:scale-[0.98] transition-all shadow-sm shadow-rose-100/50"
+                                className="w-full py-5 rounded-[2rem] bg-white border-2 border-slate-100 text-slate-900 font-black text-sm flex items-center justify-center space-x-3 active:scale-[0.98] transition-all shadow-sm"
                             >
-                                <LogOut size={20} />
-                                <span>Terminate Current Session</span>
+                                <LogOut size={20} className="text-rose-500" />
+                                <span>Log Out Now</span>
                             </button>
-                            <div className="mt-8 text-center pb-8 opacity-40">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Emerald Matrix v4.2.0-PRO</p>
+                            
+                            <div className="flex flex-col items-center space-y-2">
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em]">App Version 2.4.0</p>
+                                <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Made with ❤️ by Team</p>
                             </div>
-                        </section>
+                        </div>
                     </div>
                 </div>
             )}
@@ -349,15 +432,19 @@ const AccountView = () => {
                     <section>
                         <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Update record</h4>
                         <form onSubmit={handleSaveProfile} className="space-y-4">
-                            <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1 ml-1">Full Identity Name</label>
-                                <input 
-                                    type="text" 
-                                    value={profileForm.name}
-                                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                                    className="w-full bg-white border-none rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
-                                />
-                                <p className="mt-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest ml-1 leading-relaxed">Email: {userProfile?.email}<br/>Username: {userProfile?.username}</p>
+                            <div className="p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-100/50 space-y-4">
+                                <div className="p-5 bg-white rounded-3xl border border-slate-100 shadow-sm transition-all focus-within:ring-2 focus-within:ring-emerald-500/10">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1 ml-1">Full Identity Name</label>
+                                    <input 
+                                        type="text" 
+                                        value={profileForm.name}
+                                        onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                                        className="w-full bg-transparent border-none p-0 text-sm font-bold focus:ring-0 outline-none"
+                                    />
+                                </div>
+                                <div className="px-6 py-2">
+                                    <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed">Email: {userProfile?.email}<br/>Username: {userProfile?.username}</p>
+                                </div>
                             </div>
                             <button 
                                 type="submit"
@@ -406,48 +493,50 @@ const AccountView = () => {
 
                     <section className="pt-6 border-t border-slate-50">
                         <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">API Access Protocols</h4>
-                        <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
-                            {hasApiKey ? (
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-white rounded-xl border border-slate-100 flex items-center justify-between">
-                                        <code className="text-[10px] font-black tracking-widest text-slate-500 truncate mr-2">
-                                            {showApiKey ? apiKey : '••••••••••••••••••••••••'}
-                                        </code>
-                                        <div className="flex items-center space-x-2">
-                                            <button onClick={() => setShowApiKey(!showApiKey)} className="p-2 text-slate-400 hover:text-emerald-500 transition-colors">
-                                                {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                                            </button>
-                                            <button 
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(apiKey || '');
-                                                    toast.success('Key copied to vault');
-                                                }}
-                                                className="p-2 text-slate-400 hover:text-emerald-500 transition-colors"
-                                            >
-                                                <Copy size={16} />
-                                            </button>
+                            <div className="p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-100/50 overflow-hidden">
+                                {hasApiKey ? (
+                                    <div className="space-y-4">
+                                        <div className="p-5 bg-white rounded-3xl border border-slate-100 flex items-center justify-between shadow-sm">
+                                            <code className="text-[10px] font-black tracking-widest text-slate-500 truncate mr-2">
+                                                {showApiKey ? apiKey : '••••••••••••••••••••••••'}
+                                            </code>
+                                            <div className="flex items-center space-x-2">
+                                                <button onClick={() => setShowApiKey(!showApiKey)} className="p-2 text-slate-400 hover:text-emerald-500 transition-colors">
+                                                    {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(apiKey || '');
+                                                        toast.success('Key copied to vault');
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-emerald-500 transition-colors"
+                                                >
+                                                    <Copy size={16} />
+                                                </button>
+                                            </div>
                                         </div>
+                                        <button 
+                                            onClick={handleGenerateApiKey}
+                                            className="w-full py-4 bg-white border border-emerald-100 text-emerald-600 rounded-3xl font-black text-[10px] uppercase tracking-widest active:bg-emerald-50 transition-colors shadow-sm"
+                                        >
+                                            Rotate API Key
+                                        </button>
                                     </div>
-                                    <button 
-                                        onClick={handleGenerateApiKey}
-                                        className="w-full py-4 bg-white border border-emerald-100 text-emerald-600 rounded-2xl font-black text-[10px] uppercase tracking-widest active:bg-emerald-50 transition-colors"
-                                    >
-                                        Rotate API Key
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="text-center py-4 space-y-4">
-                                    <Info className="mx-auto text-emerald-200" size={32} />
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No Active API Key Registered</p>
-                                    <button 
-                                        onClick={handleGenerateApiKey}
-                                        className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-50"
-                                    >
-                                        Initiate API Integration
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                                ) : (
+                                    <div className="text-center py-6 space-y-4">
+                                        <div className="w-16 h-16 bg-emerald-50 rounded-3xl flex items-center justify-center mx-auto">
+                                            <Info className="text-emerald-500" size={32} />
+                                        </div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No Active API Key Registered</p>
+                                        <button 
+                                            onClick={handleGenerateApiKey}
+                                            className="w-full py-4 bg-emerald-600 text-white rounded-3xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-100"
+                                        >
+                                            Initiate API Integration
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                     </section>
                 </div>
             )}
@@ -467,23 +556,23 @@ const AccountView = () => {
                             </div>
                         ) : (
                             <div className="space-y-6">
-                                <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-6">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="p-3 bg-white rounded-2xl text-emerald-600 shadow-sm"><CircleDollarSign size={24} /></div>
+                                <div className="p-2 bg-slate-50/50 rounded-[2.5rem] border border-slate-100/50 space-y-1">
+                                    <div className="p-5 bg-white rounded-3xl flex items-center space-x-4 border border-slate-50 shadow-sm">
+                                        <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><CircleDollarSign size={24} /></div>
                                         <div>
                                             <p className="text-sm font-black text-slate-800 tracking-tight">Preferential Pricing</p>
                                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Locked acquisition rates</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center space-x-4">
-                                        <div className="p-3 bg-white rounded-2xl text-emerald-600 shadow-sm"><TrendingUp size={24} /></div>
+                                    <div className="p-5 bg-white rounded-3xl flex items-center space-x-4 border border-slate-50 shadow-sm">
+                                        <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><TrendingUp size={24} /></div>
                                         <div>
                                             <p className="text-sm font-black text-slate-800 tracking-tight">Growth Acceleration</p>
                                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Unlimited temporal scale</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center space-x-4">
-                                        <div className="p-3 bg-white rounded-2xl text-emerald-600 shadow-sm"><Headset size={24} /></div>
+                                    <div className="p-5 bg-white rounded-3xl flex items-center space-x-4 border border-slate-50 shadow-sm">
+                                        <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><Headset size={24} /></div>
                                         <div>
                                             <p className="text-sm font-black text-slate-800 tracking-tight">Priority Uplink</p>
                                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Instant support mediation</p>
@@ -515,48 +604,50 @@ const AccountView = () => {
     );
 };
 
-const MenuBtn = ({ icon, label, desc, onClick }: { icon: any, label: string, desc: string, onClick?: () => void }) => (
-    <button onClick={onClick} className="w-full p-4 bg-white border border-emerald-50 rounded-[1.8rem] flex items-center justify-between active:bg-emerald-50 transition-all hover:border-emerald-200 group">
+const ActionBtn = ({ icon, label, desc, color, onClick }: { icon: any, label: string, desc: string, color: string, onClick?: () => void }) => (
+    <button onClick={onClick} className="w-full p-4 bg-white rounded-3xl flex items-center justify-between active:scale-[0.98] transition-all border border-slate-100/50 shadow-sm">
         <div className="flex items-center space-x-4">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:scale-110 transition-transform">
+            <div className={`p-3 rounded-2xl bg-white shadow-sm border border-slate-50 ${color}`}>
                 {icon}
             </div>
             <div className="text-left">
-                <p className="text-sm font-black text-slate-800 tracking-tight">{label}</p>
-                <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">{desc}</p>
+                <p className="text-sm font-bold text-slate-900">{label}</p>
+                <p className="text-[10px] text-slate-400 font-medium">{desc}</p>
             </div>
         </div>
-        <ChevronRight size={18} className="text-slate-200 group-hover:text-emerald-500 transition-colors" />
+        <ChevronRight size={18} className="text-slate-300" />
     </button>
 );
 
 const NotifyToggle = ({ label, desc, active, onToggle }: { label: string, desc: string, active: boolean, onToggle: () => void }) => (
-    <button onClick={onToggle} className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center justify-between transition-all active:scale-[0.98]">
+    <button onClick={onToggle} className="w-full p-5 bg-white border border-slate-100 shadow-sm rounded-3xl flex items-center justify-between transition-all active:scale-[0.98]">
         <div className="text-left">
-            <p className="text-sm font-black text-slate-800">{label}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{desc}</p>
+            <p className="text-sm font-bold text-slate-900">{label}</p>
+            <p className="text-[10px] text-slate-400 font-medium">{desc}</p>
         </div>
-        <div className={`w-12 h-6 rounded-full p-1 transition-colors ${active ? 'bg-emerald-500' : 'bg-slate-200'}`}>
-            <div className={`w-4 h-4 bg-white rounded-full transition-transform ${active ? 'translate-x-6' : 'translate-x-0'}`}></div>
+        <div className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${active ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+            <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-300 transform ${active ? 'translate-x-6' : 'translate-x-0'} shadow-sm`}></div>
         </div>
     </button>
 );
 
 const SettingsInp = ({ label, type, value, onChange, show, toggle }: { label: string, type: string, value: string, onChange: (v: string) => void, show?: boolean, toggle?: () => void }) => (
-    <div className="p-5 bg-slate-50 rounded-[1.8rem] border border-slate-100 flex flex-col relative">
-        <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 ml-1">{label}</label>
-        <input 
-            type={type} 
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="bg-transparent border-none p-0 text-sm font-black tracking-widest outline-none focus:ring-0 placeholder:text-slate-200"
-            placeholder="••••••••"
-        />
-        {toggle && (
-            <button type="button" onClick={toggle} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-emerald-500 transition-colors">
-                {show ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-        )}
+    <div className="p-5 bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col relative focus-within:ring-2 focus-within:ring-emerald-500/10 transition-all">
+        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">{label}</label>
+        <div className="flex items-center">
+            <input 
+                type={type} 
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="bg-transparent border-none p-0 text-sm font-bold tracking-widest outline-none focus:ring-0 placeholder:text-slate-200 flex-1"
+                placeholder="••••••••"
+            />
+            {toggle && (
+                <button type="button" onClick={toggle} className="p-1 text-slate-300 hover:text-emerald-500 transition-colors">
+                    {show ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+            )}
+        </div>
     </div>
 );
 

@@ -248,23 +248,21 @@ const TicketsView = () => {
         <div className="min-h-screen bg-white text-slate-800 font-sans pb-32 select-none relative">
             
             {/* Header */}
-            <div className="p-6 bg-white sticky top-0 z-40 border-b border-emerald-50">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center">
-                        <button 
-                            onClick={() => view === 'list' ? router.push('/user') : setView('list')}
-                            className="p-2 bg-emerald-50 rounded-xl text-emerald-600 active:scale-90 transition-transform"
-                        >
-                            <ChevronLeft size={24} />
-                        </button>
-                        <h2 className="ml-4 text-xl font-black text-slate-900 tracking-tight uppercase italic">
-                            {view === 'list' ? 'SUPPORT' : view === 'create' ? 'NEW TICKET' : 'CONVERSATION'}
-                        </h2>
-                    </div>
+            <div className="p-6 bg-white sticky top-0 z-50 border-b border-emerald-50">
+                <div className="flex items-center pb-2">
+                    <button 
+                        onClick={() => view === 'list' ? router.push('/user') : setView('list')}
+                        className="p-2 bg-emerald-50 rounded-xl text-emerald-600 active:scale-90 transition-transform"
+                    >
+                        <ChevronLeft size={24} />
+                    </button>
+                    <h2 className="ml-4 text-xl font-black text-slate-900 tracking-tight uppercase italic">
+                        {view === 'list' ? 'SUPPORT' : view === 'create' ? 'NEW TICKET' : 'CONVERSATION'}
+                    </h2>
                 </div>
 
                 {view === 'list' && (
-                    <div className="relative group">
+                    <div className="relative group mt-4">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" size={18} />
                         <input 
                             type="text"

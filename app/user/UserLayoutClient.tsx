@@ -35,6 +35,7 @@ type Notification = {
 
 const UserLayoutClient = ({ children, initialSettings }: UserLayoutClientProps) => {
     const pathname = usePathname();
+    const router = useRouter(); // Initialize router correctly at top level
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [isRedeemOpen, setIsRedeemOpen] = useState(false);
@@ -215,8 +216,6 @@ const UserLayoutClient = ({ children, initialSettings }: UserLayoutClientProps) 
             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
         }`;
 
-    const router = useRouter();
-
     const handleLogout = async () => {
         try {
             await fetch('/api/auth/logout', {
@@ -229,7 +228,19 @@ const UserLayoutClient = ({ children, initialSettings }: UserLayoutClientProps) 
         }
     };
 
-    if (pathname === '/user' || pathname === '/user/add-funds' || pathname.startsWith('/user/history') || pathname === '/user/account' || pathname === '/user/tickets' || pathname === '/user/voucher' || pathname.startsWith('/user/redeem')) {
+    // Whitelist path yang tidak menggunakan Layout bawaan
+    const isNewDesign = 
+        pathname === '/user' || 
+        pathname === '/user/new-order' || 
+        pathname === '/user/add-funds' || 
+        pathname.startsWith('/user/history') || 
+        pathname === '/user/account' || 
+        pathname === '/user/tickets' || 
+        pathname === '/user/voucher' || 
+        pathname.startsWith('/user/redeem') ||
+        pathname.startsWith('/user/services');
+
+    if (isNewDesign) {
         return <>{children}</>;
     }
 

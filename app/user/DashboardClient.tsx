@@ -291,24 +291,26 @@ const DashboardClient = ({ data }: Props) => {
       {/* Services Grid */}
       <div className="px-6 mt-10">
         <h3 className="font-bold text-[11px] text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Main Services</h3>
-        <div className="grid grid-cols-4 gap-y-8">
+        <div className="grid grid-cols-4 gap-y-10">
           {data.platforms.slice(0, 7).map((item) => (
-            <Link key={item.id} href={`/user/new-order?platform=${item.slug}`} className="flex flex-col items-center group cursor-pointer active:scale-90 transition-transform">
-              <div className={`w-14 h-14 bg-emerald-50 text-emerald-600 rounded-[1.5rem] flex items-center justify-center mb-3 shadow-sm group-hover:bg-emerald-100 group-hover:shadow-emerald-100 transition-all duration-300`}>
+            <Link key={item.id} href={`/user/new-order?platform=${item.slug}`} className="flex flex-col items-center group cursor-pointer active:scale-95 transition-all">
+              <div className="w-16 h-16 rounded-full overflow-hidden mb-3 flex items-center justify-center transition-all duration-500 group-hover:scale-110 shadow-lg shadow-black/5">
                 {item.icon_imagekit_url ? (
-                  <img src={item.icon_imagekit_url} alt={item.name} className="w-7 h-7 object-contain group-hover:scale-110 transition-transform" />
+                  <img src={item.icon_imagekit_url} alt={item.name} className="w-full h-full object-cover" />
                 ) : (
-                  <Smartphone size={24} />
+                  <div className="w-full h-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <Smartphone size={28} />
+                  </div>
                 )}
               </div>
-              <span className="text-[10px] font-bold text-slate-600 text-center line-clamp-1 px-1 uppercase tracking-tight">{item.name}</span>
+              <span className="text-[10px] font-bold text-slate-800 text-center line-clamp-1 px-1 uppercase tracking-tight group-hover:text-emerald-600 transition-colors">{item.name}</span>
             </Link>
           ))}
-          <Link href="/user/services" className="flex flex-col items-center group cursor-pointer active:scale-90 transition-transform">
-            <div className="w-14 h-14 bg-slate-50 text-slate-400 rounded-[1.5rem] flex items-center justify-center mb-3 shadow-sm group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-all duration-300">
-              <Plus size={24} />
+          <Link href="/user/services" className="flex flex-col items-center group cursor-pointer active:scale-95 transition-all">
+            <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-3 transition-all duration-500 group-hover:bg-emerald-50 group-hover:text-emerald-500 group-hover:scale-110 shadow-lg shadow-black/5">
+              <Plus size={28} />
             </div>
-            <span className="text-[10px] font-bold text-slate-600 text-center uppercase tracking-tight">Others</span>
+            <span className="text-[10px] font-bold text-slate-800 text-center uppercase tracking-tight group-hover:text-emerald-600 transition-colors">Others</span>
           </Link>
         </div>
       </div>

@@ -4,22 +4,27 @@ import React, { useState, useEffect } from 'react';
 import {
     Code,
     Copy,
-    CheckCircle,
-    Key,
+    CheckCircle2,
     Package,
     ShoppingCart,
     User,
     Clock,
     RefreshCw,
-    ChevronRight,
+    ChevronLeft,
     AlertCircle,
-    Loader2,
-    Globe
+    Globe,
+    ChevronDown,
+    Terminal,
+    Key,
+    Zap,
+    Info,
+    ArrowRight
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 const ApiDocumentationPage = () => {
-    const [copiedKey, setCopiedKey] = useState(false);
+    const router = useRouter();
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
     const [activeSection, setActiveSection] = useState('services');
     const [activeLanguage, setActiveLanguage] = useState('curl');
@@ -27,6 +32,7 @@ const ApiDocumentationPage = () => {
     const [loading, setLoading] = useState(true);
     const [apiEndpoint, setApiEndpoint] = useState('/api/v2');
     const [samples, setSamples] = useState<{ service: any; order: any; balance: any } | null>(null);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const apiKey = userData?.api_key || 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
 
@@ -50,28 +56,17 @@ const ApiDocumentationPage = () => {
                     const sampleData = await sampleRes.json();
                     setSamples(sampleData);
                 }
-            } catch (error) {
-                // Silently fail or handle error appropriately in UI
-            } finally {
+            } catch (error) { } finally {
                 setLoading(false);
             }
         };
         fetchUserData();
     }, []);
 
-    const copyApiKey = () => {
-        if (!userData?.api_key) {
-            toast.error('API key not found. Please generate one in Account settings.');
-            return;
-        }
-        navigator.clipboard.writeText(apiKey);
-        setCopiedKey(true);
-        setTimeout(() => setCopiedKey(false), 2000);
-    };
-
-    const copyCode = (code: string, id: string) => {
-        navigator.clipboard.writeText(code);
+    const copyText = (text: string, id: string) => {
+        navigator.clipboard.writeText(text);
         setCopiedCode(id);
+        toast.success('Copied to clipboard');
         setTimeout(() => setCopiedCode(null), 2000);
     };
 
@@ -87,675 +82,310 @@ const ApiDocumentationPage = () => {
             id: 'services',
             name: 'Get Services',
             method: 'POST',
-            icon: <Package className="w-4 h-4" />,
-            description: 'Get a list of all available services',
+            icon: <Package size={18} />,
+            description: 'Fetch our real-time service matrix and acquisition rates.',
             params: [
-                { name: 'key', type: 'string', required: true, description: 'Your API key' },
+                { name: 'key', type: 'string', required: true, description: 'Your secure API authentication key' },
                 { name: 'action', type: 'string', required: true, description: 'services' },
             ],
-            response: samples?.service ? JSON.stringify({
-                status: "success",
-                data: [samples.service]
-            }, null, 2) : `{
-  "status": "success",
-  "data": [
-    {
-      "service": 1,
-      "name": "Instagram Followers",
-      "type": "Default",
-      "category": "Instagram",
-      "rate": "0.50",
-      "min": 100,
-      "max": 500000,
-      "note": "Super fast delivery",
-      "refill": true,
-      "cancel": false
-    }
-  ]
-}`,
+            response: samples?.service ? JSON.stringify({ status: "success", data: [samples.service] }, null, 2) : `{ "status": "success", "data": [...] }`,
             examples: {
-                curl: `curl -X POST ${apiEndpoint} \\
-  -d "key=YOUR_API_KEY" \\
-  -d "action=services"`,
-                php: `<?php
-$api_url = '${apiEndpoint}';
-
-$post_data = [
-    'key' => 'YOUR_API_KEY',
-    'action' => 'services'
-];
-
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $api_url);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-$response = curl_exec($ch);
-curl_close($ch);
-
-$result = json_decode($response, true);
-print_r($result);
-?>`,
-                node: `const axios = require('axios');
-
-const apiUrl = '${apiEndpoint}';
-
-const params = new URLSearchParams();
-params.append('key', 'YOUR_API_KEY');
-params.append('action', 'services');
-
-axios.post(apiUrl, params)
-  .then(response => {
-    // Handle response
-  })
-  .catch(error => {
-    console.error('Error:', error);
-  });`,
-                python: `import requests
-
-api_url = '${apiEndpoint}'
-
-data = {
-    'key': 'YOUR_API_KEY',
-    'action': 'services'
-}
-
-response = requests.post(api_url, data=data)
-result = response.json()
-print(result)`,
+                curl: `curl -X POST ${apiEndpoint} \\\n  -d "key=${apiKey}" \\\n  -d "action=services"`,
+                php: `<?php\n$ch = curl_init();\ncurl_setopt($ch, CURLOPT_URL, '${apiEndpoint}');\ncurl_setopt($ch, CURLOPT_POST, true);\ncurl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['key' => '${apiKey}', 'action' => 'services']));\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n$res = curl_exec($ch);\nprint_r(json_decode($res, true));\n?>`,
+                node: `const axios = require('axios');\nconst params = new URLSearchParams();\nparams.append('key', '${apiKey}');\nparams.append('action', 'services');\n\naxios.post('${apiEndpoint}', params).then(res => console.log(res.data));`,
+                python: `import requests\ndata = {'key': '${apiKey}', 'action': 'services'}\nres = requests.post('${apiEndpoint}', data=data)\nprint(res.json())`,
             },
         },
         {
             id: 'order',
             name: 'Add Order',
             method: 'POST',
-            icon: <ShoppingCart className="w-4 h-4" />,
-            description: 'Create a new order',
+            icon: <ShoppingCart size={18} />,
+            description: 'Initiate a new order acquisition protocol.',
             params: [
-                { name: 'key', type: 'string', required: true, description: 'Your API key' },
+                { name: 'key', type: 'string', required: true, description: 'API Authentication Key' },
                 { name: 'action', type: 'string', required: true, description: 'add' },
-                { name: 'service', type: 'integer', required: true, description: 'Service ID' },
-                { name: 'link', type: 'string', required: true, description: 'Link to page' },
-                { name: 'quantity', type: 'integer', required: true, description: 'Quantity needed' },
+                { name: 'service', type: 'int', required: true, description: 'Target Service ID' },
+                { name: 'link', type: 'string', required: true, description: 'Endpoint URL' },
+                { name: 'quantity', type: 'int', required: true, description: 'Required quantity' },
             ],
-            response: samples?.order ? JSON.stringify({
-                status: "success",
-                order: samples.order.order
-            }, null, 2) : `{
-  "status": "success",
-  "order": 123456
-}`,
+            response: `{ "status": "success", "order": 123456 }`,
             examples: {
-                curl: `curl -X POST ${apiEndpoint} \\
-  -d "key=YOUR_API_KEY" \\
-  -d "action=add" \\
-  -d "service=${samples?.service?.service || 1}" \\
-  -d "link=https://instagram.com/username" \\
-  -d "quantity=1000"`,
-                php: `<?php
-$api_url = '${apiEndpoint}';
-
-$post_data = [
-    'key' => 'YOUR_API_KEY',
-    'action' => 'add',
-    'service' => ${samples?.service?.service || 1},
-    'link' => 'https://instagram.com/username',
-    'quantity' => 1000
-];
-
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $api_url);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-$response = curl_exec($ch);
-curl_close($ch);
-
-$result = json_decode($response, true);
-print_r($result);
-?>`,
-                node: `const axios = require('axios');
-
-const apiUrl = '${apiEndpoint}';
-
-const params = new URLSearchParams();
-params.append('key', 'YOUR_API_KEY');
-params.append('action', 'add');
-params.append('service', '1');
-params.append('link', 'https://instagram.com/username');
-params.append('quantity', '1000');
-
-axios.post(apiUrl, params)
-  .then(response => {
-    // Handle response
-  })
-  .catch(error => {
-    console.error('Error:', error);
-  });`,
-                python: `import requests
-
-api_url = '${apiEndpoint}'
-
-data = {
-    'key': 'YOUR_API_KEY',
-    'action': 'add',
-    'service': 1,
-    'link': 'https://instagram.com/username',
-    'quantity': 1000
-}
-
-response = requests.post(api_url, data=data)
-result = response.json()
-print(result)`,
+                curl: `curl -X POST ${apiEndpoint} \\\n  -d "key=${apiKey}" \\\n  -d "action=add" \\\n  -d "service=1" \\\n  -d "link=https://example.com" \\\n  -d "quantity=1000"`,
+                php: `// Similar to above with extra params`,
+                node: `// Similar to above with extra params`,
+                python: `// Similar to above with extra params`,
             },
         },
         {
             id: 'status',
             name: 'Order Status',
             method: 'POST',
-            icon: <Clock className="w-4 h-4" />,
-            description: 'Check the status of an order',
+            icon: <Clock size={18} />,
+            description: 'Monitor the temporal status of your active orders.',
             params: [
-                { name: 'key', type: 'string', required: true, description: 'Your API key' },
+                { name: 'key', type: 'string', required: true, description: 'API Key' },
                 { name: 'action', type: 'string', required: true, description: 'status' },
-                { name: 'order', type: 'integer', required: true, description: 'Order ID' },
+                { name: 'order', type: 'int', required: true, description: 'Order ID' },
             ],
-            response: samples?.order ? JSON.stringify({
-                status: "success",
-                ...samples.order
-            }, null, 2) : `{
-  "status": "success",
-  "charge": "0.50",
-  "start_count": "1000",
-  "status": "Completed",
-  "remains": "0",
-  "currency": "USD"
-}`,
+            response: `{ "status": "success", "charge": "0.50", "status": "Completed" }`,
             examples: {
-                curl: `curl -X POST ${apiEndpoint} \\
-  -d "key=YOUR_API_KEY" \\
-  -d "action=status" \\
-  -d "order=${samples?.order?.order || 123456}"`,
-                php: `<?php
-$api_url = '${apiEndpoint}';
-
-$post_data = [
-    'key' => 'YOUR_API_KEY',
-    'action' => 'status',
-    'order' => ${samples?.order?.order || 123456}
-];
-
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $api_url);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-$response = curl_exec($ch);
-curl_close($ch);
-
-$result = json_decode($response, true);
-print_r($result);
-?>`,
-                node: `const axios = require('axios');
-
-const apiUrl = '${apiEndpoint}';
-
-const params = new URLSearchParams();
-params.append('key', 'YOUR_API_KEY');
-params.append('action', 'status');
-params.append('order', '123456');
-
-axios.post(apiUrl, params)
-  .then(response => {
-    // Handle response
-  })
-  .catch(error => {
-    console.error('Error:', error);
-  });`,
-                python: `import requests
-
-api_url = '${apiEndpoint}'
-
-data = {
-    'key': 'YOUR_API_KEY',
-    'action': 'status',
-    'order': 123456
-}
-
-response = requests.post(api_url, data=data)
-result = response.json()
-print(result)`,
+                curl: `curl -X POST ${apiEndpoint} \\\n  -d "key=${apiKey}" \\\n  -d "action=status" \\\n  -d "order=123456"`,
+                php: ``, node: ``, python: ``
             },
         },
         {
-            id: 'profile',
-            name: 'User Profile',
+            id: 'balance',
+            name: 'Account',
             method: 'POST',
-            icon: <User className="w-4 h-4" />,
-            description: 'Get your account balance and information',
+            icon: <User size={18} />,
+            description: 'Retrieve your liquid assets and account telemetry.',
             params: [
-                { name: 'key', type: 'string', required: true, description: 'Your API key' },
+                { name: 'key', type: 'string', required: true, description: 'API Key' },
                 { name: 'action', type: 'string', required: true, description: 'balance' },
             ],
-            response: samples?.balance ? JSON.stringify({
-                status: "success",
-                ...samples.balance
-            }, null, 2) : `{
-  "status": "success",
-  "balance": "1240.50",
-  "currency": "USD"
-}`,
+            response: `{ "status": "success", "balance": "1240.50" }`,
             examples: {
-                curl: `curl -X POST ${apiEndpoint} \\
-  -d "key=YOUR_API_KEY" \\
-  -d "action=balance"`,
-                php: `<?php
-$api_url = '${apiEndpoint}';
-
-$post_data = [
-    'key' => 'YOUR_API_KEY',
-    'action' => 'balance'
-];
-
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $api_url);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-$response = curl_exec($ch);
-curl_close($ch);
-
-$result = json_decode($response, true);
-print_r($result);
-?>`,
-                node: `const axios = require('axios');
-
-const apiUrl = '${apiEndpoint}';
-
-const params = new URLSearchParams();
-params.append('key', 'YOUR_API_KEY');
-params.append('action', 'balance');
-
-axios.post(apiUrl, params)
-  .then(response => {
-    // Handle response
-  })
-  .catch(error => {
-    console.error('Error:', error);
-  });`,
-                python: `import requests
-
-api_url = '${apiEndpoint}'
-
-data = {
-    'key': 'YOUR_API_KEY',
-    'action': 'balance'
-}
-
-response = requests.post(api_url, data=data)
-result = response.json()
-print(result)`,
-            },
-        },
-        {
-            id: 'refill',
-            name: 'Refill Order',
-            method: 'POST',
-            icon: <RefreshCw className="w-4 h-4" />,
-            description: 'Request a refill for an order (if available)',
-            params: [
-                { name: 'key', type: 'string', required: true, description: 'Your API key' },
-                { name: 'action', type: 'string', required: true, description: 'refill' },
-                { name: 'order', type: 'integer', required: true, description: 'Order ID' },
-            ],
-            response: `{
-  "status": "success",
-  "refill": 1
-}`,
-            examples: {
-                curl: `curl -X POST ${apiEndpoint} \\
-  -d "key=YOUR_API_KEY" \\
-  -d "action=refill" \\
-  -d "order=123456"`,
-                php: `<?php
-$api_url = '${apiEndpoint}';
-
-$post_data = [
-    'key' => 'YOUR_API_KEY',
-    'action' => 'refill',
-    'order' => 123456
-];
-
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $api_url);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-$response = curl_exec($ch);
-curl_close($ch);
-
-$result = json_decode($response, true);
-print_r($result);
-?>`,
-                node: `const axios = require('axios');
-
-const apiUrl = '${apiEndpoint}';
-
-const params = new URLSearchParams();
-params.append('key', 'YOUR_API_KEY');
-params.append('action', 'refill');
-params.append('order', '123456');
-
-axios.post(apiUrl, params)
-  .then(response => {
-    // Handle response
-  })
-  .catch(error => {
-    console.error('Error:', error);
-  });`,
-                python: `import requests
-
-api_url = '${apiEndpoint}'
-
-data = {
-    'key': 'YOUR_API_KEY',
-    'action': 'refill',
-    'order': 123456
-}
-
-response = requests.post(api_url, data=data)
-result = response.json()
-print(result)`,
+                curl: `curl -X POST ${apiEndpoint} \\\n  -d "key=${apiKey}" \\\n  -d "action=balance"`,
+                php: ``, node: ``, python: ``
             },
         },
         {
             id: 'webhook',
             name: 'Webhooks',
-            method: 'POST (Incoming)',
-            icon: <Globe className="w-4 h-4" />,
-            description: 'Receive real-time updates for your orders',
+            method: 'WEBHOOK',
+            icon: <Globe size={18} />,
+            description: 'Configure external endpoints for real-time order updates.',
             params: [
-                { name: 'order', type: 'integer', required: true, description: 'Order ID' },
-                { name: 'status', type: 'string', required: true, description: 'New Status (COMPLETED, PARTIAL, CANCELED)' },
-                { name: 'charge', type: 'decimal', required: false, description: 'Final charge amount' },
-                { name: 'remains', type: 'integer', required: false, description: 'Remaining quantity' },
+                { name: 'order', type: 'int', required: true, description: 'Order ID' },
+                { name: 'status', type: 'string', required: true, description: 'New Status code' },
             ],
-            response: `{
-  "status": "success"
-}
-// Note: Your server must respond with 200 OK`,
+            response: `HTTP 200 OK`,
             examples: {
-                curl: `// Incoming JSON Payload
-{
-  "order": 123456,
-  "status": "COMPLETED",
-  "charge": "0.50",
-  "start_count": 1000,
-  "remains": 0,
-  "currency": "USD"
-}`,
-                php: `// Handle Incoming Webhook using PHP
-$json = file_get_contents('php://input');
-$data = json_decode($json, true);
-
-if ($data) {
-    $order_id = $data['order'];
-    $status = $data['status'];
-    
-    // Update your database
-    // ...
-    
-    echo json_encode(['status' => 'success']);
-}`,
-                node: `// Handle Incoming Webhook using Express
-app.post('/webhook', (req, res) => {
-    const { order, status, charge } = req.body;
-    
-    // Update your database
-    
-    res.json({ status: 'success' });
-});`,
-                python: `// Handle Incoming Webhook using Flask
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    data = request.json
-    order_id = data.get('order')
-    status = data.get('status')
-    
-    print(f"Order {order_id} updated to {status}")
-    
-    return jsonify({"status": "success"})`
+                curl: `{\n  "order": 123456,\n  "status": "COMPLETED",\n  "charge": "0.50"\n}`,
+                php: ``, node: ``, python: ``
             },
         },
     ];
 
-    const activeEndpoint = endpoints.find(e => e.id === activeSection);
+    const activeEndpoint = endpoints.find(e => e.id === activeSection) || endpoints[0];
+
+    if (loading) return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+            <div className="w-12 h-12 border-4 border-emerald-50 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
+            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Syncing API Matrix...</p>
+        </div>
+    );
 
     return (
-        <div>
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-slate-900">API Documentation</h1>
-                <p className="text-slate-500">Integrate our services into your own platform</p>
-            </div>
-
-            {/* API Key Section */}
-            <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-6 mb-8">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <Key className="w-5 h-5 text-amber-400" />
-                            <h2 className="text-lg font-semibold text-white">Your API Key</h2>
-                        </div>
-                        <p className="text-slate-300 text-sm">Keep this key secret. Do not share it publicly.</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <code className="px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-amber-400 font-mono text-sm">
-                            {apiKey}
-                        </code>
-                        <button
-                            onClick={copyApiKey}
-                            className={`p-2.5 rounded-lg transition-colors ${copiedKey
-                                ? 'bg-green-500 text-white'
-                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                }`}
-                        >
-                            {copiedKey ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                        </button>
-                    </div>
+        <div className="min-h-screen font-sans pb-32 select-none relative overflow-x-hidden">
+            {/* Background Layers */}
+            <div className="fixed inset-0 bg-slate-50 -z-30"></div>
+            <div className="fixed top-0 left-0 w-full h-44 bg-emerald-600 rounded-b-[2.5rem] -z-10 shadow-2xl shadow-emerald-100/50"></div>
+            
+            {/* Navigation Header */}
+            <div className="p-5 flex items-center justify-between text-white sticky top-0 z-50">
+                <button 
+                  onClick={() => router.push('/user/account')}
+                  className="p-3 bg-white/20 backdrop-blur-xl rounded-2xl border border-white/30 active:scale-90 transition-all flex items-center justify-center shadow-lg"
+                >
+                  <ChevronLeft size={22} strokeWidth={3} />
+                </button>
+                <div className="flex flex-col items-center">
+                    <h1 className="text-xs font-black tracking-[0.2em] uppercase drop-shadow-sm">REST API</h1>
+                    <p className="text-[8px] font-bold text-emerald-100 uppercase tracking-widest opacity-80">Documentation</p>
                 </div>
+                <div className="w-12"></div>
             </div>
 
-            {/* API Info */}
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-8">
-                <div className="flex gap-3">
-                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm">
-                        <p className="font-medium text-blue-800 mb-1">API Endpoint</p>
-                        <code className="text-blue-600 bg-blue-100 px-2 py-1 rounded">{apiEndpoint}</code>
-                        <div className="flex items-center gap-2 mt-2">
-                            <p className="text-blue-700">Method: <span className="font-bold">POST</span></p>
-                            <span className="text-blue-300">|</span>
-                            <p className="text-blue-700">Pricing Tier: <span className="font-bold underline decoration-indigo-500 decoration-2">{userData?.isReseller ? 'RESELLER' : 'STANDARD'}</span></p>
+            <div className="px-6 space-y-6 mt-4">
+                
+                {/* API Key Section */}
+                <section className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-emerald-900/5 border border-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 opacity-40"></div>
+                    <div className="relative z-10">
+                        <div className="flex items-center space-x-2 mb-4">
+                            <Key size={16} className="text-emerald-500" />
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Authentication Key</label>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid lg:grid-cols-4 gap-8">
-                {/* Sidebar */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden sticky top-24">
-                        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                            <h3 className="font-semibold text-slate-900 text-sm">Endpoints</h3>
-                        </div>
-                        <nav className="p-2">
-                            {endpoints.map((endpoint) => (
-                                <button
-                                    key={endpoint.id}
-                                    onClick={() => setActiveSection(endpoint.id)}
-                                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg transition-colors text-left ${activeSection === endpoint.id
-                                        ? 'bg-blue-50 text-blue-600'
-                                        : 'text-slate-600 hover:bg-slate-50'
-                                        }`}
+                        <div className="flex space-x-2">
+                            <div className="flex-1 bg-slate-50 border border-emerald-50 rounded-2xl p-4 flex items-center justify-between overflow-hidden group">
+                                <code className="text-xs font-black text-slate-600 truncate mr-2 tracking-tighter">
+                                    {apiKey}
+                                </code>
+                                <button 
+                                  onClick={() => copyText(apiKey, 'key')}
+                                  className="p-2 bg-white rounded-xl shadow-sm border border-emerald-50 text-emerald-600 hover:scale-110 active:scale-90 transition-all"
                                 >
-                                    {endpoint.icon}
-                                    <span className="flex-1">{endpoint.name}</span>
-                                    <ChevronRight className={`w-4 h-4 transition-transform ${activeSection === endpoint.id ? 'rotate-90' : ''}`} />
+                                    {copiedCode === 'key' ? <CheckCircle2 size={16} /> : <Copy size={16} />}
                                 </button>
-                            ))}
-                        </nav>
-                    </div>
-                </div>
-
-                {/* Content */}
-                <div className="lg:col-span-3 space-y-6">
-                    {activeEndpoint && (
-                        <>
-                            {/* Endpoint Header */}
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                                            {activeEndpoint.icon}
-                                        </div>
-                                        <div>
-                                            <h2 className="font-semibold text-slate-900">{activeEndpoint.name}</h2>
-                                            <p className="text-sm text-slate-500">{activeEndpoint.description}</p>
-                                        </div>
-                                    </div>
-                                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
-                                        {activeEndpoint.method}
-                                    </span>
-                                </div>
-
-                                {/* Parameters */}
-                                <div className="p-6">
-                                    <h3 className="font-semibold text-slate-900 mb-4">Parameters</h3>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm">
-                                            <thead>
-                                                <tr className="text-left text-slate-500 border-b border-slate-100">
-                                                    <th className="pb-3 font-medium">Parameter</th>
-                                                    <th className="pb-3 font-medium">Type</th>
-                                                    <th className="pb-3 font-medium">Required</th>
-                                                    <th className="pb-3 font-medium">Description</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {activeEndpoint.params.map((param, idx) => (
-                                                    <tr key={idx} className="border-b border-slate-50">
-                                                        <td className="py-3">
-                                                            <code className="px-2 py-1 bg-slate-100 rounded text-slate-700 font-mono text-xs">
-                                                                {param.name}
-                                                            </code>
-                                                        </td>
-                                                        <td className="py-3 text-slate-600">{param.type}</td>
-                                                        <td className="py-3">
-                                                            {param.required ? (
-                                                                <span className="text-red-600 font-medium">Yes</span>
-                                                            ) : (
-                                                                <span className="text-slate-400">No</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="py-3 text-slate-600">{param.description}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
                             </div>
-
-                            {/* Example Request with Language Tabs */}
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                                    <h3 className="font-semibold text-slate-900">Example Request</h3>
-                                    <div className="flex items-center gap-2">
-                                        {languages.map((lang) => (
-                                            <button
-                                                key={lang.id}
-                                                onClick={() => setActiveLanguage(lang.id)}
-                                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${activeLanguage === lang.id
-                                                    ? 'bg-slate-900 text-white'
-                                                    : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                                                    }`}
-                                            >
-                                                {lang.name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="relative">
-                                    <button
-                                        onClick={() => copyCode(activeEndpoint.examples[activeLanguage as keyof typeof activeEndpoint.examples], `${activeEndpoint.id}-${activeLanguage}`)}
-                                        className={`absolute top-3 right-3 p-2 rounded-lg transition-colors z-10 ${copiedCode === `${activeEndpoint.id}-${activeLanguage}`
-                                            ? 'bg-green-500 text-white'
-                                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                            }`}
-                                    >
-                                        {copiedCode === `${activeEndpoint.id}-${activeLanguage}` ? (
-                                            <CheckCircle className="w-4 h-4" />
-                                        ) : (
-                                            <Copy className="w-4 h-4" />
-                                        )}
-                                    </button>
-                                    <div className="p-4 bg-slate-900 overflow-x-auto">
-                                        <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap">
-                                            {activeEndpoint.examples[activeLanguage as keyof typeof activeEndpoint.examples]}
-                                        </pre>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Example Response */}
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                                    <h3 className="font-semibold text-slate-900">Example Response</h3>
-                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
-                                        200 OK
-                                    </span>
-                                </div>
-                                <div className="p-4 bg-slate-900 overflow-x-auto">
-                                    <pre className="text-sm text-emerald-400 font-mono whitespace-pre-wrap">
-                                        {activeEndpoint.response}
-                                    </pre>
-                                </div>
-                            </div>
-                        </>
-                    )}
-
-                    {/* Error Codes */}
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                            <h3 className="font-semibold text-slate-900">Error Codes</h3>
                         </div>
-                        <div className="p-6">
-                            <div className="space-y-3">
-                                {[
-                                    { code: 'invalid_api_key', description: 'The API key provided is invalid' },
-                                    { code: 'insufficient_balance', description: 'Not enough balance to place order' },
-                                    { code: 'invalid_service', description: 'The service ID does not exist' },
-                                    { code: 'invalid_link', description: 'The link provided is invalid or private' },
-                                    { code: 'order_not_found', description: 'The order ID does not exist' },
-                                    { code: 'refill_not_available', description: 'Refill is not available for this order' },
-                                ].map((error, idx) => (
-                                    <div key={idx} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
-                                        <code className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-mono">
-                                            {error.code}
-                                        </code>
-                                        <span className="text-sm text-slate-600">{error.description}</span>
+                        <p className="mt-4 text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Keep this terminal key secure. Do not expose in client-side code.</p>
+                    </div>
+                </section>
+
+                {/* API Endpoint & Selector */}
+                <section className="relative">
+                    <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-emerald-900/5 border border-white">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-4 ml-1">Select Endpoint</label>
+                        
+                        <button 
+                          onClick={() => setIsMenuOpen(!isMenuOpen)}
+                          className={`w-full flex items-center justify-between p-4 bg-slate-50 border-2 rounded-2xl transition-all ${
+                            isMenuOpen ? 'border-emerald-500 bg-white ring-4 ring-emerald-500/5' : 'border-emerald-50'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-emerald-500 text-white rounded-xl shadow-md">
+                                {activeEndpoint.icon}
+                            </div>
+                            <div className="text-left">
+                                <span className="text-xs font-black text-slate-800 uppercase tracking-tight block">
+                                  {activeEndpoint.name}
+                                </span>
+                                <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">
+                                  {activeEndpoint.method}
+                                </span>
+                            </div>
+                          </div>
+                          <ChevronDown className={`text-slate-300 transition-transform duration-500 ${isMenuOpen ? 'rotate-180' : ''}`} size={20} />
+                        </button>
+
+                        {isMenuOpen && (
+                          <div className="absolute left-6 right-6 mt-3 bg-white rounded-[2.5rem] shadow-2xl border border-emerald-50 z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+                            {endpoints.map((e) => (
+                              <button
+                                key={e.id}
+                                onClick={() => {
+                                  setActiveSection(e.id);
+                                  setIsMenuOpen(false);
+                                }}
+                                className="w-full px-6 py-4 text-left hover:bg-emerald-50 flex items-center justify-between group transition-colors border-b border-slate-50 last:border-0"
+                              >
+                                <div className="flex items-center space-x-4">
+                                    <div className={`p-2 rounded-xl transition-all ${activeSection === e.id ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-emerald-100 group-hover:text-emerald-600'}`}>
+                                        {e.icon}
                                     </div>
+                                    <div>
+                                      <p className={`text-xs font-black uppercase tracking-tight ${activeSection === e.id ? 'text-emerald-600' : 'text-slate-700'}`}>
+                                        {e.name}
+                                      </p>
+                                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{e.description}</p>
+                                    </div>
+                                </div>
+                                {activeSection === e.id && <CheckCircle2 size={16} className="text-emerald-500" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="mt-6 p-4 bg-emerald-50/50 rounded-2xl border border-dashed border-emerald-100 flex items-center space-x-3">
+                            <Terminal size={16} className="text-emerald-500 shrink-0" />
+                            <code className="text-[10px] font-black text-emerald-700 tracking-tighter truncate">{apiEndpoint}</code>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Parameters Table */}
+                <section>
+                    <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-emerald-900/5 border border-white">
+                        <div className="flex items-center space-x-2 mb-6">
+                            <Info size={16} className="text-emerald-500" />
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Request Parameters</h3>
+                        </div>
+                        <div className="space-y-4">
+                            {activeEndpoint.params.map((p, i) => (
+                                <div key={i} className="flex items-start justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center space-x-2">
+                                            <code className="text-xs font-black text-emerald-600">{p.name}</code>
+                                            <span className="text-[9px] font-black text-slate-300 uppercase italic">{p.type}</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 font-bold leading-tight">{p.description}</p>
+                                    </div>
+                                    {p.required && (
+                                        <span className="bg-rose-50 text-rose-500 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border border-rose-100">Req</span>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Example Request Section */}
+                <section>
+                    <div className="bg-slate-900 rounded-[2.5rem] p-6 shadow-2xl shadow-slate-200 border border-slate-800">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center space-x-2">
+                                <Zap size={16} className="text-amber-400" />
+                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Sample</h3>
+                            </div>
+                            <div className="flex bg-slate-800 p-1 rounded-xl">
+                                {languages.map(lang => (
+                                    <button 
+                                      key={lang.id}
+                                      onClick={() => setActiveLanguage(lang.id)}
+                                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black transition-all ${
+                                        activeLanguage === lang.id ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
+                                      }`}
+                                    >
+                                        {lang.name}
+                                    </button>
                                 ))}
                             </div>
                         </div>
+                        <div className="relative group">
+                            <div className="absolute -inset-2 bg-emerald-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="relative bg-black/40 rounded-2xl p-5 border border-white/5 overflow-x-auto custom-scrollbar">
+                                <pre className="text-[10px] font-bold text-emerald-400/90 leading-relaxed font-mono whitespace-pre">
+                                    {activeEndpoint.examples[activeLanguage as keyof typeof activeEndpoint.examples] || '// No sample available'}
+                                </pre>
+                            </div>
+                            <button 
+                              onClick={() => copyText(activeEndpoint.examples[activeLanguage as keyof typeof activeEndpoint.examples], 'sample')}
+                              className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 text-white rounded-xl active:scale-90 transition-all border border-white/10"
+                            >
+                                {copiedCode === 'sample' ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+                            </button>
+                        </div>
                     </div>
-                </div>
+                </section>
+
+                {/* Example Response */}
+                <section>
+                    <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-emerald-900/5 border border-white">
+                        <div className="flex items-center justify-between mb-4 px-1">
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Expected Response</h3>
+                            <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest italic">HTTPS 200 OK</span>
+                        </div>
+                        <div className="bg-emerald-50/30 rounded-2xl p-4 border border-emerald-50/50">
+                            <pre className="text-[10px] font-black text-slate-600 font-mono whitespace-pre-wrap">
+                                {activeEndpoint.response}
+                            </pre>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Quick Support Link */}
+                <section className="bg-emerald-600 rounded-[2.5rem] p-6 shadow-xl shadow-emerald-100 flex items-center justify-between group active:scale-95 transition-all cursor-pointer" onClick={() => router.push('/user/tickets')}>
+                    <div className="space-y-1">
+                        <h4 className="text-white font-black text-sm tracking-tight italic">NEED INTEGRATION HELP?</h4>
+                        <p className="text-emerald-100 text-[10px] font-bold uppercase tracking-widest opacity-80">Our engineering team is at baseline.</p>
+                    </div>
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                        <ArrowRight size={20} />
+                    </div>
+                </section>
+
             </div>
+
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 20px; }
+            `}</style>
+
         </div>
     );
 };

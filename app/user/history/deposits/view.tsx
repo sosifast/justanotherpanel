@@ -162,7 +162,8 @@ const DepositsView = ({ initialDeposits }: DepositsViewProps) => {
                         return (
                             <div 
                                 key={item.id} 
-                                className="p-4 bg-white border border-emerald-50 rounded-[2rem] flex justify-between items-center shadow-sm active:scale-[0.98] transition-transform hover:shadow-md hover:border-emerald-100 group"
+                                onClick={() => handleViewDetails(item)}
+                                className="p-4 bg-white border border-emerald-50 rounded-[2rem] flex justify-between items-center shadow-sm active:scale-[0.98] transition-all hover:shadow-md hover:border-emerald-100 group cursor-pointer"
                             >
                                 <div className="flex items-center space-x-4">
                                     <div className={`p-4 rounded-2xl transition-all group-hover:scale-105 ${
@@ -171,7 +172,7 @@ const DepositsView = ({ initialDeposits }: DepositsViewProps) => {
                                         <ArrowDownLeft size={18} strokeWidth={3} />
                                     </div>
                                     <div className="space-y-1">
-                                        <h4 className="text-sm font-black text-slate-800 line-clamp-1 leading-tight">Deposit via {method}</h4>
+                                        <h4 className="text-sm font-black text-slate-800 line-clamp-1 leading-tight group-hover:text-emerald-600 transition-colors">Deposit via {method}</h4>
                                         <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                                             <span className="flex items-center"><Calendar size={10} className="mr-1 opacity-60" /> {format(new Date(item.created_at), 'dd MMM yyyy')}</span>
                                             <span className="opacity-30">•</span>
@@ -195,25 +196,23 @@ const DepositsView = ({ initialDeposits }: DepositsViewProps) => {
                                         )}
                                         {getStatusLabel(item.status)}
                                     </div>
-                                    <div className="flex items-center justify-end space-x-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex items-center justify-end space-x-1 mt-1">
                                         {item.status === 'PENDING' && (details?.payment_url || details?.paypal_order_id) && (
                                             <a
                                                 href={details?.payment_url || `https://www.paypal.com/checkoutnow?token=${details?.paypal_order_id}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="p-1 px-2.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="p-1 px-2.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all flex items-center space-x-1"
                                                 title="Pay Now"
                                             >
-                                                <CreditCard size={14} strokeWidth={3} />
+                                                <CreditCard size={12} strokeWidth={3} />
+                                                <span className="text-[8px] font-bold uppercase tracking-tighter">Pay</span>
                                             </a>
                                         )}
-                                        <button
-                                            onClick={() => handleViewDetails(item)}
-                                            className="p-1 px-2.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200 transition-all"
-                                            title="View Details"
-                                        >
-                                            <Info size={14} strokeWidth={3} />
-                                        </button>
+                                        <div className="p-1 px-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition-all opacity-0 group-hover:opacity-100">
+                                            <Info size={12} strokeWidth={3} />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

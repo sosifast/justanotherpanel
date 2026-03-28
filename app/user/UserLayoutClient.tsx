@@ -239,6 +239,7 @@ const UserLayoutClient = ({ children, initialSettings }: UserLayoutClientProps) 
         pathname === '/user/tickets' || 
         pathname === '/user/voucher' || 
         pathname.startsWith('/user/redeem') ||
+        pathname === '/user/api' ||
         pathname.startsWith('/user/services');
 
     if (isNewDesign) {

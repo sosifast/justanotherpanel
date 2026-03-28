@@ -33,7 +33,8 @@ import {
   TrendingUp,
   Headset,
   Ticket,
-  Moon
+  Moon,
+  Code
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -381,6 +382,7 @@ const AccountView = () => {
                                 <ActionBtn icon={<TrendingUp size={22} />} label="Become Reseller" desc={isReseller ? "Partnership Active" : "Scale your business uplink"} color="text-amber-500" onClick={() => setSubView('reseller')} />
                                 <ActionBtn icon={<CreditCard size={22} />} label="Payment Methods" desc="Manage cards & balance" color="text-emerald-500" onClick={() => router.push('/user/add-funds')} />
                                 <ActionBtn icon={<Ticket size={22} />} label="Redeem Credits" desc="Claim access vouchers" color="text-orange-500" onClick={() => router.push('/user/redeem/claim')} />
+                                <ActionBtn icon={<Code size={22} />} label="Rest API" desc="Developer documentation" color="text-indigo-500" onClick={() => router.push('/user/api')} />
                             </div>
                         </section>
 
@@ -391,8 +393,6 @@ const AccountView = () => {
                             </div>
                             <div className="bg-slate-50/50 rounded-[2.5rem] p-2 space-y-1">
                                 <ActionBtn icon={<Bell size={22} />} label="Notifications" desc="Set app alerts" color="text-purple-500" onClick={() => setSubView('notifications')} />
-                                <ActionBtn icon={<Globe size={22} />} label="Language" desc="English (US)" color="text-indigo-500" />
-                                <ActionBtn icon={<Moon size={22} />} label="App Theme" desc="Light Mode" color="text-slate-700" />
                             </div>
                         </section>
 

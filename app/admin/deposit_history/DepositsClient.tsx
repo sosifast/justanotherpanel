@@ -6,6 +6,8 @@ import { format } from 'date-fns';
 import { checkDepositStatus } from './actions';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 type DepositData = {
   id: number;
@@ -18,6 +20,12 @@ type DepositData = {
 
 const DepositsClient = ({ initialDeposits }: { initialDeposits: DepositData[] }) => {
   const [deposits, setDeposits] = useState(initialDeposits);
+  const router = useRouter();
+
+  useEffect(() => {
+    setDeposits(initialDeposits);
+  }, [initialDeposits]);
+
   const [isPending, startTransition] = useTransition();
   const [checkingId, setCheckingId] = useState<number | null>(null);
   const [isUpdatingAll, setIsUpdatingAll] = useState(false);
@@ -39,6 +47,7 @@ const DepositsClient = ({ initialDeposits }: { initialDeposits: DepositData[] })
         const result = await checkDepositStatus(id);
         if (result.success) {
           toast.success(result.message);
+          router.refresh();
         } else {
           toast.error(result.message);
         }
@@ -79,6 +88,7 @@ const DepositsClient = ({ initialDeposits }: { initialDeposits: DepositData[] })
     toast.dismiss('update-all');
     toast.success(`Updated ${successCount}/${pendingAuto.length} deposits`);
     setIsUpdatingAll(false);
+    router.refresh();
   };
 
   const filteredDeposits = useMemo(() => {

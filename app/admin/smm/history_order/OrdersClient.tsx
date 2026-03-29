@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useTransition } from 'react';
 import { Search, Filter, MoreVertical, ShoppingCart, User, Link as LinkIcon, DollarSign, CheckCircle, XCircle, Clock, Loader, RefreshCw, Trash2, Edit, Eye, X, Clipboard, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 type OrderData = {
   id: number;
@@ -33,6 +34,13 @@ type OrderData = {
 
 const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
   const [orders, setOrders] = useState(initialOrders);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setOrders(initialOrders);
+  }, [initialOrders]);
+
   const [updating, setUpdating] = useState<number | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
@@ -95,6 +103,7 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
           start_count: data.order.start_count,
         } : o));
         toast.success('Status updated from provider');
+        router.refresh();
       } else {
         toast.error(data.error);
       }
@@ -130,6 +139,7 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
       if (res.ok) {
         setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
         toast.success('Order status updated successfully');
+        router.refresh();
       } else {
         toast.error(data.error);
       }
@@ -153,6 +163,7 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
       if (res.ok) {
         setOrders(prev => prev.filter(o => o.id !== orderId));
         toast.success('Order deleted successfully');
+        router.refresh();
       } else {
         const data = await res.json();
         toast.error(data.error);
@@ -206,6 +217,7 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
       if (res.ok) {
         setOrders(prev => prev.map(o => o.id === selectedOrder.id ? data.order : o));
         toast.success('Order updated successfully');
+        router.refresh();
         setShowEditModal(false);
       } else {
         toast.error(data.error);
@@ -229,8 +241,8 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
       const data = await res.json();
       if (res.ok) {
         toast.success(data.message);
-        // Refresh orders list from server by reloading
-        window.location.reload();
+        // Soft refresh the page data
+        router.refresh();
       } else {
         toast.error(data.error || 'Sync failed');
       }

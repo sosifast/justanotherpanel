@@ -15,6 +15,7 @@ type GatewayFormData = {
     // Cryptomus
     cryptomus_merchant_id: string;
     cryptomus_payment_key: string;
+    cryptomus_is_customer_fee: boolean;
     // Manual
     manual_bank_name: string;
     manual_account_number: string;
@@ -43,6 +44,7 @@ const GatewayModal = ({ isOpen, onClose, onSubmit, gateway }: GatewayModalProps)
         paypal_mode: 'sandbox',
         cryptomus_merchant_id: '',
         cryptomus_payment_key: '',
+        cryptomus_is_customer_fee: false,
         manual_bank_name: '',
         manual_account_number: '',
         manual_account_holder: '',
@@ -64,6 +66,7 @@ const GatewayModal = ({ isOpen, onClose, onSubmit, gateway }: GatewayModalProps)
                 paypal_mode: config.mode || 'sandbox',
                 cryptomus_merchant_id: config.merchantId || '',
                 cryptomus_payment_key: config.paymentKey || '',
+                cryptomus_is_customer_fee: config.is_customer_fee || false,
                 manual_bank_name: config.bankName || '',
                 manual_account_number: config.accountNumber || '',
                 manual_account_holder: config.accountHolder || '',
@@ -87,6 +90,7 @@ const GatewayModal = ({ isOpen, onClose, onSubmit, gateway }: GatewayModalProps)
         } else if (formData.provider === 'CRYPTOMUS') {
             api_config.merchantId = formData.cryptomus_merchant_id;
             api_config.paymentKey = formData.cryptomus_payment_key;
+            api_config.is_customer_fee = formData.cryptomus_is_customer_fee;
         } else if (formData.provider === 'MANUAL') {
             api_config.bankName = formData.manual_bank_name;
             api_config.accountNumber = formData.manual_account_number;
@@ -250,6 +254,30 @@ const GatewayModal = ({ isOpen, onClose, onSubmit, gateway }: GatewayModalProps)
                                             {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                     </div>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Fee Borne By</label>
+                                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, cryptomus_is_customer_fee: false })}
+                                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${!formData.cryptomus_is_customer_fee ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            Merchant
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, cryptomus_is_customer_fee: true })}
+                                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${formData.cryptomus_is_customer_fee ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            Customer
+                                        </button>
+                                    </div>
+                                    <p className="mt-2 text-xs text-slate-500">
+                                        {formData.cryptomus_is_customer_fee 
+                                            ? "Customer will pay the Cryptomus transaction fee." 
+                                            : "Fee will be deducted from your Cryptomus balance."}
+                                    </p>
                                 </div>
                             </div>
                         )}

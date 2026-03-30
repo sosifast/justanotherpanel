@@ -48,6 +48,7 @@ export async function POST(req: Request) {
             url_return: `${baseUrl}/user/history/deposits`,
             url_callback: `${baseUrl}/api/webhooks/cryptomus`,
             is_payment_multiple: true,
+            is_customer_fee: config.is_customer_fee || false,
             lifetime: '3600'
         };
 

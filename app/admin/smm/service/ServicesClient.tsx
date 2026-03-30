@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, MoreVertical, Plus, Layers, CheckCircle, XCircle, Edit, Trash2, X, RefreshCw, Package } from 'lucide-react';
+import { Search, Plus, Layers, CheckCircle, XCircle, Edit, Trash2, X, RefreshCw, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
@@ -59,7 +59,6 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
   const [modalType, setModalType] = useState<ModalType>(null);
   const [selectedService, setSelectedService] = useState<ServiceData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
 
   // Sync state
   const [syncData, setSyncData] = useState({
@@ -157,14 +156,12 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
       note: service.note || ''
     });
     setModalType('edit');
-    setDropdownOpen(null);
   };
 
   // Open Delete Modal
   const openDeleteModal = (service: ServiceData) => {
     setSelectedService(service);
     setModalType('delete');
-    setDropdownOpen(null);
   };
 
   // Close Modal
@@ -497,33 +494,23 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
                       {service.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right relative">
-                    <button
-                      onClick={() => setDropdownOpen(dropdownOpen === service.id ? null : service.id)}
-                      className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    {dropdownOpen === service.id && (
-                      <div className="absolute right-6 top-12 z-10 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[140px]">
-                        <button
-                          onClick={() => openEditModal(service)}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                        >
-                          <Edit className="w-4 h-4" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(service)}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => openEditModal(service)}
+                        title="Edit Service"
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(service)}
+                        title="Delete Service"
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -884,10 +871,6 @@ const ServicesClient = ({ initialServices, categories, apiProviders }: Props) =>
         </div>
       )}
 
-      {/* Click outside to close dropdown */}
-      {dropdownOpen !== null && (
-        <div className="fixed inset-0 z-0" onClick={() => setDropdownOpen(null)}></div>
-      )}
     </div>
   );
 };

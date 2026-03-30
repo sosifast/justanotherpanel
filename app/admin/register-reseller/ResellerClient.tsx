@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Shield, Mail, Wallet, Calendar, Search } from 'lucide-react';
+import { Shield, Mail, Wallet, Calendar, Search, Settings } from 'lucide-react';
 import Image from 'next/image';
 
 type Reseller = {
@@ -144,8 +144,8 @@ export default function ResellerClient({ resellers }: { resellers: Reseller[] })
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
-                                            Manage
+                                        <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Manage">
+                                            <Settings className="w-4 h-4" />
                                         </button>
                                     </td>
                                 </tr>

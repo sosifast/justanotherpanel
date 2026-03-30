@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, MoreVertical, Edit, Trash2, X, Ticket, Calendar, DollarSign, Users, Info, Loader, Filter } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, X, Ticket, Calendar, DollarSign, Users, Info, Loader, Filter } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
@@ -29,7 +29,6 @@ const ReedemGenerateClient = ({ initialCodes }: { initialCodes: RedeemCode[] }) 
     const [modalType, setModalType] = useState<'add' | 'edit' | 'delete' | null>(null);
     const [selectedCode, setSelectedCode] = useState<RedeemCode | null>(null);
     const [loading, setLoading] = useState(false);
-    const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
 
     const [formData, setFormData] = useState({
         name_code: '',
@@ -73,13 +72,11 @@ const ReedemGenerateClient = ({ initialCodes }: { initialCodes: RedeemCode[] }) 
             total_info: code.total_info || ''
         });
         setModalType('edit');
-        setDropdownOpen(null);
     };
 
     const openDeleteModal = (code: RedeemCode) => {
         setSelectedCode(code);
         setModalType('delete');
-        setDropdownOpen(null);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -217,23 +214,23 @@ const ReedemGenerateClient = ({ initialCodes }: { initialCodes: RedeemCode[] }) 
                                             {code.status}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right relative">
-                                        <button
-                                            onClick={() => setDropdownOpen(dropdownOpen === code.id ? null : code.id)}
-                                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"
-                                        >
-                                            <MoreVertical className="w-4 h-4" />
-                                        </button>
-                                        {dropdownOpen === code.id && (
-                                            <div className="absolute right-6 top-10 z-10 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[120px]">
-                                                <button onClick={() => openEditModal(code)} className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2">
-                                                    <Edit className="w-3 h-3" /> Edit
-                                                </button>
-                                                <button onClick={() => openDeleteModal(code)} className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2">
-                                                    <Trash2 className="w-3 h-3" /> Delete
-                                                </button>
-                                            </div>
-                                        )}
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => openEditModal(code)}
+                                                title="Edit Code"
+                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            >
+                                                <Edit className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => openDeleteModal(code)}
+                                                title="Delete Code"
+                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

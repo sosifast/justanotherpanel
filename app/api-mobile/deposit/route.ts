@@ -62,6 +62,7 @@ async function createCryptomusPayment(gateway: any, amount: number, userId: numb
         url_return: `${baseUrl}/api-mobile/deposit/success`,
         url_callback: `${baseUrl}/api/webhooks/cryptomus`,
         is_payment_multiple: true,
+        is_customer_fee: config.is_customer_fee || false,
         lifetime: '3600'
     };
 

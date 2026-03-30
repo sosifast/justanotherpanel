@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useTransition } from 'react';
-import { Search, Filter, MoreVertical, ShoppingCart, User, Link as LinkIcon, DollarSign, CheckCircle, XCircle, Clock, Loader, RefreshCw, Trash2, Edit, Eye, X, Clipboard, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, ShoppingCart, User, Link as LinkIcon, DollarSign, CheckCircle, XCircle, Clock, Loader, RefreshCw, Trash2, Edit, Eye, X, Clipboard, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -42,7 +42,6 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
   }, [initialOrders]);
 
   const [updating, setUpdating] = useState<number | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -90,7 +89,6 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
   const handleUpdateStatus = async (orderId: number) => {
     try {
       setUpdating(orderId);
-      setDropdownOpen(null);
       const res = await fetch(`/api/admin/orders/${orderId}/check-status`, {
         method: 'POST'
       });
@@ -128,7 +126,6 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
 
     try {
       setUpdating(orderId);
-      setDropdownOpen(null);
       const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -155,7 +152,6 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
 
     try {
       setIsDeleting(orderId);
-      setDropdownOpen(null);
       const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: 'DELETE'
       });
@@ -178,7 +174,6 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
   const handleShowDetails = (order: OrderData) => {
     setSelectedOrder(order);
     setShowDetailModal(true);
-    setDropdownOpen(null);
   };
 
   const handleEditClick = (order: OrderData) => {
@@ -191,7 +186,6 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
       remains: order.remains || 0
     });
     setShowEditModal(true);
-    setDropdownOpen(null);
   };
 
   const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -340,6 +334,7 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
                 <th className="px-6 py-4 font-semibold">Service</th>
                 <th className="px-6 py-4 font-semibold">Details</th>
                 <th className="px-6 py-4 font-semibold">Charge</th>
+                <th className="px-6 py-4 font-semibold">Profit</th>
                 <th className="px-6 py-4 font-semibold">Status</th>
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
@@ -372,58 +367,55 @@ const OrdersClient = ({ initialOrders }: { initialOrders: OrderData[] }) => {
                   </td>
                   <td className="px-6 py-4 font-medium text-slate-700">${Number(order.price_sale).toFixed(4)}</td>
                   <td className="px-6 py-4">
+                    <div className={`font-bold ${Number(order.price_sale) - Number(order.price_api) > 0 ? 'text-emerald-500' : 'text-slate-400'}`}>
+                      ${(Number(order.price_sale) - Number(order.price_api)).toFixed(4)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                       {getStatusIcon(order.status)}
                       {order.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right relative">
-                    <button
-                      onClick={() => setDropdownOpen(dropdownOpen === order.id ? null : order.id)}
-                      disabled={isDeleting === order.id}
-                      className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                    >
-                      {isDeleting === order.id ? <Loader className="w-4 h-4 animate-spin" /> : <MoreVertical className="w-4 h-4" />}
-                    </button>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => handleShowDetails(order)}
+                        title="View Details"
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
 
-                    {dropdownOpen === order.id && (
-                      <div className="absolute right-6 top-10 z-10 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[170px]">
+                      {order.id_api_provider ? (
                         <button
-                          onClick={() => handleShowDetails(order)}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                          onClick={() => handleUpdateStatus(order.id)}
+                          disabled={updating === order.id}
+                          title="Check Status"
+                          className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
                         >
-                          <Eye className="w-3 h-3" />
-                          View Details
+                          {updating === order.id ? <Loader className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                         </button>
-                        {order.id_api_provider ? (
+                      ) : (
+                        <>
                           <button
-                            onClick={() => handleUpdateStatus(order.id)}
-                            disabled={updating === order.id}
-                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2"
+                            onClick={() => handleEditClick(order)}
+                            title="Edit Order"
+                            className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                           >
-                            {updating === order.id ? <Loader className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                            Check Status
+                            <Edit className="w-4 h-4" />
                           </button>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => handleEditClick(order)}
-                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-blue-600"
-                            >
-                              <Edit className="w-3 h-3" />
-                              Edit Order
-                            </button>
-                            <button
-                              onClick={() => handleDeleteOrder(order.id)}
-                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              Delete Order
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
+                          <button
+                            onClick={() => handleDeleteOrder(order.id)}
+                            disabled={isDeleting === order.id}
+                            title="Delete Order"
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {isDeleting === order.id ? <Loader className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Plus, User, Mail, CheckCircle, XCircle, Edit, Trash2, X, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Search, Filter, Plus, User, Mail, CheckCircle, XCircle, Edit, Trash2, X, Eye, EyeOff, RefreshCw } from 'lucide-react';
 
 type UserData = {
   id: number;
@@ -23,7 +23,6 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -99,21 +98,18 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
       balance: String(user.balance)
     });
     setModalType('edit');
-    setDropdownOpen(null);
   };
 
   // Open Delete Modal
   const openDeleteModal = (user: UserData) => {
     setSelectedUser(user);
     setModalType('delete');
-    setDropdownOpen(null);
   };
 
   // Open Resend Modal
   const openResendModal = (user: UserData) => {
     setSelectedUser(user);
     setModalType('resend');
-    setDropdownOpen(null);
   };
 
   // Close Modal
@@ -248,7 +244,6 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
       alert('Failed to resend activation link');
     } finally {
       setLoading(false);
-      setDropdownOpen(null);
     }
   };
 
@@ -342,42 +337,32 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
                       {user.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right relative">
-                    <button
-                      onClick={() => setDropdownOpen(dropdownOpen === user.id ? null : user.id)}
-                      className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    {dropdownOpen === user.id && (
-                      <div className="absolute right-6 top-12 z-10 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[140px]">
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => openEditModal(user)}
+                        title="Edit User"
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      {user.status !== 'ACTIVE' && (
                         <button
-                          onClick={() => openEditModal(user)}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                          onClick={() => openResendModal(user)}
+                          title="Resend Activation"
+                          className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                         >
-                          <Edit className="w-4 h-4" />
-                          Edit
+                          <RefreshCw className="w-4 h-4" />
                         </button>
-                        {user.status !== 'ACTIVE' && (
-                          <button
-                            onClick={() => openResendModal(user)}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-y border-slate-50"
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                            Resend Link
-                          </button>
-                        )}
-                        <button
-                          onClick={() => openDeleteModal(user)}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                      )}
+                      <button
+                        onClick={() => openDeleteModal(user)}
+                        title="Delete User"
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -631,10 +616,6 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
         </div>
       )}
 
-      {/* Click outside to close dropdown */}
-      {dropdownOpen !== null && (
-        <div className="fixed inset-0 z-0" onClick={() => setDropdownOpen(null)}></div>
-      )}
     </div>
   );
 };

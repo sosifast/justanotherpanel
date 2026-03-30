@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Plus, Globe, CheckCircle, XCircle, Edit, Trash2, X } from 'lucide-react';
+import { Search, Filter, Plus, Globe, CheckCircle, XCircle, Edit, Trash2, X } from 'lucide-react';
 import ImageUpload from '@/components/ui/ImageUpload';
 
 type PlatformData = {
@@ -24,7 +24,6 @@ const PlatformsClient = ({ initialPlatforms }: { initialPlatforms: PlatformData[
   const [modalType, setModalType] = useState<ModalType>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -59,14 +58,12 @@ const PlatformsClient = ({ initialPlatforms }: { initialPlatforms: PlatformData[
       status: platform.status
     });
     setModalType('edit');
-    setDropdownOpen(null);
   };
 
   // Open Delete Modal
   const openDeleteModal = (platform: PlatformData) => {
     setSelectedPlatform(platform);
     setModalType('delete');
-    setDropdownOpen(null);
   };
 
   // Close Modal
@@ -273,33 +270,23 @@ const PlatformsClient = ({ initialPlatforms }: { initialPlatforms: PlatformData[
                       {platform.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right relative">
-                    <button
-                      onClick={() => setDropdownOpen(dropdownOpen === platform.id ? null : platform.id)}
-                      className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    {dropdownOpen === platform.id && (
-                      <div className="absolute right-6 top-12 z-10 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[140px]">
-                        <button
-                          onClick={() => openEditModal(platform)}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                        >
-                          <Edit className="w-4 h-4" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(platform)}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => openEditModal(platform)}
+                        title="Edit Platform"
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(platform)}
+                        title="Delete Platform"
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -450,10 +437,6 @@ const PlatformsClient = ({ initialPlatforms }: { initialPlatforms: PlatformData[
         </div>
       )}
 
-      {/* Click outside to close dropdown */}
-      {dropdownOpen !== null && (
-        <div className="fixed inset-0 z-0" onClick={() => setDropdownOpen(null)}></div>
-      )}
     </div>
   );
 };

@@ -1,10 +1,9 @@
 import React from 'react';
-import { Users, ShoppingBag, LifeBuoy, DollarSign, AlertCircle, MoreVertical } from 'lucide-react';
+import { Users, ShoppingBag, LifeBuoy, DollarSign, AlertCircle, MoreVertical, ArrowUpRight, ArrowDownRight, TrendingUp, CheckCircle } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import crypto from 'crypto';
-import PostHogAnalytics, { PostHogData, PostHogTrendPoint, PostHogBreakdownItem } from './PostHogAnalytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,21 +15,103 @@ export const metadata = {
 
 
 async function getStats() {
-  const totalRevenue = await prisma.deposits.aggregate({
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  // --- REVENUE ---
+  const revenueThisMonth = await prisma.deposits.aggregate({
     _sum: { amount: true },
-    where: { status: 'PAYMENT' } // Assuming PAYMENT = Paid
+    where: { 
+      status: 'PAYMENT',
+      created_at: { gte: firstDayOfMonth }
+    }
   });
 
-  const totalOrders = await prisma.order.count();
-  const activeUsers = await prisma.user.count({ where: { status: 'ACTIVE' } });
+  const revenueLastMonth = await prisma.deposits.aggregate({
+    _sum: { amount: true },
+    where: { 
+      status: 'PAYMENT',
+      created_at: { 
+        gte: firstDayOfLastMonth,
+        lt: firstDayOfMonth
+      }
+    }
+  });
 
-  const pendingTickets = await prisma.ticket.count({ where: { status: 'OPEN' } });
+  const revThis = Number(revenueThisMonth._sum.amount || 0);
+  const revLast = Number(revenueLastMonth._sum.amount || 0);
+  const revChange = revLast === 0 ? 100 : ((revThis - revLast) / revLast) * 100;
+
+  // --- ORDERS ---
+  const ordersThisMonth = await prisma.order.count({
+    where: { created_at: { gte: firstDayOfMonth } }
+  });
+
+  const ordersLastMonth = await prisma.order.count({
+    where: { 
+      created_at: { 
+        gte: firstDayOfLastMonth,
+        lt: firstDayOfMonth
+      }
+    }
+  });
+
+  const ordChange = ordersLastMonth === 0 ? 100 : ((ordersThisMonth - ordersLastMonth) / ordersLastMonth) * 100;
+
+  // --- ACTIVE USERS (Users who placed an order this month) ---
+  const activeUsersThisMonth = await prisma.user.count({ 
+    where: { 
+      status: 'ACTIVE',
+      orders: {
+        some: {
+          created_at: { gte: firstDayOfMonth }
+        }
+      }
+    } 
+  });
+
+  const activeUsersLastMonth = await prisma.user.count({ 
+    where: { 
+      status: 'ACTIVE',
+      orders: {
+        some: {
+          created_at: { 
+            gte: firstDayOfLastMonth,
+            lt: firstDayOfMonth
+          }
+        }
+      }
+    } 
+  });
+
+  const userChange = activeUsersLastMonth === 0 ? 100 : ((activeUsersThisMonth - activeUsersLastMonth) / activeUsersLastMonth) * 100;
+
+  // --- OPEN TICKETS ---
+  const openTickets = await prisma.ticket.count({ where: { status: 'OPEN' } });
+  const totalTickets = await prisma.ticket.count();
+  const ticketPercentage = totalTickets === 0 ? 0 : (openTickets / totalTickets) * 100;
 
   return {
-    revenue: totalRevenue._sum.amount ? Number(totalRevenue._sum.amount).toFixed(2) : '0.00',
-    orders: totalOrders,
-    users: activeUsers,
-    tickets: pendingTickets
+    revenue: {
+      value: revThis.toFixed(2),
+      change: revChange.toFixed(1),
+      isUp: revChange >= 0
+    },
+    orders: {
+      value: ordersThisMonth,
+      change: ordChange.toFixed(1),
+      isUp: ordChange >= 0
+    },
+    users: {
+      value: activeUsersThisMonth,
+      change: userChange.toFixed(1),
+      isUp: userChange >= 0
+    },
+    tickets: {
+      value: openTickets,
+      percentage: ticketPercentage.toFixed(1)
+    }
   };
 }
 
@@ -42,6 +123,16 @@ async function getRecentOrders() {
       user: true,
       service: true,
       api_provider: true
+    }
+  });
+}
+
+async function getRecentDeposits() {
+  return await prisma.deposits.findMany({
+    take: 5,
+    orderBy: { created_at: 'desc' },
+    include: {
+      user: true
     }
   });
 }
@@ -104,89 +195,6 @@ async function getCryptomusBalance() {
 
 
 
-async function getPostHogData(): Promise<PostHogData | null> {
-  const settingsResults = await prisma.$queryRaw<any[]>`SELECT posthog_api_key, posthog_host, posthog_personal_api_key, posthog_project_id, site_name FROM "setting" LIMIT 1`;
-  const settings = settingsResults[0];
-
-  if (!settings?.posthog_personal_api_key || !settings?.posthog_project_id) {
-    return null;
-  }
-
-  const apiKey = settings.posthog_personal_api_key as string;
-  const projectId = settings.posthog_project_id as string;
-  const host = (settings.posthog_host as string) || 'https://us.i.posthog.com';
-  const baseUrl = `${host}/api/projects/${projectId}/query/`;
-
-  const fetchHogQL = async (query: string) => {
-    try {
-      const res = await fetch(baseUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query: { kind: 'HogQLQuery', query } }),
-        next: { revalidate: 300 } // Cache for 5 minutes
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch (e) {
-      console.error('PostHog fetch error:', e);
-      return null;
-    }
-  };
-
-  try {
-    const [visitorsRes, pageviewsRes, trendRes, countriesRes, browsersRes, pagesRes, referrersRes, devicesRes, vitalsRes] = await Promise.all([
-      fetchHogQL("SELECT count(DISTINCT distinct_id) FROM events WHERE timestamp > now() - interval 30 day"),
-      fetchHogQL("SELECT count() FROM events WHERE event = '$pageview' AND timestamp > now() - interval 30 day"),
-      fetchHogQL("SELECT toDate(timestamp) as d, count() FROM events WHERE event = '$pageview' AND timestamp > now() - interval 30 day GROUP BY d ORDER BY d ASC"),
-      fetchHogQL("SELECT properties.$geoip_country_code, count() FROM events WHERE timestamp > now() - interval 30 day GROUP BY properties.$geoip_country_code ORDER BY count() DESC LIMIT 10"),
-      fetchHogQL("SELECT properties.$browser, count() FROM events WHERE timestamp > now() - interval 30 day GROUP BY properties.$browser ORDER BY count() DESC LIMIT 10"),
-      fetchHogQL("SELECT properties.$current_url, count() FROM events WHERE event = '$pageview' AND timestamp > now() - interval 30 day GROUP BY properties.$current_url ORDER BY count() DESC LIMIT 10"),
-      fetchHogQL("SELECT properties.$referrer, count() FROM events WHERE timestamp > now() - interval 30 day GROUP BY properties.$referrer ORDER BY count() DESC LIMIT 10"),
-      fetchHogQL("SELECT properties.$device_type, count() FROM events WHERE timestamp > now() - interval 30 day GROUP BY properties.$device_type ORDER BY count() DESC"),
-      fetchHogQL("SELECT avg(properties.$web_vitals_LCP), avg(properties.$web_vitals_FID), avg(properties.$web_vitals_CLS), avg(properties.$web_vitals_FCP) FROM events WHERE event = '$pageview' AND timestamp > now() - interval 30 day"),
-    ]);
-
-    const visitors = visitorsRes?.results?.[0] || 0;
-    const pageviews = pageviewsRes?.results?.[0] || 0;
-    
-    // Map trend
-    const trend = (trendRes?.results || []).map((r: any) => ({
-      date: new Date(r[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      value: r[1]
-    }));
-
-    // Map breakdowns
-    const mapBreakdown = (res: any) => (res?.results || []).map((r: any) => ({ name: r[0] || 'Unknown', count: r[1] }));
-
-    const vitalsResult = vitalsRes?.results?.[0] || [0, 0, 0, 0];
-
-    return {
-      visitors,
-      pageviews,
-      bounceRate: 0, // Simplified
-      avgSessionDuration: 0, // Simplified
-      trend,
-      topPages: mapBreakdown(pagesRes),
-      topReferrers: mapBreakdown(referrersRes),
-      countries: mapBreakdown(countriesRes),
-      browsers: mapBreakdown(browsersRes),
-      devices: mapBreakdown(devicesRes),
-      webVitals: {
-          lcp: parseFloat(vitalsResult[0]) || 0,
-          fid: parseFloat(vitalsResult[1]) || 0,
-          cls: parseFloat(vitalsResult[2]) || 0,
-          fcp: parseFloat(vitalsResult[3]) || 0,
-      },
-      domain: settings.site_name,
-    };
-  } catch (err) {
-    console.error('Error processing PostHog data:', err);
-    return null;
-  }
-}
 
 const AdminDashboard = async () => {
   const session = await getCurrentUser();
@@ -195,12 +203,12 @@ const AdminDashboard = async () => {
     redirect('/auth/login');
   }
 
-  const [statsData, recentOrders, providers, cryptomusBalanceRaw, phData] = await Promise.all([
+  const [statsData, recentOrders, recentDeposits, providers, cryptomusBalanceRaw] = await Promise.all([
     getStats(),
     getRecentOrders(),
+    getRecentDeposits(),
     getProviders(),
     getCryptomusBalance(),
-    getPostHogData(),
   ]);
 
   const cryptomusBalance = Array.isArray(cryptomusBalanceRaw)
@@ -208,10 +216,54 @@ const AdminDashboard = async () => {
     : [];
 
   const stats = [
-    { label: "Total Revenue", value: `$${statsData.revenue}`, change: "30d", icon: <DollarSign className="w-5 h-5 text-emerald-500" />, bg: "bg-emerald-500/10" },
-    { label: "Total Orders", value: statsData.orders.toLocaleString(), change: "all", icon: <ShoppingBag className="w-5 h-5 text-blue-500" />, bg: "bg-blue-500/10" },
-    { label: "Active Users", value: statsData.users.toLocaleString(), change: "all", icon: <Users className="w-5 h-5 text-indigo-500" />, bg: "bg-indigo-500/10" },
-    { label: "Open Tickets", value: statsData.tickets.toLocaleString(), change: "live", icon: <LifeBuoy className="w-5 h-5 text-amber-500" />, bg: "bg-amber-500/10" },
+    {
+      label: "Total Revenue",
+      value: `$${statsData.revenue.value}`,
+      change: `${statsData.revenue.change}%`,
+      isUp: statsData.revenue.isUp,
+      sublabel: "this month",
+      icon: <DollarSign className="w-5 h-5" />,
+      color: "emerald",
+      bg: "bg-emerald-50",
+      text: "text-emerald-600",
+      iconBg: "text-emerald-900"
+    },
+    {
+      label: "Total Order",
+      value: statsData.orders.value.toLocaleString(),
+      change: `${statsData.orders.change}%`,
+      isUp: statsData.orders.isUp,
+      sublabel: "this month",
+      icon: <ShoppingBag className="w-5 h-5" />,
+      color: "blue",
+      bg: "bg-blue-50",
+      text: "text-blue-600",
+      iconBg: "text-blue-900"
+    },
+    {
+      label: "Active User",
+      value: statsData.users.value.toLocaleString(),
+      change: `${statsData.users.change}%`,
+      isUp: statsData.users.isUp,
+      sublabel: "ordered this month",
+      icon: <Users className="w-5 h-5" />,
+      color: "indigo",
+      bg: "bg-indigo-50",
+      text: "text-indigo-600",
+      iconBg: "text-indigo-900"
+    },
+    {
+      label: "Open Ticket",
+      value: statsData.tickets.value.toLocaleString(),
+      change: `${statsData.tickets.percentage}%`,
+      isUp: false,
+      sublabel: "of total tickets",
+      icon: <LifeBuoy className="w-5 h-5" />,
+      color: "amber",
+      bg: "bg-amber-50",
+      text: "text-amber-600",
+      iconBg: "text-amber-900"
+    },
   ];
 
   return (
@@ -220,162 +272,234 @@ const AdminDashboard = async () => {
         {stats.map((stat, index) => (
           <div
             key={index}
-            className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+            className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group"
           >
             <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-lg ${stat.bg}`}>{stat.icon}</div>
-              <div className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-700">
-                {/* Placeholder change data */}
+              <div className={`p-3 rounded-xl ${stat.bg} ${stat.text} group-hover:scale-110 transition-transform`}>
+                {stat.icon}
+              </div>
+              <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg ${stat.label === "Open Ticket"
+                ? "bg-slate-100 text-slate-600"
+                : stat.isUp
+                  ? "bg-emerald-100 text-emerald-600"
+                  : "bg-red-100 text-red-600"
+                }`}>
+                {stat.label !== "Open Ticket" && (
+                  stat.isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />
+                )}
                 {stat.change}
               </div>
             </div>
-            <p className="text-slate-500 text-sm font-medium">{stat.label}</p>
-            <h3 className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</h3>
+            <div className="relative z-10">
+              <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{stat.label}</p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <h3 className="text-2xl font-bold text-slate-900">{stat.value}</h3>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1 font-medium italic">{stat.sublabel}</p>
+            </div>
+            
+            {/* Subtle decorative background icon */}
+            <div className={`absolute -right-4 -bottom-4 opacity-[0.03] ${stat.iconBg} group-hover:opacity-[0.05] transition-opacity`}>
+               {React.cloneElement(stat.icon as React.ReactElement, { className: "w-24 h-24" })}
+            </div>
           </div>
         ))}
       </div>
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      <div className="grid lg:grid-cols-2 gap-8 mb-8">
+        {/* Recent Orders */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
           <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <h3 className="font-bold text-slate-800">Recent Transactions</h3>
-            <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-              View All Orders
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-blue-500" /> Recent Orders
+            </h3>
+            <button className="text-[10px] uppercase tracking-wider text-blue-600 hover:text-blue-700 font-bold">
+              View All
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-slate-500 uppercase bg-slate-50/50">
+              <thead className="text-[10px] text-slate-400 uppercase bg-slate-50/50">
                 <tr>
-                  <th className="px-6 py-3">Order ID</th>
-                  <th className="px-6 py-3">User</th>
-                  <th className="px-6 py-3">Service</th>
-                  <th className="px-6 py-3">Amount</th>
-                  <th className="px-6 py-3">Provider</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3"></th>
+                  <th className="px-6 py-3 font-bold">User</th>
+                  <th className="px-6 py-3 font-bold">Service</th>
+                  <th className="px-6 py-3 font-bold text-right">Price</th>
+                  <th className="px-6 py-3 font-bold text-center">Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-50">
                 {recentOrders.map((order: any) => (
-                  <tr
-                    key={order.id}
-                    className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group"
-                  >
-                    <td className="px-6 py-4 font-medium text-slate-900">#{order.id}</td>
-                    <td className="px-6 py-4">{order.user.username}</td>
-                    <td className="px-6 py-4 truncate max-w-[150px]">{order.service.name}</td>
-                    <td className="px-6 py-4 font-medium">${Number(order.price_sale).toFixed(4)}</td>
-                    <td className="px-6 py-4 text-slate-500 text-xs">{order.api_provider?.name || 'Manual'}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-bold ${order.status === 'COMPLETED' || order.status === 'SUCCESS'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : order.status === 'PROCESSING' || order.status === 'IN_PROGRESS'
-                            ? 'bg-blue-100 text-blue-700'
-                            : order.status === 'PENDING'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}
-                      >
+                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-3">
+                      <div className="font-bold text-slate-700">{order.user.username}</div>
+                      <div className="text-[10px] text-slate-400">#{order.id}</div>
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="truncate max-w-[120px] text-slate-600 font-medium">{order.service.name}</div>
+                    </td>
+                    <td className="px-6 py-3 font-bold text-right text-slate-900">${Number(order.price_sale).toFixed(3)}</td>
+                    <td className="px-6 py-3 text-center">
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${order.status === 'COMPLETED' || order.status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                         {order.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-600">
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                    </td>
                   </tr>
                 ))}
-                {recentOrders.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
-                      No orders found.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-slate-900 text-white rounded-xl p-6 relative overflow-hidden shadow-xl">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full -mr-10 -mt-10 blur-xl" />
-            <h3 className="text-slate-300 text-sm font-medium mb-1">Provider Balances</h3>
-            {/* Total provider balance sum */}
-            <div className="flex items-baseline gap-2 mb-4">
-              <h2 className="text-3xl font-bold">
-                ${providers.reduce((acc: number, curr: any) => acc + Number(curr.balance), 0).toFixed(2)}
-              </h2>
-            </div>
-            <div className="space-y-3">
-              {providers.map((provider: any) => (
-                <div key={provider.id}>
-                  <div className="flex justify-between text-xs items-center mb-1">
-                    <span className="text-slate-400">{provider.name}</span>
-                    <span className="font-bold">${Number(provider.balance).toFixed(2)}</span>
-                  </div>
-                  <div className="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                    {/* Visual bar just for effect, randomized width or full */}
-                    <div className="bg-blue-500 h-full w-full" style={{ width: '100%' }} />
-                  </div>
-                </div>
-              ))}
-              {providers.length === 0 && <p className="text-slate-500 text-xs">No active providers.</p>}
-            </div>
-
-            {Array.isArray(cryptomusBalance) && cryptomusBalance.length > 0 && (
-              <div className="mt-6 pt-6 border-t border-white/10">
-                <h4 className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-3">Cryptomus Balance</h4>
-                <div className="space-y-3">
-                  {cryptomusBalance.map((item: any, idx: number) => {
-                    const balanceNum = parseFloat(item.balance);
-
-                    // Only show balances > 0
-                    if (isNaN(balanceNum) || balanceNum <= 0) return null;
-                    return (
-                      <div key={idx} className="flex justify-between text-xs items-center">
-                        <span className="text-slate-400">{item.currency_code}</span>
-                        <span className="font-bold">{item.balance}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <button className="w-full mt-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors border border-white/10">
-              Manage APIs
+        {/* Recent Deposits */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-500" /> Recent Deposits
+            </h3>
+            <button className="text-[10px] uppercase tracking-wider text-blue-600 hover:text-blue-700 font-bold">
+              View All
             </button>
           </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-red-500" /> System Alerts
-            </h3>
-            <div className="space-y-3">
-              {/* Low Balance Alerts */}
-              {providers.filter((p: any) => Number(p.balance) < 10).map((p: any) => (
-                <div key={p.id} className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                  <p className="text-xs text-amber-700 font-medium mb-1">Low Balance</p>
-                  <p className="text-xs text-amber-600/80">
-                    {p.name} balance is low (${Number(p.balance).toFixed(2)}).
-                  </p>
-                </div>
-              ))}
-              {providers.filter((p: any) => Number(p.balance) < 10).length === 0 && (
-                <p className="text-sm text-slate-500 italic">No active alerts.</p>
-              )}
-            </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-[10px] text-slate-400 uppercase bg-slate-50/50">
+                <tr>
+                  <th className="px-6 py-3 font-bold">User</th>
+                  <th className="px-6 py-3 font-bold">Method</th>
+                  <th className="px-6 py-3 font-bold text-right">Amount</th>
+                  <th className="px-6 py-3 font-bold text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {recentDeposits.map((deposit: any) => {
+                  const detail = deposit.detail_transaction as any;
+                  return (
+                    <tr key={deposit.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-3">
+                        <div className="font-bold text-slate-700">{deposit.user.username}</div>
+                        <div className="text-[10px] text-slate-400">ID: {deposit.id}</div>
+                      </td>
+                      <td className="px-6 py-3">
+                        <div className="text-slate-600 font-medium capitalize">{detail?.payment_method || 'Deposit'}</div>
+                      </td>
+                      <td className="px-6 py-3 font-bold text-right text-emerald-600">${Number(deposit.amount).toFixed(2)}</td>
+                      <td className="px-6 py-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${deposit.status === 'PAYMENT' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {deposit.status}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-      {/* PostHog Analytics Section */}
-      <PostHogAnalytics data={phData} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Card 1: Total Provider Balance Summary */}
+        <div className="bg-slate-900 text-white rounded-2xl p-6 relative overflow-hidden shadow-xl flex flex-col justify-between">
+          <div className="relative z-10">
+            <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-4">Net Provider Equity</h3>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-blue-500/20 rounded-xl backdrop-blur-md border border-blue-500/20">
+                <TrendingUp className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-black tracking-tight leading-none">
+                  ${providers.reduce((acc: number, curr: any) => acc + Number(curr.balance), 0).toFixed(2)}
+                </h2>
+                <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase">aggregated across {providers.length} APIs</p>
+              </div>
+            </div>
+            
+            {Array.isArray(cryptomusBalance) && cryptomusBalance.length > 0 && (
+              <div className="space-y-2 mt-4">
+                <h4 className="text-slate-500 text-[9px] font-black uppercase tracking-wider">Cryptomus Assets</h4>
+                <div className="flex flex-wrap gap-2">
+                  {cryptomusBalance.slice(0, 3).map((item: any, idx: number) => (
+                    <div key={idx} className="px-2 py-1 bg-white/5 rounded border border-white/10 flex items-center gap-2">
+                      <span className="text-blue-400 font-bold text-[10px]">{item.currency_code}</span>
+                      <span className="text-white font-mono text-[10px]">{item.balance}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <button className="relative z-10 w-full mt-6 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10">
+            Analytics Report
+          </button>
+          
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-10 -mt-10 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-600/10 rounded-full -ml-8 -mb-8 blur-2xl" />
+        </div>
+
+        {/* Card 2: Detailed Provider Balances */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
+          <h3 className="font-bold text-slate-800 mb-4 flex items-center justify-between">
+            <span className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-black">
+               API Provider Status
+            </span>
+            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded-full font-bold">Online</span>
+          </h3>
+          <div className="space-y-4 flex-1 overflow-y-auto max-h-[250px] pr-2 scrollbar-hide">
+            {providers.map((provider: any) => (
+              <div key={provider.id} className="group cursor-default">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-slate-600 font-bold text-xs group-hover:text-blue-600 transition-colors">{provider.name}</span>
+                  <span className="text-xs font-black text-slate-900">${Number(provider.balance).toFixed(2)}</span>
+                </div>
+                <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                  <div className={`h-full transition-all duration-1000 ${Number(provider.balance) < 10 ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: '100%' }} />
+                </div>
+              </div>
+            ))}
+            {providers.length === 0 && <p className="text-slate-400 text-xs italic text-center py-4">No providers configured.</p>}
+          </div>
+          <div className="mt-4 pt-4 border-t border-slate-50">
+             <p className="text-[9px] text-slate-400 font-medium text-center">Auto-syncing every 5 minutes</p>
+          </div>
+        </div>
+
+        {/* Card 3: System Alerts */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
+          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-black">
+            System Alerts
+          </h3>
+          <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px] pr-1">
+            {providers.filter((p: any) => Number(p.balance) < 10).map((p: any) => (
+              <div key={p.id} className="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-3 animate-pulse">
+                <div className="p-1.5 bg-red-100 rounded-lg text-red-600 h-fit">
+                   <AlertCircle className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-red-800 font-black mb-0.5 uppercase tracking-tighter">Low Funds</p>
+                  <p className="text-[10px] text-red-600/80 leading-tight font-medium">
+                     {p.name} needs top-up immediately.
+                  </p>
+                </div>
+              </div>
+            ))}
+            {providers.filter((p: any) => Number(p.balance) < 10).length === 0 && (
+              <div className="flex flex-col items-center justify-center py-8 opacity-40">
+                 <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-3 grayscale group-hover:grayscale-0 transition-all">
+                    <CheckCircle className="w-5 h-5" />
+                 </div>
+                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-center">Engine Nominal</p>
+                 <p className="text-[9px] text-slate-400 font-medium text-center mt-1">No critical issues detected</p>
+              </div>
+            )}
+          </div>
+          <div className="mt-4">
+             <button className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-slate-200">
+                Ignore All Alerts
+             </button>
+          </div>
+        </div>
+      </div>
     </>
   );
 };
-
 
 export default AdminDashboard;

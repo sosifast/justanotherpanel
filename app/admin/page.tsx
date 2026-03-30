@@ -300,7 +300,7 @@ const AdminDashboard = async () => {
             
             {/* Subtle decorative background icon */}
             <div className={`absolute -right-4 -bottom-4 opacity-[0.03] ${stat.iconBg} group-hover:opacity-[0.05] transition-opacity`}>
-               {React.cloneElement(stat.icon as React.ReactElement, { className: "w-24 h-24" })}
+               {React.cloneElement(stat.icon as React.ReactElement<any>, { className: "w-24 h-24" })}
             </div>
           </div>
         ))}

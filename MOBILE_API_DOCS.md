@@ -133,6 +133,35 @@ Returns user profile summary, account statistics, and recent announcements.
 
 ---
 
+## 1b. Slider Banner
+**Endpoint**: `GET /slider-image`
+
+Mengambil daftar banner slider untuk ditampilkan di halaman utama mobile app.
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Promo Ramadhan",
+      "slug": "promo-ramadhan",
+      "imagekit_url_banner": "https://ik.imagekit.io/..."
+    },
+    {
+      "id": 2,
+      "name": "Top Up Bonus",
+      "slug": "top-up-bonus",
+      "imagekit_url_banner": "https://ik.imagekit.io/..."
+    }
+  ],
+  "message": "Sliders fetched successfully"
+}
+```
+
+---
+
 ## 2. Deposits
 
 > **Supported Payment Methods: PayPal and Cryptomus only.**  

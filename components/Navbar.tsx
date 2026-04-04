@@ -66,7 +66,8 @@ export default function Navbar({ settings, alwaysSolid = false }: NavbarProps) {
 
                         <nav className="hidden md:flex items-center space-x-8" aria-label="Main Navigation">
                             <Link href="/services" className={`text-sm font-medium transition-colors ${isSolid ? 'text-slate-600 hover:text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}>Services</Link>
-                            <Link href="/blog" className={`text-sm font-medium transition-colors ${isSolid ? 'text-slate-600 hover:text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}>Blog</Link>
+                            <Link href="/blog" className={`text-sm font-medium transition-colors ${isSolid ? 'text-slate-600 hover:text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}>Blogs</Link>
+                            <Link href="/pages/sms-temp" className={`text-sm font-medium transition-colors ${isSolid ? 'text-slate-600 hover:text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}>Sms Temp</Link>
                             <Link href="/#features" className={`text-sm font-medium transition-colors ${isSolid ? 'text-slate-600 hover:text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}>Features</Link>
                             <Link href="/#about" className={`text-sm font-medium transition-colors ${isSolid ? 'text-slate-600 hover:text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}>Why Us</Link>
                         </nav>
@@ -103,7 +104,8 @@ export default function Navbar({ settings, alwaysSolid = false }: NavbarProps) {
                 {isMenuOpen && (
                     <nav className="md:hidden absolute top-full left-0 w-full bg-white border-b border-slate-200 py-4 px-4 flex flex-col space-y-4 shadow-lg z-50">
                         <Link href="/services" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Services</Link>
-                        <Link href="/blog" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Blog</Link>
+                        <Link href="/blog" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Blogs</Link>
+                        <Link href="/pages/sms-temp" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Sms Temp</Link>
                         <Link href="/#features" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Features</Link>
                         <Link href="/#about" className="text-slate-600 font-medium" onClick={() => setIsMenuOpen(false)}>Why Us</Link>
                         <div className="pt-2 border-t border-slate-100 flex flex-col gap-3">

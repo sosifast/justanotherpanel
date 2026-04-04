@@ -24,7 +24,16 @@ export default async function VirtualNumberHistoryOrderPage() {
     const serializedOrders = orders.map(order => ({
         ...order,
         price_api_sms: Number(order.price_api_sms),
-        price_sale: Number(order.price_sale)
+        price_sale: Number(order.price_sale),
+        user: {
+            ...order.user,
+            balance: Number(order.user.balance)
+        },
+        product: {
+            ...order.product,
+            cost: Number(order.product.cost),
+            cost_sale: Number(order.product.cost_sale)
+        }
     }));
 
     return <HistoryOrderClient initialOrders={serializedOrders as any} />;

@@ -28,7 +28,8 @@ import {
   Clock,
   ExternalLink,
   ArrowRight,
-  Megaphone
+  Megaphone,
+  MessageSquare
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
@@ -306,11 +307,11 @@ const DashboardClient = ({ data }: Props) => {
               <span className="text-[10px] font-bold text-slate-800 text-center line-clamp-1 px-1 uppercase tracking-tight group-hover:text-emerald-600 transition-colors">{item.name}</span>
             </Link>
           ))}
-          <Link href="/user/services" className="flex flex-col items-center group cursor-pointer active:scale-95 transition-all">
-            <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-3 transition-all duration-500 group-hover:bg-emerald-50 group-hover:text-emerald-500 group-hover:scale-110 shadow-lg shadow-black/5">
-              <Plus size={28} />
+          <Link href="/user/sms-temp/service" className="flex flex-col items-center group cursor-pointer active:scale-95 transition-all">
+            <div className="w-16 h-16 bg-white overflow-hidden rounded-full flex items-center justify-center mb-3 transition-all duration-500 group-hover:scale-110 shadow-lg shadow-black/5 border border-emerald-50">
+              <img src="/icon/sms.png" alt="SMS Temp" className="w-full h-full object-cover" />
             </div>
-            <span className="text-[10px] font-bold text-slate-800 text-center uppercase tracking-tight group-hover:text-emerald-600 transition-colors">Others</span>
+            <span className="text-[10px] font-bold text-slate-800 text-center uppercase tracking-tight group-hover:text-emerald-600 transition-colors">Sms Temp</span>
           </Link>
         </div>
       </div>
@@ -512,7 +513,7 @@ const DashboardClient = ({ data }: Props) => {
           <span className="text-[10px] font-bold uppercase tracking-widest">Home</span>
         </Link>
         <Link
-          href="/user/history/order"
+          href="/user/history"
           onClick={() => setActiveTab('History')}
           className={`flex flex-col items-center space-y-1.5 transition-all active:scale-90 group ${activeTab === 'History' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
         >
@@ -567,7 +568,8 @@ const DashboardClient = ({ data }: Props) => {
                 notifications.map((n) => (
                   <div
                     key={n.id}
-                    className={`p-5 rounded-[2.2rem] border transition-all flex items-start space-x-4 group ${n.is_read ? 'bg-white border-slate-50' : 'bg-emerald-50/30 border-emerald-100 shadow-sm'
+                    onClick={() => handleViewNotification(n)}
+                    className={`p-5 rounded-[2.2rem] border transition-all flex items-start space-x-4 group cursor-pointer active:scale-[0.98] ${n.is_read ? 'bg-white border-slate-50' : 'bg-emerald-50/30 border-emerald-100 shadow-sm'
                       }`}
                   >
                     <div className={`p-3 rounded-2xl flex-shrink-0 transition-transform group-hover:scale-110 ${n.is_read ? 'bg-slate-50 text-slate-400' : 'bg-white text-emerald-600 shadow-sm'

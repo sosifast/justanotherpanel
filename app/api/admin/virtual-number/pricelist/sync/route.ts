@@ -22,11 +22,13 @@ export async function POST(req: Request) {
 
                 if (response.data && response.data.code === 200 && response.data.data) {
                     const prices = response.data.data;
+                    const syncedProjectIds: string[] = [];
 
                     for (const key in prices) {
                         const priceData = prices[key];
                         // project_id is what the API sends, but sometimes it is sent as string/number
                         const pidStr = String(priceData.project_id);
+                        syncedProjectIds.push(pidStr);
 
                         const cost = Number(priceData.cost);
                         // cost_sale is the cost + markup
@@ -65,13 +67,23 @@ export async function POST(req: Request) {
                         }
                         syncedCount++;
                     }
+
+                    // Delete products that are no longer in the API response for this country
+                    const deleted = await prisma.productSms.deleteMany({
+                        where: {
+                            country_id: country.id,
+                            project_id: {
+                                notIn: syncedProjectIds
+                            }
+                        }
+                    });
                 }
             } catch (err) {
                 console.error(`Error syncing prices for country ${country.title}:`, err);
             }
         }
 
-        return NextResponse.json({ message: `Successfully synced ${syncedCount} prices across all countries.` });
+        return NextResponse.json({ message: `Successfully synced ${syncedCount} prices and cleaned up obsolete records.` });
 
     } catch (error: any) {
         console.error('Pricelist sync error:', error);

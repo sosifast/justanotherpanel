@@ -240,7 +240,8 @@ const UserLayoutClient = ({ children, initialSettings }: UserLayoutClientProps) 
         pathname === '/user/voucher' || 
         pathname.startsWith('/user/redeem') ||
         pathname === '/user/api' ||
-        pathname.startsWith('/user/services');
+        pathname.startsWith('/user/services') ||
+        pathname.startsWith('/user/sms-temp');
 
     if (isNewDesign) {
         return <>{children}</>;

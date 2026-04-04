@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Filter, Plus, User, Mail, CheckCircle, XCircle, Edit, Trash2, X, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Search, Plus, User, Mail, CheckCircle, XCircle, Edit, Trash2, X, Eye, EyeOff, RefreshCw } from 'lucide-react';
 
 type UserData = {
   id: number;
@@ -11,6 +11,7 @@ type UserData = {
   balance: any;
   role: string;
   status: string;
+  created_at: string;
 };
 
 type ModalType = 'add' | 'edit' | 'delete' | 'resend' | null;
@@ -23,6 +24,17 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Stats calculation
+  const totalUsers = users.length;
+  const activeUsers = users.filter(u => u.status === 'ACTIVE').length;
+  const inactiveUsers = users.filter(u => u.status !== 'ACTIVE').length;
+  
+  const currentMonthUsers = users.filter(u => {
+    const date = new Date(u.created_at);
+    const now = new Date();
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  }).length;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -247,53 +259,176 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
     }
   };
 
+  // Bulk resend activation link for all inactive users
+  const handleBulkSendActivation = async () => {
+    const inactiveCount = users.filter(u => u.status === 'INACTIVE').length;
+    if (inactiveCount === 0) {
+      alert('No inactive users found.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to send activation links to all ${inactiveCount} inactive users?`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/users/bulk-resend-activation', {
+        method: 'POST'
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to send bulk activation links');
+      } else {
+        alert(`Successfully sent activation links to ${data.sentCount} user(s).`);
+      }
+    } catch (error) {
+      console.error('Error in bulk resend activation:', error);
+      alert('Failed to process bulk activation links');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cleanup inactive users (delete more than 30 days old)
+  const handleCleanupInactive = async () => {
+    if (!confirm("Are you sure you want to permanently delete all inactive users who hasn't activated for more than 30 days? This action cannot be undone.")) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/users/cleanup-inactive', {
+        method: 'POST'
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to cleanup inactive users');
+      } else {
+        alert(data.message || 'Successfully cleaned up inactive users');
+        // Refresh users list locally
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        setUsers(prev => prev.filter(u => !(u.status === 'INACTIVE' && new Date(u.created_at) <= thirtyDaysAgo)));
+      }
+    } catch (error) {
+      console.error('Error in cleanup inactive:', error);
+      alert('Failed to cleanup inactive users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Users Management</h1>
-          <p className="text-slate-500 text-sm">Manage all registered users and their balances.</p>
-        </div>
-        <button
-          onClick={openAddModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-900/20"
-        >
-          <Plus className="w-4 h-4" />
-          Add New User
-        </button>
-      </div>
-
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-        <div className="relative w-full md:w-96">
-          <input
-            type="text"
-            placeholder="Search users by name, email or username..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-          />
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <User className="w-6 h-6 text-blue-600" />
+            </div>
+            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full px-2">Total</span>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-slate-800">{totalUsers}</div>
+            <div className="text-sm text-slate-500">Total Users</div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 text-sm font-medium transition-colors">
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="flex-1 md:flex-none px-4 py-2 border border-slate-200 rounded-lg text-slate-600 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="ALL">All Roles</option>
-            <option value="MEMBER">Member</option>
-            <option value="STAFF">Staff</option>
-            <option value="ADMIN">Admin</option>
-          </select>
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-emerald-50 rounded-lg">
+              <CheckCircle className="w-6 h-6 text-emerald-600" />
+            </div>
+            <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Success</span>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-slate-800">{activeUsers}</div>
+            <div className="text-sm text-slate-500">Active Users</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-red-50 rounded-lg">
+              <XCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">Disabled</span>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-slate-800">{inactiveUsers}</div>
+            <div className="text-sm text-slate-500">Inactive Users</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <RefreshCw className="w-6 h-6 text-purple-600" />
+            </div>
+            <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">Monthly</span>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-slate-800">{currentMonthUsers}</div>
+            <div className="text-sm text-slate-500">New Users (Month)</div>
+          </div>
         </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-white">
+          <div className="relative w-full md:w-96">
+            <input
+              type="text"
+              placeholder="Search users by name, email or username..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+            />
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="flex-1 md:flex-none px-4 py-2 border border-slate-200 rounded-lg text-slate-600 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="ALL">All Roles</option>
+              <option value="MEMBER">Member</option>
+              <option value="STAFF">Staff</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+            <button
+              onClick={handleBulkSendActivation}
+              disabled={loading}
+              className="px-4 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors border border-emerald-100 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Send All Activation</span>
+              <span className="sm:hidden">Send All</span>
+            </button>
+            <button
+              onClick={handleCleanupInactive}
+              disabled={loading}
+              className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors border border-red-100 disabled:opacity-50"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden lg:inline">Clean Inactive (30d)</span>
+              <span className="lg:hidden">Clean</span>
+            </button>
+            <button
+              onClick={openAddModal}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-900/20"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add New User</span>
+              <span className="sm:hidden">Add</span>
+            </button>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-100">
@@ -349,10 +484,11 @@ const UsersClient = ({ initialUsers }: { initialUsers: UserData[] }) => {
                       {user.status !== 'ACTIVE' && (
                         <button
                           onClick={() => openResendModal(user)}
-                          title="Resend Activation"
-                          className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          title="Send Activation Link"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-100"
                         >
-                          <RefreshCw className="w-4 h-4" />
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          Send Link
                         </button>
                       )}
                       <button

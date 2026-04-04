@@ -13,16 +13,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/auth/login',
         '/auth/register',
         '/blog',
+        '/pages/sms-temp',
+        '/pages/sms-temp/services-sms',
     ].map((route) => ({
         url: `${baseUrl}${route}`,
         lastModified: new Date(),
         changeFrequency: 'daily' as const,
-        priority: route === '' ? 1 : 0.8,
+        priority: route === '' ? 1 : (route.includes('/pages/sms-temp') ? 0.9 : 0.8),
     }))
 
     // Dynamic blog posts
-    // NOTE: During Vercel build/export, DB connectivity may be temporarily unavailable.
-    // Don't hard-fail the whole build just because sitemap can't load dynamic posts.
     let posts: MetadataRoute.Sitemap = []
     try {
         const articles = await prisma.articlePost.findMany({

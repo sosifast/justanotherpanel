@@ -71,6 +71,7 @@ export default function Navbar({ settings, alwaysSolid = false }: NavbarProps) {
                     <nav className="hidden md:flex items-center space-x-1" aria-label="Main Navigation">
                         {[
                             { name: 'Services', href: '/services' },
+                            { name: 'Sms Temp', href: '/pages/sms-temp' },
                             { name: 'Features', href: '/#features' },
                             { name: 'Why Us', href: '/#about' }
                         ].map((item) => (
@@ -123,6 +124,7 @@ export default function Navbar({ settings, alwaysSolid = false }: NavbarProps) {
                 <nav className="bg-white/95 backdrop-blur-xl border-b border-slate-200/60 p-5 mx-4 mt-2 rounded-3xl shadow-2xl flex flex-col space-y-2">
                     {[
                         { name: 'Services', href: '/services' },
+                        { name: 'Sms Temp', href: '/pages/sms-temp' },
                         { name: 'Features', href: '/#features' },
                         { name: 'Why Us', href: '/#about' }
                     ].map((item) => (

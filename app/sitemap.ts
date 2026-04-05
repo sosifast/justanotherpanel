@@ -2,7 +2,8 @@ import { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://apkey.net'
+    // Standardizing to www.apkey.net to match metadataBase in layout.tsx
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.apkey.net'
 
     // Static pages
     const routes = [
@@ -32,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
         posts = articles.map((article) => ({
             url: `${baseUrl}/blog/${article.slug}`,
-            lastModified: article.updated_at,
+            lastModified: article.updated_at || new Date(),
             changeFrequency: 'weekly' as const,
             priority: 0.7,
         }))
